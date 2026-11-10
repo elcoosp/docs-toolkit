@@ -15,7 +15,7 @@ on:
       config_url:
         description: 'Canonical release-plz.toml URL'
         type: string
-        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/release-plz.toml'
+        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/28444472a7e4d5e7b25c739b382f8d1d8bff784c/release-plz.toml'
       dry_run:
         description: 'Preview only (no PR, no publish, no tag)'
         type: boolean
@@ -47,12 +47,23 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
-      - name: Fetch canonical config
+      - name: Fetch canonical config (SHA-pinned)
         env:
           CONFIG_URL: ${{ inputs.config_url }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          curl -fsSL "$CONFIG_URL" -o /tmp/release-plz.toml
-          echo "Config lines: $(wc -l < /tmp/release-plz.toml)"
+          # raw.githubusercontent.com caches by path; /main/ can be stale for minutes.
+          # Resolve main -> commit SHA, then fetch the SHA-pinned path.
+          REPO_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/([^/]+/[^/]+)/.*#\1#')
+          FILE_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/[^/]+/[^/]+/([^/]+)/.*#\1#')
+          PINNED_SHA=$(gh api "repos/$REPO_PATH/commits/main" -q .sha)
+          echo "  resolved main -> $PINNED_SHA"
+          curl -fsSL "https://raw.githubusercontent.com/$REPO_PATH/$PINNED_SHA/$FILE_PATH" -o /tmp/release-plz.toml
+          echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
+          if grep -qE '^\s*footer\s*=' /tmp/release-plz.toml; then
+            echo "::error::config contains unsupported 'footer' key"
+            exit 1
+          fi
       - name: Preview (release-plz update — no PR)
         if: inputs.dry_run == true
         env:
@@ -84,10 +95,23 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
-      - name: Fetch canonical config
+      - name: Fetch canonical config (SHA-pinned)
         env:
           CONFIG_URL: ${{ inputs.config_url }}
-        run: curl -fsSL "$CONFIG_URL" -o /tmp/release-plz.toml
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # raw.githubusercontent.com caches by path; /main/ can be stale for minutes.
+          # Resolve main -> commit SHA, then fetch the SHA-pinned path.
+          REPO_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/([^/]+/[^/]+)/.*#\1#')
+          FILE_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/[^/]+/[^/]+/([^/]+)/.*#\1#')
+          PINNED_SHA=$(gh api "repos/$REPO_PATH/commits/main" -q .sha)
+          echo "  resolved main -> $PINNED_SHA"
+          curl -fsSL "https://raw.githubusercontent.com/$REPO_PATH/$PINNED_SHA/$FILE_PATH" -o /tmp/release-plz.toml
+          echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
+          if grep -qE '^\s*footer\s*=' /tmp/release-plz.toml; then
+            echo "::error::config contains unsupported 'footer' key"
+            exit 1
+          fi
       - name: release-plz release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
