@@ -1,13 +1,8 @@
 name: Release (release-plz)
 
 # Reusable release-plz workflow.
-#
-# dry_run semantics (matches the official release-plz GitHub Action):
-#   - release-pr job: runs `release-plz update` (modifies files locally,
-#     no PR opened). Print diff as the preview. release-pr has no --dry-run.
-#   - release job:   runs `release-plz release --dry-run` (supported flag).
-#
-# Config fetched at runtime from docs-toolkit — zero per-repo config files.
+# dry_run semantics: release-pr runs `release-plz update` (local preview);
+# release runs `release-plz release --dry-run`.
 
 on:
   workflow_call:
@@ -21,11 +16,12 @@ on:
         type: boolean
         default: false
     secrets:
-      RELEASE_PLZ_TOKEN:
-        required: false
-        description: 'PAT (contents+pull-requests write). Required for binary repos so `release: published` fires binaries.yml.'
-      CARGO_REGISTRY_TOKEN:
+      GH_TOKEN:
         required: true
+        description: 'GitHub token (contents+pull-requests write).'
+      CARGO_REGISTRY_TOKEN:
+        required: false
+        description: 'crates.io token. Required for real releases; not for dry-run.'
 
 permissions:
   contents: write
@@ -52,8 +48,6 @@ jobs:
           CONFIG_URL: ${{ inputs.config_url }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # raw.githubusercontent.com caches by path — /main/ can serve stale.
-          # gh api hits the repo API directly: no CDN cache, always current.
           STRIPPED="${CONFIG_URL#https://raw.githubusercontent.com/}"
           REPO_PATH=$(echo "$STRIPPED" | awk -F'/' '{print $1"/"$2}')
           FILE_PATH=$(echo "$STRIPPED" | awk -F'/' '{for(i=4;i<=NF;i++) printf "%s%s", (i>4?"/":""), $i}')
@@ -69,9 +63,8 @@ jobs:
         if: inputs.dry_run == true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          release-plz update -vv --config /tmp/release-plz.toml
+          release-plz update -vv --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
           echo "::group::git diff"
           git --no-pager diff
           echo "::endgroup::"
@@ -79,7 +72,6 @@ jobs:
       - name: release-plz release-pr
         if: inputs.dry_run == false
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: release-plz release-pr -vv --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
 
@@ -103,22 +95,13 @@ jobs:
           CONFIG_URL: ${{ inputs.config_url }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # raw.githubusercontent.com caches by path — /main/ can serve stale.
-          # gh api hits the repo API directly: no CDN cache, always current.
           STRIPPED="${CONFIG_URL#https://raw.githubusercontent.com/}"
           REPO_PATH=$(echo "$STRIPPED" | awk -F'/' '{print $1"/"$2}')
           FILE_PATH=$(echo "$STRIPPED" | awk -F'/' '{for(i=4;i<=NF;i++) printf "%s%s", (i>4?"/":""), $i}')
-          echo "  repo: $REPO_PATH  file: $FILE_PATH  ref: main"
           gh api "repos/$REPO_PATH/contents/$FILE_PATH?ref=main" \
             -H "Accept: application/vnd.github.raw" > /tmp/release-plz.toml
-          echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
-          if grep -qE '^\s*footer\s*=' /tmp/release-plz.toml; then
-            echo "::error::config contains unsupported 'footer' key"
-            exit 1
-          fi
       - name: release-plz release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run }}
