@@ -38,10 +38,8 @@ export const onRequest = (context: RouteContext): void => {
   route.head.push({ tag: 'meta', attrs: { property: 'og:type', content: 'website' } });
   route.head.push({ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } });
 
-  if (!is404) {
-    route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
-    route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
-  }
+  route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
+  route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
 
   if (description) {
     route.head.push({ tag: 'meta', attrs: { property: 'og:description', content: description } });
