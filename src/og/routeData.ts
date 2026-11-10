@@ -30,10 +30,7 @@ export const onRequest = (context: RouteContext): void => {
     pathname === '/404/' ||
     pathname === '/404.html';
 
-  const ogImageUrl =
-    is404 && context.site
-      ? new URL('/404-card.png', context.site).toString()
-      : getImagePath({ url: context.url, site: context.site });
+  const ogImageUrl = getImagePath({ url: context.url, site: context.site });
   const title = route.entry?.data?.title ?? '';
   const description = route.entry?.data?.description;
 
@@ -67,7 +64,7 @@ export const onRequest = (context: RouteContext): void => {
     },
   };
 
-  // Breadcrumb only makes sense on non-home pages (a 1-item breadcrumb is noise).
+  // Breadcrumb only makes sense on non-home pages.
   if (pathname !== '/' && pathname !== '') {
     const breadcrumb = {
       '@context': 'https://schema.org',
