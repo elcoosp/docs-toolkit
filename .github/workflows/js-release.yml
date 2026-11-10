@@ -30,13 +30,13 @@ permissions:
 
 jobs:
   plan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
       do_publish: ${{ steps.f.outputs.do_publish }}
       do_release: ${{ steps.f.outputs.do_release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Resolve version
@@ -64,14 +64,14 @@ jobs:
 
   build:
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
         if: inputs.package_manager == 'pnpm'
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node_version }}
           cache: ${{ inputs.package_manager }}
@@ -83,14 +83,14 @@ jobs:
   publish:
     needs: [plan, build]
     if: needs.plan.outputs.do_publish == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
         if: inputs.package_manager == 'pnpm'
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node_version }}
           cache: ${{ inputs.package_manager }}
@@ -105,13 +105,15 @@ jobs:
   changelog:
     needs: plan
     if: needs.plan.outputs.do_release == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN || github.token }}
-      - uses: taiki-e/install-action@git-cliff
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
       - run: curl -fsSL '${{ inputs.config_url }}' -o /tmp/cliff.toml
       - run: |
           git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o CHANGELOG.md
@@ -124,7 +126,7 @@ jobs:
             git commit -m "chore(release): update changelog for $GITHUB_REF_NAME"
             git push
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: release-notes
           path: /tmp/release-notes.md
@@ -132,13 +134,13 @@ jobs:
   release:
     needs: [plan, changelog]
     if: needs.plan.outputs.do_release == 'true' && needs.changelog.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release-notes
           path: /tmp/notes
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           body_path: /tmp/notes/release-notes.md

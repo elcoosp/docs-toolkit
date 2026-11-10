@@ -37,10 +37,14 @@ permissions:
   contents: write
   id-token: write
 
+# Pinned runner labels — ubuntu-latest is mid-migration to 26.04
+# (Oct 19 – Nov 19, 2026). Pin to 24.04 until validated.
+# Ref: https://github.com/actions/runner-images/issues/14748
+
 jobs:
   plan:
     name: Plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
       matrix: ${{ steps.m.outputs.matrix }}
@@ -49,7 +53,7 @@ jobs:
       do_publish: ${{ steps.f.outputs.do_publish }}
       do_release: ${{ steps.f.outputs.do_release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN || github.token }}
@@ -85,9 +89,9 @@ jobs:
             M=$(echo "$T" | jq -c '[.[] | {
               target: .,
               os: (if . == "x86_64-apple-darwin" then "macos-13"
-                   elif . == "aarch64-apple-darwin" then "macos-latest"
-                   elif . == "x86_64-pc-windows-msvc" then "windows-latest"
-                   else "ubuntu-latest" end),
+                   elif . == "aarch64-apple-darwin" then "macos-14"
+                   elif . == "x86_64-pc-windows-msvc" then "windows-2022"
+                   else "ubuntu-24.04" end),
               cross: (if . == "aarch64-unknown-linux-gnu" then true else false end)
             }]')
             echo "matrix=$M" >> "$GITHUB_OUTPUT"
@@ -108,9 +112,9 @@ jobs:
   checks:
     name: Checks
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -135,7 +139,7 @@ jobs:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -166,7 +170,7 @@ jobs:
           [[ -z "$NAME" ]] && NAME=$(basename "${{ github.repository }}")
           cd "target/${{ matrix.target }}/release"
           7z a "$NAME-${{ matrix.target }}.zip" "$NAME.exe"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: binary-${{ github.event.repository.name }}-${{ matrix.target }}
           path: |
@@ -178,9 +182,9 @@ jobs:
     name: Publish crates
     needs: [plan, checks]
     if: needs.plan.outputs.do_publish == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
@@ -196,13 +200,15 @@ jobs:
     name: Changelog
     needs: plan
     if: needs.plan.outputs.do_release == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN || github.token }}
-      - uses: taiki-e/install-action@git-cliff
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
       - name: Fetch canonical cliff.toml
         run: curl -fsSL '${{ inputs.config_url }}' -o /tmp/cliff.toml
       - name: Generate CHANGELOG + release notes
@@ -218,7 +224,7 @@ jobs:
             git commit -m "chore(release): update changelog for $GITHUB_REF_NAME"
             git push
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: release-notes
           path: /tmp/release-notes.md
@@ -231,19 +237,19 @@ jobs:
       needs.plan.outputs.do_release == 'true' &&
       needs.changelog.result == 'success' &&
       (needs.build-binaries.result == 'success' || needs.build-binaries.result == 'skipped')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: needs.plan.outputs.has_binaries == 'true'
         with:
           pattern: 'binary-*'
           merge-multiple: true
           path: /tmp/assets
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release-notes
           path: /tmp/notes
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
