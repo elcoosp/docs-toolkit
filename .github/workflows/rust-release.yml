@@ -238,7 +238,24 @@ jobs:
         with:
           tool: git-cliff
       - name: Fetch canonical cliff.toml
-        run: curl -fsSL '${{ inputs.config_url }}' -o /tmp/cliff.toml
+        run: |
+          curl -fsSL '${{ inputs.config_url }}' -o /tmp/cliff.toml
+          # Inject repo name dynamically so [remote.github] is complete
+          REPO_NAME="${{ github.event.repository.name }}"
+          python3 - <<PYINJECT
+import re
+path = '/tmp/cliff.toml'
+with open(path, 'r') as f:
+    content = f.read()
+if '[remote.github]' in content and 'repo =' not in content:
+    content = content.replace(
+        '[remote.github]\nowner = "elcoosp"',
+        f'[remote.github]\nowner = "elcoosp"\nrepo = "{REPO_NAME}"'
+    )
+    with open(path, 'w') as f:
+        f.write(content)
+    print(f'Injected repo = "{REPO_NAME}"')
+PYINJECT
       - name: Generate CHANGELOG + release notes
         run: |
           git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o CHANGELOG.md
