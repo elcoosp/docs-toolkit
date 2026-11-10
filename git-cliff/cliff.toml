@@ -1,0 +1,64 @@
+# ============================================================================
+# Canonical git-cliff configuration for the elcoosp docs fleet.
+#
+# THIS IS THE ONLY COPY. Do not fork it into individual repos.
+#
+# How consumers use it:
+#   Local dev:  export GIT_CLIFF_CONFIG_URL=https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/git-cliff/cliff.toml
+#   CI:         args: --config-url https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/git-cliff/cliff.toml
+#   Offline:    bash docs-toolkit/scripts/install-cliff-config.sh   (caches to ~/.config/cliff.toml)
+#
+# Docs: https://git-cliff.org/docs/configuration
+# ============================================================================
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+"""
+body = """
+{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}\
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | upper_first }}
+{% endfor %}\
+{% endfor %}\n"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+protect_breaking_commits = true
+filter_commits = false
+topo_order = false
+sort_commits = "newest"
+commit_parsers = [
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Bug Fixes" },
+  { message = "^doc", group = "Documentation" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Refactor" },
+  { message = "^style", group = "Styling" },
+  { message = "^test", group = "Testing" },
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^chore\\(deps\\)", group = "Dependencies" },
+  { message = "^chore", group = "Miscellaneous" },
+  { message = "^revert", group = "Revert" },
+]
+tag_pattern = "v[0-9]*"
+skip_tags = ""
+ignore_tags = ""
+
+[remote.github]
+owner = "elcoosp"
