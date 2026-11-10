@@ -1,19 +1,19 @@
-# Reusable changelog + release workflow for the elcoosp docs fleet.
-# Callers: `uses: elcoosp/docs-toolkit/.github/workflows/changelog.yml@main`
+# Reusable changelog workflow for the elcoosp docs fleet.
+# Callers see templates/changelog.yml (additive) and
+# templates/changelog-with-release.yml (standalone).
 #
-# Inputs:
-#   mode: 'release' (default) — regenerate CHANGELOG.md, commit, tag release
-#         'check'            — fail if CHANGELOG.md is stale (PR gate)
-#   config_url: canonical cliff.toml URL (defaults to docs-toolkit main)
-#   changelog_path: repo-relative path to CHANGELOG.md (default: CHANGELOG.md)
+# mode:
+#   'changelog-only' (default) — regenerate CHANGELOG.md + commit; no release
+#   'release'                  — also create GitHub release from the changelog
+#   'check'                    — fail if CHANGELOG.md is stale (PR gate)
 
 on:
   workflow_call:
     inputs:
       mode:
-        description: "'release' or 'check'"
+        description: "'changelog-only' | 'release' | 'check'"
         type: string
-        default: 'release'
+        default: 'changelog-only'
       config_url:
         description: 'Raw URL to canonical cliff.toml'
         type: string
@@ -25,7 +25,7 @@ on:
     secrets:
       token:
         required: false
-        description: 'GitHub token for release creation (defaults to github.token)'
+        description: 'GitHub token (defaults to github.token)'
 
 permissions:
   contents: write
@@ -33,50 +33,43 @@ permissions:
 
 jobs:
   changelog:
-    name: Generate changelog
+    name: Generate changelog (${{ inputs.mode }})
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.token || github.token }}
 
-      - name: Install git-cliff
-        uses: taiki-e/install-action@git-cliff
+      - uses: taiki-e/install-action@git-cliff
 
       - name: Fetch canonical config
-        run: |
-          curl -fsSL "${{ inputs.config_url }}" -o /tmp/cliff.toml
-          echo "Config lines: $(wc -l < /tmp/cliff.toml)"
+        run: curl -fsSL "${{ inputs.config_url }}" -o /tmp/cliff.toml
 
       - name: Generate changelog
-        if: inputs.mode == 'release'
+        if: inputs.mode != 'check'
         run: |
           git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o "${{ inputs.changelog_path }}"
 
       - name: Generate release notes
         if: inputs.mode == 'release'
-        id: notes
         run: |
           git cliff --config /tmp/cliff.toml --latest --strip header > /tmp/release_notes.md
-          echo "notes_file=/tmp/release_notes.md" >> "$GITHUB_OUTPUT"
 
-      - name: Check changelog freshness
+      - name: Check freshness
         if: inputs.mode == 'check'
         run: |
           git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o /tmp/expected.md
-          if ! diff -q "${{ inputs.changelog_path }}" /tmp/expected.md >/dev/null; then
-            echo "::error::CHANGELOG.md is stale — regenerate with git-cliff"
-            diff "${{ inputs.changelog_path }}" /tmp/expected.md | head -50
+          diff -q "${{ inputs.changelog_path }}" /tmp/expected.md || {
+            echo "::error::CHANGELOG.md is stale — run git cliff locally"
             exit 1
-          fi
+          }
 
-      - name: Commit changelog
-        if: inputs.mode == 'release'
+      - name: Commit
+        if: inputs.mode != 'check'
         run: |
           if git diff --quiet "${{ inputs.changelog_path }}"; then
-            echo "No changelog changes"
+            echo "No changes"
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -91,7 +84,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          body_path: ${{ steps.notes.outputs.notes_file }}
+          body_path: /tmp/release_notes.md
           draft: false
           prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
         env:
