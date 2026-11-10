@@ -69,6 +69,7 @@ jobs:
         if: inputs.dry_run == true
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           release-plz update -vv --config /tmp/release-plz.toml
           echo "::group::git diff"
@@ -79,7 +80,8 @@ jobs:
         if: inputs.dry_run == false
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-        run: release-plz release-pr -vv --config /tmp/release-plz.toml
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+        run: release-plz release-pr -vv --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
 
   release:
     name: Release
@@ -117,6 +119,7 @@ jobs:
       - name: release-plz release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
