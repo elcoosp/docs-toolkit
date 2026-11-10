@@ -49,7 +49,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     defaultLocale = 'root',
     plugins = [],
     sidebar,
-    routeMiddleware = './src/routeData.mjs',
+    routeMiddleware = './src/routeData.ts',
     base,
     accentOverride,
     expressiveCode = { themes: ['github-light', 'github-dark'] },

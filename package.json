@@ -38,10 +38,10 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "build": "node scripts/prebuild.mjs && tsdown && node scripts/postbuild.mjs",
+    "build": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
     "typecheck": "tsc --noEmit",
-    "prepare": "node scripts/prebuild.mjs && tsdown && node scripts/postbuild.mjs",
-    "prebuild": "node scripts/prebuild.mjs"
+    "prepare": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
+    "prebuild": "node scripts/prebuild.ts"
   },
   "dependencies": {
     "sharp": "^0.35.5"
