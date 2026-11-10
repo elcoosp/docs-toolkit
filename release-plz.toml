@@ -16,6 +16,7 @@ pr_labels            = ["release"]
 semver_check         = true
 dependencies_update  = false
 release_always       = false
+git_only             = true   # use git tags as version baseline, not crates.io
 
 [changelog]
 header = """
