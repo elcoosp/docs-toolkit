@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { readFile, readdir, writeFile, mkdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 const C = "src/content/docs", P = "public", D = "docs", PL = join(D, "page-plans");

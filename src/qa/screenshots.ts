@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Visual QA gate: screenshots every built route in two viewports and two
  * themes and fails on console errors, page errors, HTTP >= 400, horizontal

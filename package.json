@@ -4,33 +4,62 @@
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "type": "module",
   "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
-    ".": "./dist/index.mjs",
-    "./og": "./dist/og/index.mjs",
-    "./og/routeData": "./dist/og/routeData.mjs",
-    "./config": "./dist/config/index.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./og": {
+      "types": "./dist/og/index.d.mts",
+      "import": "./dist/og/index.mjs"
+    },
+    "./og/routeData": {
+      "types": "./dist/og/routeData.d.mts",
+      "import": "./dist/og/routeData.mjs"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.mts",
+      "import": "./dist/config/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "bin": {
-    "qa-components": "./dist/bin/qa-components.mjs",
-    "qa-screenshots": "./dist/bin/qa-screenshots.mjs",
-    "bootstrap-artifacts": "./dist/bin/bootstrap-artifacts.mjs"
+    "docs-toolkit-qa-components": "./dist/qa/components.mjs",
+    "docs-toolkit-qa-screenshots": "./dist/qa/screenshots.mjs",
+    "docs-toolkit-bootstrap-artifacts": "./dist/qa/bootstrap-artifacts.mjs"
   },
-  "files": ["dist", "src", "README.md"],
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "prepare": "pnpm build"
+    "build": "tsdown && node scripts/postbuild.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepare": "tsdown && node scripts/postbuild.mjs"
   },
   "dependencies": {
-    "react": "^19.3.1",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "@types/node": "^24.19.2",
+    "tsdown": "^0.23.7",
+    "typescript": "~6.0.3"
   },
   "peerDependencies": {
-    "astro": "^7.0.0",
     "@astrojs/starlight": "^0.42.0",
-    "astro-takumi": "*"
+    "astro": "^7.0.0",
+    "astro-takumi": "*",
+    "playwright": "^1.65.0",
+    "react": "^19.3.1"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
   }
 }

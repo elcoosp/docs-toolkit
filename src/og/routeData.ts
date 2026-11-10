@@ -1,10 +1,26 @@
 import { getImagePath } from 'astro-takumi';
 
-export const onRequest = (context) => {
+interface MetaTag {
+  tag: 'meta';
+  attrs: Record<string, string>;
+}
+
+interface StarlightRoute {
+  head: MetaTag[];
+  entry?: { data?: { title?: string; description?: string } };
+}
+
+export interface RouteContext {
+  url: URL;
+  site?: URL;
+  locals: { starlightRoute: StarlightRoute };
+}
+
+export const onRequest = (context: RouteContext): void => {
   const route = context.locals.starlightRoute;
   const ogImageUrl = getImagePath({ url: context.url, site: context.site });
 
-  route.head.push({ tag: 'meta', attrs: { property: 'og:title', content: route.entry?.data?.title || '' } });
+  route.head.push({ tag: 'meta', attrs: { property: 'og:title', content: route.entry?.data?.title ?? '' } });
   route.head.push({ tag: 'meta', attrs: { property: 'og:type', content: 'website' } });
   route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
   route.head.push({ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } });

@@ -1,13 +1,17 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "strict": false,
+    "types": ["node"],
+    "strict": true,
     "skipLibCheck": true,
-    "allowJs": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "tsdown.config.ts"]
 }

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 const CLS = { Aside: "sl-aside", Badge: "sl-badge", Card: "sl-card", CardGrid: "card-grid",
