@@ -27,6 +27,10 @@ on:
         description: 'Canonical cliff.toml URL'
         type: string
         default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/git-cliff/cliff.toml'
+      linux_deps:
+        description: 'Space-separated apt packages'
+        type: string
+        default: ''
     secrets:
       CARGO_REGISTRY_TOKEN:
         required: false
@@ -119,6 +123,9 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux' && inputs.linux_deps != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ inputs.linux_deps }}
       - name: fmt
         if: contains(fromJSON(needs.plan.outputs.checks), 'fmt')
         run: cargo fmt --all -- --check
@@ -144,6 +151,9 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux' && inputs.linux_deps != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ inputs.linux_deps }}
       - uses: taiki-e/install-action@v2
         if: matrix.cross
         with:
@@ -189,6 +199,9 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux' && inputs.linux_deps != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ inputs.linux_deps }}
       - name: Inspect publishable crates
         run: |
           echo "Crates that will publish (workspace, honoring publish = false):"
