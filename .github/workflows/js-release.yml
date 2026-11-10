@@ -1,0 +1,148 @@
+name: JS Release
+
+on:
+  workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: true
+      dry_run:
+        type: boolean
+        default: false
+      node_version:
+        type: string
+        default: '22'
+      package_manager:
+        type: string
+        default: 'pnpm'
+      config_url:
+        type: string
+        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/git-cliff/cliff.toml'
+    secrets:
+      NPM_TOKEN:
+        required: false
+      GH_TOKEN:
+        required: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      do_publish: ${{ steps.f.outputs.do_publish }}
+      do_release: ${{ steps.f.outputs.do_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve version
+        id: v
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ inputs.dry_run }}" == "false" ]]; then
+            if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              echo "::error::Tag $GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH"
+              exit 1
+            fi
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Resolve flags
+        id: f
+        run: |
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "do_publish=false" >> "$GITHUB_OUTPUT"
+            echo "do_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "do_publish=${{ inputs.publish }}" >> "$GITHUB_OUTPUT"
+            echo "do_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        if: inputs.package_manager == 'pnpm'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: ${{ inputs.package_manager }}
+          registry-url: https://registry.npmjs.org
+      - run: ${{ inputs.package_manager }} install --frozen-lockfile
+      - run: ${{ inputs.package_manager }} run build --if-present
+      - run: ${{ inputs.package_manager }} test --if-present
+
+  publish:
+    needs: [plan, build]
+    if: needs.plan.outputs.do_publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        if: inputs.package_manager == 'pnpm'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: ${{ inputs.package_manager }}
+          registry-url: https://registry.npmjs.org
+      - run: ${{ inputs.package_manager }} install --frozen-lockfile
+      - run: ${{ inputs.package_manager }} run build --if-present
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  changelog:
+    needs: plan
+    if: needs.plan.outputs.do_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN || github.token }}
+      - uses: taiki-e/install-action@git-cliff
+      - run: curl -fsSL '${{ inputs.config_url }}' -o /tmp/cliff.toml
+      - run: |
+          git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o CHANGELOG.md
+          git cliff --config /tmp/cliff.toml --latest --strip header > /tmp/release-notes.md
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet CHANGELOG.md; then
+            git add CHANGELOG.md
+            git commit -m "chore(release): update changelog for $GITHUB_REF_NAME"
+            git push
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: /tmp/release-notes.md
+
+  release:
+    needs: [plan, changelog]
+    if: needs.plan.outputs.do_release == 'true' && needs.changelog.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: /tmp/notes
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body_path: /tmp/notes/release-notes.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || github.token }}

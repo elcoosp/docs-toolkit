@@ -1,0 +1,26 @@
+# Standard JS/npm release caller.
+# Copy to .github/workflows/release.yml in each JS repo.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    uses: elcoosp/docs-toolkit/.github/workflows/js-release.yml@main
+    with:
+      publish: true
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
