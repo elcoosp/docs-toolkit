@@ -117,8 +117,8 @@ export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, proje
           {/* Top row — baseline-aligned logo + name */}
           <div tw="flex items-center justify-between">
             <div tw="flex items-center" style={{ gap: 20, alignItems: "center" }}>
-              <img src={logoDataUrl} style={{ width: 120, height: 120, objectFit: "contain", display: "block" }} alt="" />
-              <span style={{ fontSize: 40, fontWeight: 800, color: "#09090b", letterSpacing: "-0.045em", lineHeight: 1, marginTop: 4 }}>{projectName}</span>
+              <img src={logoDataUrl} style={{ width: 160, height: 160, objectFit: "contain", display: "block" }} alt="" />
+              <span style={{ fontSize: 52, fontWeight: 800, color: "#09090b", letterSpacing: "-0.045em", lineHeight: 1, marginTop: 4 }}>{projectName}</span>
             </div>
             <div tw="flex items-center" style={{
               borderWidth: 1, borderStyle: "solid",
