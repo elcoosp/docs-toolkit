@@ -226,6 +226,9 @@ jobs:
     needs: plan
     if: needs.plan.outputs.do_release == 'true'
     runs-on: ubuntu-24.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+      GITHUB_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v5
         with:
