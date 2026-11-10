@@ -64,7 +64,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          release-plz update -vv --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
+          release-plz update --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
           echo "::group::git diff"
           git --no-pager diff
           echo "::endgroup::"
@@ -73,7 +73,7 @@ jobs:
         if: inputs.dry_run == false
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: release-plz release-pr -vv --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
+        run: release-plz release-pr --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
 
   release:
     name: Release
