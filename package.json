@@ -1,0 +1,36 @@
+{
+  "name": "@elcoosp/docs-toolkit",
+  "version": "0.1.0",
+  "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./og": "./dist/og/index.mjs",
+    "./og/routeData": "./dist/og/routeData.mjs",
+    "./config": "./dist/config/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "qa-components": "./dist/bin/qa-components.mjs",
+    "qa-screenshots": "./dist/bin/qa-screenshots.mjs",
+    "bootstrap-artifacts": "./dist/bin/bootstrap-artifacts.mjs"
+  },
+  "files": ["dist", "src", "README.md"],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepare": "pnpm build"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "peerDependencies": {
+    "astro": "^7.0.0",
+    "@astrojs/starlight": "^0.42.0",
+    "astro-takumi": "*"
+  }
+}
