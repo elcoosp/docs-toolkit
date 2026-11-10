@@ -15,6 +15,7 @@ git_tag_name         = "v{{ version }}"
 pr_labels            = ["release"]
 semver_check         = true
 dependencies_update  = false
+release_always       = false
 
 [changelog]
 header = """

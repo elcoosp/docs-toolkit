@@ -1,13 +1,13 @@
 name: Release (release-plz)
 
-# Reusable release-plz workflow. Owns:
-#   - version computation (SemVer + cargo-semver-checks)
-#   - CHANGELOG.md generation (git-cliff engine, canonical template)
-#   - Release PR
-#   - tag creation, crates.io publish, GitHub Release
+# Reusable release-plz workflow.
 #
-# Config is fetched at runtime from docs-toolkit — zero per-repo config files.
-# Caller: see templates/release-plz-caller.yml
+# dry_run semantics (matches the official release-plz GitHub Action):
+#   - release-pr job: runs `release-plz update` (modifies files locally,
+#     no PR opened). Print diff as the preview. release-pr has no --dry-run.
+#   - release job:   runs `release-plz release --dry-run` (supported flag).
+#
+# Config fetched at runtime from docs-toolkit — zero per-repo config files.
 
 on:
   workflow_call:
@@ -17,13 +17,13 @@ on:
         type: string
         default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/release-plz.toml'
       dry_run:
-        description: 'Print plan without opening PR / releasing'
+        description: 'Preview only (no PR, no publish, no tag)'
         type: boolean
         default: false
     secrets:
       RELEASE_PLZ_TOKEN:
         required: false
-        description: 'PAT (contents+pull-requests write). Required for binary repos so `release: published` fires binaries.yml. Falls back to GITHUB_TOKEN.'
+        description: 'PAT (contents+pull-requests write). Required for binary repos so `release: published` fires binaries.yml.'
       CARGO_REGISTRY_TOKEN:
         required: true
 
@@ -53,15 +53,21 @@ jobs:
         run: |
           curl -fsSL "$CONFIG_URL" -o /tmp/release-plz.toml
           echo "Config lines: $(wc -l < /tmp/release-plz.toml)"
-      - name: release-plz release-pr
+      - name: Preview (release-plz update — no PR)
+        if: inputs.dry_run == true
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          ARGS=(release-pr --config /tmp/release-plz.toml)
-          if [[ "$DRY_RUN" == "true" ]]; then ARGS+=(--dry-run); fi
-          release-plz "${ARGS[@]}"
+          release-plz update --config /tmp/release-plz.toml
+          echo "::group::git diff"
+          git --no-pager diff
+          echo "::endgroup::"
+          echo "::notice::dry_run — no PR opened, no commit made"
+      - name: release-plz release-pr
+        if: inputs.dry_run == false
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+        run: release-plz release-pr --config /tmp/release-plz.toml
 
   release:
     name: Release
