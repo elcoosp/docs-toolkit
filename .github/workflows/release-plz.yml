@@ -47,18 +47,19 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
-      - name: Fetch canonical config (SHA-pinned)
+      - name: Fetch canonical config (via GitHub API)
         env:
           CONFIG_URL: ${{ inputs.config_url }}
           GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          # raw.githubusercontent.com caches by path; /main/ can be stale for minutes.
-          # Resolve main -> commit SHA, then fetch the SHA-pinned path.
-          REPO_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/([^/]+/[^/]+)/.*#\1#')
-          FILE_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/[^/]+/[^/]+/([^/]+)/.*#\1#')
-          PINNED_SHA=$(gh api "repos/$REPO_PATH/commits/main" -q .sha)
-          echo "  resolved main -> $PINNED_SHA"
-          curl -fsSL "https://raw.githubusercontent.com/$REPO_PATH/$PINNED_SHA/$FILE_PATH" -o /tmp/release-plz.toml
+          # raw.githubusercontent.com caches by path — /main/ can serve stale.
+          # gh api hits the repo API directly: no CDN cache, always current.
+          STRIPPED="${CONFIG_URL#https://raw.githubusercontent.com/}"
+          REPO_PATH=$(echo "$STRIPPED" | awk -F'/' '{print $1"/"$2}')
+          FILE_PATH=$(echo "$STRIPPED" | awk -F'/' '{for(i=4;i<=NF;i++) printf "%s%s", (i>4?"/":""), $i}')
+          echo "  repo: $REPO_PATH  file: $FILE_PATH  ref: main"
+          gh api "repos/$REPO_PATH/contents/$FILE_PATH?ref=main" \
+            -H "Accept: application/vnd.github.raw" > /tmp/release-plz.toml
           echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
           if grep -qE '^\s*footer\s*=' /tmp/release-plz.toml; then
             echo "::error::config contains unsupported 'footer' key"
@@ -95,18 +96,19 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
-      - name: Fetch canonical config (SHA-pinned)
+      - name: Fetch canonical config (via GitHub API)
         env:
           CONFIG_URL: ${{ inputs.config_url }}
           GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          # raw.githubusercontent.com caches by path; /main/ can be stale for minutes.
-          # Resolve main -> commit SHA, then fetch the SHA-pinned path.
-          REPO_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/([^/]+/[^/]+)/.*#\1#')
-          FILE_PATH=$(echo "$CONFIG_URL" | sed -E 's#https://raw.githubusercontent.com/[^/]+/[^/]+/([^/]+)/.*#\1#')
-          PINNED_SHA=$(gh api "repos/$REPO_PATH/commits/main" -q .sha)
-          echo "  resolved main -> $PINNED_SHA"
-          curl -fsSL "https://raw.githubusercontent.com/$REPO_PATH/$PINNED_SHA/$FILE_PATH" -o /tmp/release-plz.toml
+          # raw.githubusercontent.com caches by path — /main/ can serve stale.
+          # gh api hits the repo API directly: no CDN cache, always current.
+          STRIPPED="${CONFIG_URL#https://raw.githubusercontent.com/}"
+          REPO_PATH=$(echo "$STRIPPED" | awk -F'/' '{print $1"/"$2}')
+          FILE_PATH=$(echo "$STRIPPED" | awk -F'/' '{for(i=4;i<=NF;i++) printf "%s%s", (i>4?"/":""), $i}')
+          echo "  repo: $REPO_PATH  file: $FILE_PATH  ref: main"
+          gh api "repos/$REPO_PATH/contents/$FILE_PATH?ref=main" \
+            -H "Accept: application/vnd.github.raw" > /tmp/release-plz.toml
           echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
           if grep -qE '^\s*footer\s*=' /tmp/release-plz.toml; then
             echo "::error::config contains unsupported 'footer' key"
