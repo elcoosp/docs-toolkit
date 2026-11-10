@@ -1,0 +1,98 @@
+# Reusable changelog + release workflow for the elcoosp docs fleet.
+# Callers: `uses: elcoosp/docs-toolkit/.github/workflows/changelog.yml@main`
+#
+# Inputs:
+#   mode: 'release' (default) — regenerate CHANGELOG.md, commit, tag release
+#         'check'            — fail if CHANGELOG.md is stale (PR gate)
+#   config_url: canonical cliff.toml URL (defaults to docs-toolkit main)
+#   changelog_path: repo-relative path to CHANGELOG.md (default: CHANGELOG.md)
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: "'release' or 'check'"
+        type: string
+        default: 'release'
+      config_url:
+        description: 'Raw URL to canonical cliff.toml'
+        type: string
+        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/git-cliff/cliff.toml'
+      changelog_path:
+        description: 'Path to CHANGELOG.md relative to repo root'
+        type: string
+        default: 'CHANGELOG.md'
+    secrets:
+      token:
+        required: false
+        description: 'GitHub token for release creation (defaults to github.token)'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.token || github.token }}
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Fetch canonical config
+        run: |
+          curl -fsSL "${{ inputs.config_url }}" -o /tmp/cliff.toml
+          echo "Config lines: $(wc -l < /tmp/cliff.toml)"
+
+      - name: Generate changelog
+        if: inputs.mode == 'release'
+        run: |
+          git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o "${{ inputs.changelog_path }}"
+
+      - name: Generate release notes
+        if: inputs.mode == 'release'
+        id: notes
+        run: |
+          git cliff --config /tmp/cliff.toml --latest --strip header > /tmp/release_notes.md
+          echo "notes_file=/tmp/release_notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Check changelog freshness
+        if: inputs.mode == 'check'
+        run: |
+          git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o /tmp/expected.md
+          if ! diff -q "${{ inputs.changelog_path }}" /tmp/expected.md >/dev/null; then
+            echo "::error::CHANGELOG.md is stale — regenerate with git-cliff"
+            diff "${{ inputs.changelog_path }}" /tmp/expected.md | head -50
+            exit 1
+          fi
+
+      - name: Commit changelog
+        if: inputs.mode == 'release'
+        run: |
+          if git diff --quiet "${{ inputs.changelog_path }}"; then
+            echo "No changelog changes"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "${{ inputs.changelog_path }}"
+            git commit -m "chore(release): update changelog for $GITHUB_REF_NAME"
+            git push
+          fi
+
+      - name: Create GitHub Release
+        if: inputs.mode == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: ${{ steps.notes.outputs.notes_file }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.token || github.token }}
