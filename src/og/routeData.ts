@@ -36,19 +36,20 @@ export const onRequest = (context: RouteContext): void => {
 
   route.head.push({ tag: 'meta', attrs: { property: 'og:title', content: title } });
   route.head.push({ tag: 'meta', attrs: { property: 'og:type', content: 'website' } });
-  route.head.push({ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } });
-
   route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
+  route.head.push({ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } });
   route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
 
   if (description) {
     route.head.push({ tag: 'meta', attrs: { property: 'og:description', content: description } });
   }
 
+  // 404 pages: no JSON-LD (no schema for error pages), no breadcrumb.
   if (is404 || !context.site) return;
 
   const fullUrl = new URL(pathname, context.site).toString();
 
+  // TechArticle on every non-404 page.
   const techArticle = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
@@ -64,7 +65,13 @@ export const onRequest = (context: RouteContext): void => {
     },
   };
 
-  // Breadcrumb only makes sense on non-home pages.
+  route.head.push({
+    tag: 'script',
+    attrs: { type: 'application/ld+json' },
+    content: JSON.stringify(techArticle),
+  });
+
+  // Breadcrumb only on non-home pages (a 1-item breadcrumb is noise).
   if (pathname !== '/' && pathname !== '') {
     const breadcrumb = {
       '@context': 'https://schema.org',
@@ -74,6 +81,10 @@ export const onRequest = (context: RouteContext): void => {
         { '@type': 'ListItem', position: 2, name: title || pathname, item: fullUrl },
       ],
     };
-    route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(breadcrumb) });
+    route.head.push({
+      tag: 'script',
+      attrs: { type: 'application/ld+json' },
+      content: JSON.stringify(breadcrumb),
+    });
   }
 };
