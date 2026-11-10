@@ -1,0 +1,93 @@
+name: Release (release-plz)
+
+# Reusable release-plz workflow. Owns:
+#   - version computation (SemVer + cargo-semver-checks)
+#   - CHANGELOG.md generation (git-cliff engine, canonical template)
+#   - Release PR
+#   - tag creation, crates.io publish, GitHub Release
+#
+# Config is fetched at runtime from docs-toolkit — zero per-repo config files.
+# Caller: see templates/release-plz-caller.yml
+
+on:
+  workflow_call:
+    inputs:
+      config_url:
+        description: 'Canonical release-plz.toml URL'
+        type: string
+        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/release-plz.toml'
+      dry_run:
+        description: 'Print plan without opening PR / releasing'
+        type: boolean
+        default: false
+    secrets:
+      RELEASE_PLZ_TOKEN:
+        required: false
+        description: 'PAT (contents+pull-requests write). Required for binary repos so `release: published` fires binaries.yml. Falls back to GITHUB_TOKEN.'
+      CARGO_REGISTRY_TOKEN:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-pr:
+    name: Release PR
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: release-plz-pr-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: release-plz
+      - name: Fetch canonical config
+        env:
+          CONFIG_URL: ${{ inputs.config_url }}
+        run: |
+          curl -fsSL "$CONFIG_URL" -o /tmp/release-plz.toml
+          echo "Config lines: $(wc -l < /tmp/release-plz.toml)"
+      - name: release-plz release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          ARGS=(release-pr --config /tmp/release-plz.toml)
+          if [[ "$DRY_RUN" == "true" ]]; then ARGS+=(--dry-run); fi
+          release-plz "${ARGS[@]}"
+
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: release-plz-release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: release-plz
+      - name: Fetch canonical config
+        env:
+          CONFIG_URL: ${{ inputs.config_url }}
+        run: curl -fsSL "$CONFIG_URL" -o /tmp/release-plz.toml
+      - name: release-plz release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          ARGS=(release --config /tmp/release-plz.toml)
+          if [[ "$DRY_RUN" == "true" ]]; then ARGS+=(--dry-run); fi
+          release-plz "${ARGS[@]}"

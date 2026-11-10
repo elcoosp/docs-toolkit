@@ -1,0 +1,18 @@
+# Drop-in .github/workflows/binaries.yml for binary repos only.
+# Replace BINARY_TARGETS with the repo's matrix.
+name: Binaries
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  binaries:
+    uses: elcoosp/docs-toolkit/.github/workflows/binaries.yml@main
+    with:
+      binary_name: ''
+      asset_prefix: ''
+      binary_targets: 'BINARY_TARGETS'

@@ -1,0 +1,67 @@
+name: Binaries
+
+# Builds and attaches cross-platform binaries to an EXISTING GitHub Release
+# created by release-plz. Does NOT create releases, publish crates, or
+# generate changelogs — those are release-plz's job.
+#
+# Triggered by the caller's `on: release: types: [published]`.
+# Binary repos MUST pass RELEASE_PLZ_TOKEN so that release-plz's release
+# event actually fires (default GITHUB_TOKEN cannot trigger other workflows).
+
+on:
+  workflow_call:
+    inputs:
+      binary_targets:
+        description: 'JSON array of {target, os, cross}'
+        type: string
+        default: '[]'
+      binary_name:
+        description: 'Binary name (defaults to repo name)'
+        type: string
+        default: ''
+      asset_prefix:
+        description: 'Prefix for release assets (e.g. grider-v)'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    if: github.event_name == 'release' && github.event.action == 'published'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.binary_targets) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        if: matrix.cross
+        with:
+          tool: cross
+      - name: Build
+        shell: bash
+        run: |
+          if [[ "${{ matrix.cross }}" == "true" ]]; then
+            cross build --release --locked --target ${{ matrix.target }}
+          else
+            cargo build --release --locked --target ${{ matrix.target }}
+          fi
+      - name: Upload to existing release
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: ${{ inputs.binary_name || github.event.repository.name }}
+          target: ${{ matrix.target }}
+          token: ${{ github.token }}
+          archive: ${{ inputs.asset_prefix && format('{0}-{1}', inputs.asset_prefix, matrix.target) || format('{0}-{1}', inputs.binary_name || github.event.repository.name, matrix.target) }}
+          checksum: sha256
