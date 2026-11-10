@@ -1,7 +1,5 @@
 import React from 'react';
 
-const VERSION = 'v12-refined';
-
 export interface MakeRenderOptions {
   logoDataUrl: string;
   accentHex: string;
@@ -16,8 +14,6 @@ export interface RenderProps {
   pathname?: string;
   [key: string]: unknown;
 }
-
-
 
 function hexToRgba(hex: string, a: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -152,7 +148,6 @@ export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, proje
             <span style={{ fontSize: 15, fontFamily: "monospace", color: "#71717a", letterSpacing: "-0.01em" }}>{domain}{cleanPath ? "/" + cleanPath : ""}</span>
           </div>
 
-          <div style={{ position: "absolute", bottom: 4, left: 108, fontSize: 7, color: "rgba(0,0,0,0.12)", fontFamily: "monospace" }}>{VERSION}</div>
         </div>
       </div>
     );
