@@ -15,7 +15,7 @@ on:
       config_url:
         description: 'Canonical release-plz.toml URL'
         type: string
-        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/28444472a7e4d5e7b25c739b382f8d1d8bff784c/release-plz.toml'
+        default: 'https://raw.githubusercontent.com/elcoosp/docs-toolkit/main/release-plz.toml'
       dry_run:
         description: 'Preview only (no PR, no publish, no tag)'
         type: boolean
