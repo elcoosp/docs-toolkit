@@ -107,7 +107,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
           format: 'png',
         },
         render,
-      }),
+      } as unknown as Parameters<typeof astroTakumi>[0]),
     ],
   });
 }

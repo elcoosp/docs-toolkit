@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Visual QA gate: screenshots every built route in two viewports and two
  * themes and fails on console errors, page errors, HTTP >= 400, horizontal
@@ -22,9 +21,9 @@ import path from 'node:path';
 const BASE = process.env.QA_BASE_URL ?? 'http://localhost:4321';
 const OUT = '.qa/screenshots';
 
-async function walk(dir) {
+async function walk(dir: string): Promise<string[]> {
         const entries = await readdir(dir, { withFileTypes: true });
-        const files = [];
+        const files: string[] = [];
         for (const e of entries) {
                 const p = path.join(dir, e.name);
                 if (e.isDirectory()) files.push(...(await walk(p)));
@@ -58,9 +57,17 @@ const VIEWPORTS = {
         mobile: { width: 390, height: 844 },
 };
 
-const failures = [];
-const fail = (route, viewport, theme, kind, detail) =>
-        failures.push({ route, viewport, theme, kind, detail });
+type Failure = { kind: string; detail: string; route: string; viewport: string; theme: string };
+const failures: Failure[] = [];
+const fail = (
+  route: string,
+  viewport: string,
+  theme: string,
+  kind: string,
+  detail: string,
+): void => {
+  failures.push({ route, viewport, theme, kind, detail });
+};
 
 const browser = await chromium.launch();
 const all = await routes();
@@ -120,13 +127,13 @@ for (const route of all) {
                                         overflow:
                                                 document.documentElement.scrollWidth > window.innerWidth + 1,
                                         brokenImgs: imgs
-                                                .filter((i) => !i.complete || i.naturalWidth === 0)
-                                                .map((i) => i.currentSrc || i.src),
+                                                .filter((i) => !i.complete || (i as HTMLImageElement).naturalWidth === 0)
+                                                .map((i) => (i as HTMLImageElement).currentSrc || (i as HTMLImageElement).src),
                                         logo: logo
                                                 ? {
-                                                                src: logo.currentSrc || logo.src,
-                                                                naturalW: logo.naturalWidth,
-                                                                naturalH: logo.naturalHeight,
+                                                                src: (logo as HTMLImageElement).currentSrc || (logo as HTMLImageElement).src,
+                                                                naturalW: (logo as HTMLImageElement).naturalWidth,
+                                                                naturalH: (logo as HTMLImageElement).naturalHeight,
                                                                 renderW: logo.clientWidth,
                                                                 renderH: logo.clientHeight,
                                                         }

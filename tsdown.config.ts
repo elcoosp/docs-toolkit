@@ -18,18 +18,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   // Must be false: 3 bin entries all carry shebangs, auto-detection errors on that.
-  bin: false,
   // ESM-only: default is already false, set explicitly so it never drifts.
-  exports: false,
-  deps: {
-    neverBundle: [
-      'astro',
-      'astro/config',
-      '@astrojs/starlight',
-      'astro-takumi',
-      'react',
-      'react/jsx-runtime',
-      'playwright',
-    ],
-  },
+
 });

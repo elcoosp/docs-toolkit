@@ -1,9 +1,8 @@
-#!/usr/bin/env node
 import { readFile, readdir, writeFile, mkdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 const C = "src/content/docs", P = "public", D = "docs", PL = join(D, "page-plans");
-async function walk(dir) {
-  const out = [];
+async function walk(dir: string): Promise<string[]> {
+  const out: string[] = [];
   for (const e of await readdir(dir, { withFileTypes: true })) {
     const p = join(dir, e.name);
     if (e.isDirectory()) out.push(...(await walk(p)));
@@ -11,9 +10,10 @@ async function walk(dir) {
   }
   return out;
 }
-function fm(t, k) { const m = t.match(new RegExp(`^${k}:\\s*["']?(.+?)["']?$`, "m")); return m ? m[1] : null; }
+function fm(t: string, k: string): string | null { const m = t.match(new RegExp(`^${k}:\\s*["']?(.+?)["']?$`, "m")); return m ? m[1] : null; }
 const files = await walk(C);
-const pages = [];
+interface Page { slug: string; text: string; }
+const pages: Page[] = [];
 for (const f of files) {
   const text = await readFile(f, "utf8");
   const rel = relative(C, f).replace(/\.mdx?$/, "");

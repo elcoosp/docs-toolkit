@@ -1,15 +1,32 @@
-import React from "react";
+import React from 'react';
 
-const VERSION = "v12-refined";
+const VERSION = 'v12-refined';
 
-function hexToRgba(hex, a) {
+export interface MakeRenderOptions {
+  logoDataUrl: string;
+  accentHex: string;
+  accentHexA12: string;
+  domain: string;
+  projectName: string;
+}
+
+export interface RenderProps {
+  title?: string;
+  description?: string | null;
+  pathname?: string;
+  [key: string]: unknown;
+}
+
+
+
+function hexToRgba(hex: string, a: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
-function getSection(pathname) {
+function getSection(pathname: string): string {
   const p = "/" + (pathname || "").toLowerCase().replace(/^\/+/, "");
   if (p.includes("404")) return "404";
   if (p.startsWith("/tutorials/") || p.startsWith("/getting-started/")) return "Tutorial";
@@ -19,7 +36,7 @@ function getSection(pathname) {
   return "Overview";
 }
 
-function computeTitleSize(title, description) {
+function computeTitleSize(title: string, description?: string | null): number {
   const tl = title.length;
   const dl = description ? description.length : 0;
   const total = tl + dl;
@@ -67,8 +84,8 @@ const PARTICLES = [
 const V_LINES = [108, 208, 308, 408, 508, 608, 708, 808, 908, 1008, 1108];
 const H_LINES_TOP = [90, 180, 270];  // stop above title
 
-export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, projectName }) => {
-  return async ({ title, description, pathname }) => {
+export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, projectName }: MakeRenderOptions) => {
+  return async ({ title = '', description = null, pathname = '' }: RenderProps) => {
     const titleSize = computeTitleSize(title, description);
     const section = getSection(pathname);
     const cleanPath = pathname === "/" ? "" : pathname.replace(/^\/|\/$/g, "");
