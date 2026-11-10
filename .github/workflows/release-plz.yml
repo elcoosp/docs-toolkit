@@ -70,7 +70,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          release-plz update --config /tmp/release-plz.toml
+          release-plz update -vv --config /tmp/release-plz.toml
           echo "::group::git diff"
           git --no-pager diff
           echo "::endgroup::"
@@ -79,7 +79,7 @@ jobs:
         if: inputs.dry_run == false
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-        run: release-plz release-pr --config /tmp/release-plz.toml
+        run: release-plz release-pr -vv --config /tmp/release-plz.toml
 
   release:
     name: Release
