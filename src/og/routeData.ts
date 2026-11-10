@@ -5,8 +5,14 @@ interface MetaTag {
   attrs: Record<string, string>;
 }
 
+interface ScriptTag {
+  tag: 'script';
+  attrs: Record<string, string>;
+  content: string;
+}
+
 interface StarlightRoute {
-  head: MetaTag[];
+  head: Array<MetaTag | ScriptTag>;
   entry?: { data?: { title?: string; description?: string } };
 }
 
@@ -18,16 +24,67 @@ export interface RouteContext {
 
 export const onRequest = (context: RouteContext): void => {
   const route = context.locals.starlightRoute;
+  const pathname = context.url.pathname;
+  const is404 =
+    pathname === '/404' ||
+    pathname === '/404/' ||
+    pathname === '/404.html';
+
   const ogImageUrl = getImagePath({ url: context.url, site: context.site });
+  const title = route.entry?.data?.title ?? '';
+  const description = route.entry?.data?.description;
 
-  route.head.push({ tag: 'meta', attrs: { property: 'og:title', content: route.entry?.data?.title ?? '' } });
+  route.head.push({ tag: 'meta', attrs: { property: 'og:title', content: title } });
   route.head.push({ tag: 'meta', attrs: { property: 'og:type', content: 'website' } });
-  route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
   route.head.push({ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } });
-  route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
 
-  const desc = route.entry?.data?.description;
-  if (desc) {
-    route.head.push({ tag: 'meta', attrs: { property: 'og:description', content: desc } });
+  if (!is404) {
+    route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
+    route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
   }
+
+  if (description) {
+    route.head.push({ tag: 'meta', attrs: { property: 'og:description', content: description } });
+  }
+
+  if (is404 || !context.site) return;
+
+  const fullUrl = new URL(pathname, context.site).toString();
+
+  const techArticle = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: title,
+    description: description ?? undefined,
+    url: fullUrl,
+    image: ogImageUrl,
+    inLanguage: 'en',
+    isPartOf: {
+      '@type': 'WebSite',
+      name: context.site.hostname,
+      url: context.site.origin,
+    },
+  };
+
+  const breadcrumb: {
+    '@context': string;
+    '@type': string;
+    itemListElement: Array<{ '@type': string; position: number; name: string; item?: string }>;
+  } = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: context.site.origin }],
+  };
+
+  if (pathname !== '/' && pathname !== '') {
+    breadcrumb.itemListElement.push({
+      '@type': 'ListItem',
+      position: 2,
+      name: title || pathname,
+      item: fullUrl,
+    });
+  }
+
+  route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(techArticle) });
+  route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(breadcrumb) });
 };
