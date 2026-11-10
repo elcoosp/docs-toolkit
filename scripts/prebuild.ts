@@ -14,3 +14,24 @@ export const ROBOTO_BYTES: Buffer = Buffer.from(ROBOTO_BASE64, 'base64');
 `,
 );
 console.log(`prebuild: wrote ${out} — ${b64.length} b64 chars from ${woff2.length} source bytes`);
+
+
+// Generate a branded 404 social card if missing.
+const card404Path = 'src/assets/og-404.png';
+let card404Exists = false;
+try { readFileSync(card404Path); card404Exists = true; } catch { /* missing */ }
+
+if (!card404Exists) {
+  const sharpMod = await import('sharp');
+  const sharp = sharpMod.default;
+  const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect x="100" y="280" width="60" height="5" fill="#404040"/>
+  <text x="100" y="380" font-family="system-ui, sans-serif" font-size="180" font-weight="800" fill="#09090b">404</text>
+  <text x="100" y="470" font-family="system-ui, sans-serif" font-size="32" fill="#52525b">The page you are looking for does not exist.</text>
+  <text x="100" y="590" font-family="system-ui, sans-serif" font-size="12" letter-spacing="0.22em" fill="#a1a1aa">DOCUMENTATION</text>
+</svg>`;
+  const buf = await sharp(Buffer.from(svg)).png().toBuffer();
+  writeFileSync(card404Path, buf);
+  console.log(`prebuild: wrote ${card404Path} (${buf.length} bytes)`);
+}

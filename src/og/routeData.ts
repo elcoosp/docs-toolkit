@@ -30,7 +30,10 @@ export const onRequest = (context: RouteContext): void => {
     pathname === '/404/' ||
     pathname === '/404.html';
 
-  const ogImageUrl = getImagePath({ url: context.url, site: context.site });
+  const ogImageUrl =
+    is404 && context.site
+      ? new URL('/404-card.png', context.site).toString()
+      : getImagePath({ url: context.url, site: context.site });
   const title = route.entry?.data?.title ?? '';
   const description = route.entry?.data?.description;
 
@@ -64,25 +67,16 @@ export const onRequest = (context: RouteContext): void => {
     },
   };
 
-  const breadcrumb: {
-    '@context': string;
-    '@type': string;
-    itemListElement: Array<{ '@type': string; position: number; name: string; item?: string }>;
-  } = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: context.site.origin }],
-  };
-
+  // Breadcrumb only makes sense on non-home pages (a 1-item breadcrumb is noise).
   if (pathname !== '/' && pathname !== '') {
-    breadcrumb.itemListElement.push({
-      '@type': 'ListItem',
-      position: 2,
-      name: title || pathname,
-      item: fullUrl,
-    });
+    const breadcrumb = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: context.site.origin },
+        { '@type': 'ListItem', position: 2, name: title || pathname, item: fullUrl },
+      ],
+    };
+    route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(breadcrumb) });
   }
-
-  route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(techArticle) });
-  route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(breadcrumb) });
 };
