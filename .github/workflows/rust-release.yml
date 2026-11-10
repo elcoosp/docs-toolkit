@@ -189,12 +189,24 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Inspect publishable crates
+        run: |
+          echo "Crates that will publish (workspace, honoring publish = false):"
+          cargo metadata --no-deps --format-version 1 | \
+            jq -r '.packages[] | select(.publish != false and (.publish | length) != 1) | "  \(.name) \(.version)"' | \
+            grep -v '^  ' || true
+          echo ""
+          echo "Full list:"
+          cargo metadata --no-deps --format-version 1 | \
+            jq -r '.packages[] | "\(.name) \(.version) publish=\(.publish)"' | \
+            sed 's/^/  /'
       - name: Dry-run publish
         run: cargo publish --workspace --locked --dry-run
       - name: Publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish --workspace --locked
+
 
   changelog:
     name: Changelog
