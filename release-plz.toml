@@ -54,7 +54,6 @@ body = """
 {% endif -%}
 """
 trim = true
-footer = ""
 
 commit_parsers = [
   { message = "^feat", group = "Features" },
