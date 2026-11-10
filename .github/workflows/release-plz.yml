@@ -50,7 +50,7 @@ jobs:
       - name: Fetch canonical config (via GitHub API)
         env:
           CONFIG_URL: ${{ inputs.config_url }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # raw.githubusercontent.com caches by path — /main/ can serve stale.
           # gh api hits the repo API directly: no CDN cache, always current.
@@ -68,8 +68,8 @@ jobs:
       - name: Preview (release-plz update — no PR)
         if: inputs.dry_run == true
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           release-plz update -vv --config /tmp/release-plz.toml
           echo "::group::git diff"
@@ -79,8 +79,8 @@ jobs:
       - name: release-plz release-pr
         if: inputs.dry_run == false
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: release-plz release-pr -vv --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
 
   release:
@@ -101,7 +101,7 @@ jobs:
       - name: Fetch canonical config (via GitHub API)
         env:
           CONFIG_URL: ${{ inputs.config_url }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # raw.githubusercontent.com caches by path — /main/ can serve stale.
           # gh api hits the repo API directly: no CDN cache, always current.
@@ -118,11 +118,11 @@ jobs:
           fi
       - name: release-plz release
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          ARGS=(release --config /tmp/release-plz.toml)
+          ARGS=(release --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN")
           if [[ "$DRY_RUN" == "true" ]]; then ARGS+=(--dry-run); fi
           release-plz "${ARGS[@]}"
