@@ -238,7 +238,13 @@ jobs:
         with:
           tool: git-cliff
       - name: Fetch canonical cliff.toml
-        run: curl -fsSL '${{ inputs.config_url }}' -o /tmp/cliff.toml
+        env:
+          CONFIG_URL: ${{ inputs.config_url }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          curl -fsSL "$CONFIG_URL" -o /tmp/cliff.toml
+          sed -i "/^\[remote\.github\]/a repo = \"${REPO_NAME}\"" /tmp/cliff.toml
+          grep -A2 '\[remote.github\]' /tmp/cliff.toml
       - name: Generate CHANGELOG + release notes
         run: |
           git cliff --config /tmp/cliff.toml --tag "$GITHUB_REF_NAME" -o CHANGELOG.md
