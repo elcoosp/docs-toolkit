@@ -20,7 +20,7 @@ const html = releases.map(r => `
 `).join('\n');
 ---
 
-<StarlightPage frontmatter={{ title: cfg.title, description: cfg.description }} sidebar={[]}>
+<StarlightPage frontmatter={{ title: cfg.title, description: cfg.description, type: 'overview' }} sidebar={[]}>
   <div class="changelog" set:html={html} />
 </StarlightPage>
 
