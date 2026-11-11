@@ -18,7 +18,6 @@ import starlightFullviewMode from 'starlight-fullview-mode';
 import starlightTags from 'starlight-tags';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightAnnouncement from 'starlight-announcement';
-import { pluginCollapsible } from 'expressive-code-collapsible';
 
 
 export type { LlmsTxtConfig } from './llms';
@@ -112,10 +111,7 @@ export async function defineDocsConfig(
 
   const starlightOptions: StarlightUserConfig = {
     routeMiddleware,
-    expressiveCode: {
-      ...expressiveCode,
-      plugins: [...(expressiveCode?.plugins ?? []), pluginCollapsible()],
-    },
+    expressiveCode,
     title,
     description,
     logo: { src: logoPath },
