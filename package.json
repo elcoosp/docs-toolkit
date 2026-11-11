@@ -1,6 +1,6 @@
 {
   "name": "@elcoosp/docs-toolkit",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -40,8 +40,8 @@
   "scripts": {
     "build": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
     "typecheck": "tsc --noEmit",
-    "prepare": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
-    "prebuild": "node scripts/prebuild.ts"
+    "prebuild": "node scripts/prebuild.ts",
+    "prepublishOnly": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
@@ -76,5 +76,13 @@
     "playwright": {
       "optional": true
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elcoosp/docs-toolkit.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
