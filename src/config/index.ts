@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { ROBOTO_BASE64 } from '../assets/font-b64';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import type { AstroUserConfig } from 'astro';
@@ -85,10 +86,7 @@ export async function defineDocsConfig(
     projectName,
   });
 
-  const fontPath = fileURLToPath(
-    new URL('../assets/roboto-latin-400-normal.woff2', import.meta.url),
-  );
-  const fontBuf = fs.readFileSync(fontPath);
+  const fontBuf = Buffer.from(ROBOTO_BASE64, 'base64');
 
   const starlightPlugins = [...plugins];
   if (llmsTxt !== false) {
