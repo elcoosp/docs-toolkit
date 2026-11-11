@@ -53,36 +53,25 @@ pkg.bin = {
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 
-// Copy every route .ts file starlight-llms-txt ships into dist.
-// The bundled plugin does new URL('./<name>.txt.ts', import.meta.url)
-// for each, and when bundled those URLs resolve relative to dist/.
-{
-  const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
-  const entries = await readdir(pluginDir).catch(() => [] as string[]);
-  let copied = 0;
-  for (const f of entries) {
-    if (/^llms.*\.txt\.ts$/.test(f)) {
-      await copyFile(path.join(pluginDir, f), path.join('dist', f));
-      copied++;
-    }
-  }
-  console.log(`postbuild: copied ${copied} llms*.txt.ts route file(s) into dist/`);
-}
 
-// Copy every route .ts file starlight-llms-txt ships into dist.
-// The bundled plugin does new URL('./<name>.txt.ts', import.meta.url)
-// for each, and when bundled those URLs resolve relative to dist/.
+
+// Copy all .ts source files from starlight-llms-txt into dist.
+// The plugin's route files (`llms-*.txt.ts`) are referenced by absolute path
+// via new URL(..., import.meta.url) from the bundled plugin code, which resolves
+// to dist/. Those route files have relative imports (./generator, ./utils, ...)
+// that must resolve, so copy the full dependency chain of .ts files.
+// Skip index.ts (the plugin itself, already bundled) to avoid name collision.
 {
   const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
   const entries = await readdir(pluginDir).catch(() => [] as string[]);
   let copied = 0;
   for (const f of entries) {
-    if (/^llms.*\.txt\.ts$/.test(f)) {
-      await copyFile(path.join(pluginDir, f), path.join('dist', f));
-      copied++;
-    }
+    if (f === 'index.ts') continue;
+    if (!f.endsWith('.ts') && !f.endsWith('.d.ts')) continue;
+    await copyFile(path.join(pluginDir, f), path.join('dist', f));
+    copied++;
   }
-  console.log(`postbuild: copied ${copied} llms*.txt.ts route file(s) into dist/`);
+  console.log(`postbuild: copied ${copied} .ts source file(s) from starlight-llms-txt into dist/`);
 }
 
 console.log('postbuild: root types =', pkg.types);
