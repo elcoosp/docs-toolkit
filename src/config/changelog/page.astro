@@ -1,0 +1,33 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+import { marked } from 'marked';
+import { loadChangelog } from './parse';
+
+const cfg = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), '.astro', 'changelog.json'), 'utf8'),
+);
+const releases = loadChangelog(cfg.absPath, cfg.repo);
+const html = releases.map(r => `
+  <section class="changelog-entry">
+    <h2 id="v${r.version}">
+      <a href="${r.link}">v${r.version}</a>
+      <small>${r.date}</small>
+    </h2>
+    ${marked.parse(r.body)}
+  </section>
+`).join('\n');
+---
+
+<StarlightPage frontmatter={{ title: cfg.title, description: cfg.description }}>
+  <div class="changelog" set:html={html} />
+</StarlightPage>
+
+<style>
+  .changelog-entry { margin-bottom: 2.5rem; }
+  .changelog-entry h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .changelog-entry h2 small { font-size: 0.9rem; font-weight: normal; color: var(--sl-color-gray-3); margin-left: 0.5rem; }
+  .changelog-entry h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1.25rem; }
+  .changelog-entry ul { margin-top: 0.25rem; }
+</style>

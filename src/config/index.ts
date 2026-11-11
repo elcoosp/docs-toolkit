@@ -9,8 +9,11 @@ import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
 import { makeLlmsTxtPlugin, llmsManifestAppender, DEFAULT_LLMS_SETS, detectSections } from './llms';
 import type { LlmsTxtConfig } from './llms';
+import { changelogIntegration } from './changelog/integration';
+import type { ChangelogConfig } from './changelog/types';
 
 export type { LlmsTxtConfig } from './llms';
+export type { ChangelogConfig, Release } from './changelog/types';
 export { DEFAULT_LLMS_SETS, detectSections } from './llms';
 
 export interface DocsConfigOptions {
@@ -37,6 +40,7 @@ export interface DocsConfigOptions {
   extraVite?: Record<string, unknown>;
   /** Configure starlight-llms-txt. `false` disables the plugin entirely. */
   llmsTxt?: LlmsTxtConfig | false;
+  changelog?: ChangelogConfig;
 }
 
 export async function defineDocsConfig(
@@ -65,6 +69,7 @@ export async function defineDocsConfig(
     extraIntegrations = [],
     extraVite = {},
     llmsTxt = {},
+    changelog,
   } = options;
 
   const accent = accentOverride
@@ -90,6 +95,10 @@ export async function defineDocsConfig(
     starlightPlugins.push(makeLlmsTxtPlugin(llmsTxt));
   }
 
+  const sidebarWithChangelog = changelog
+    ? [...sidebar, { label: changelog.sidebarLabel ?? 'Changelog', link: changelog.pagePath ?? '/changelog/' }]
+    : sidebar;
+
   const starlightOptions: StarlightUserConfig = {
     routeMiddleware,
     expressiveCode,
@@ -103,7 +112,8 @@ export async function defineDocsConfig(
     ...(locales ? { locales } : {}),
     ...(defaultLocale ? { defaultLocale } : {}),
     plugins: starlightPlugins,
-    sidebar,
+    ...(changelog ? { head: [{ tag: 'link', attrs: { rel: 'alternate', type: 'application/rss+xml', title: changelog.pageTitle ?? `${title} changelog`, href: changelog.rssPath ?? '/changelog.xml' } }] } : {}),
+    sidebar: sidebarWithChangelog,
     ...extraStarlight,
   };
 
@@ -124,6 +134,22 @@ export async function defineDocsConfig(
 
   if (llmsTxt !== false) {
     integrations.push(llmsManifestAppender());
+  }
+
+  if (changelog) {
+    integrations.push(
+      changelogIntegration({
+        repo: changelog.repo,
+        changelogPath: changelog.changelogPath ?? '../CHANGELOG.md',
+        pagePath: changelog.pagePath ?? '/changelog',
+        rssPath: changelog.rssPath ?? '/changelog.xml',
+        sidebarLabel: changelog.sidebarLabel ?? 'Changelog',
+        pageTitle: changelog.pageTitle ?? `${title} changelog`,
+        description: changelog.description ?? description,
+        disableRss: changelog.disableRss ?? false,
+        disablePage: changelog.disablePage ?? false,
+      }),
+    );
   }
 
   return defineConfig({
