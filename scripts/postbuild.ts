@@ -42,6 +42,10 @@ for (const [sub, target] of Object.entries(SUBS)) {
 
 const rootTypes = exportsMap['.'].types;
 pkg.exports = exportsMap;
+// [fleet-roll] Preserve hand-curated ./src/* passthrough. Astro/Vite consumers
+// resolve PageActions.astro, llms/*, changelog/* directly from src/ — this
+// subpath is not derivable from dist/ and must not be clobbered by postbuild.
+pkg.exports['./src/*'] = './src/*';
 pkg.main = './' + SUBS['.'];
 pkg.types = rootTypes;
 pkg.bin = {
