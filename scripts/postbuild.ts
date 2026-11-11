@@ -55,23 +55,5 @@ console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 
 
 
-// Copy all .ts source files from starlight-llms-txt into dist.
-// The plugin's route files (`llms-*.txt.ts`) are referenced by absolute path
-// via new URL(..., import.meta.url) from the bundled plugin code, which resolves
-// to dist/. Those route files have relative imports (./generator, ./utils, ...)
-// that must resolve, so copy the full dependency chain of .ts files.
-// Skip index.ts (the plugin itself, already bundled) to avoid name collision.
-{
-  const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
-  const entries = await readdir(pluginDir).catch(() => [] as string[]);
-  let copied = 0;
-  for (const f of entries) {
-    if (f === 'index.ts') continue;
-    if (!f.endsWith('.ts') && !f.endsWith('.d.ts')) continue;
-    await copyFile(path.join(pluginDir, f), path.join('dist', f));
-    copied++;
-  }
-  console.log(`postbuild: copied ${copied} .ts source file(s) from starlight-llms-txt into dist/`);
-}
 
 console.log('postbuild: root types =', pkg.types);
