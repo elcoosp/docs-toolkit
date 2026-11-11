@@ -52,4 +52,16 @@ pkg.bin = {
 
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
+// Bundle starlight-llms-txt's route file into dist where the bundled plugin looks for it.
+// The bundled plugin does `new URL('./llms-custom.txt.ts', import.meta.url)` which
+// resolves to dist/llms-custom.txt.ts at runtime; ship the file there.
+const llmsSrc = path.join(process.cwd(), 'node_modules/starlight-llms-txt/llms-custom.txt.ts');
+const llmsDest = path.join('dist', 'llms-custom.txt.ts');
+if (await exists(llmsSrc)) {
+  await copyFile(llmsSrc, llmsDest);
+  console.log('postbuild: copied llms-custom.txt.ts → dist/');
+} else {
+  console.warn('postbuild: WARN — source llms-custom.txt.ts not found at', llmsSrc);
+}
+
 console.log('postbuild: root types =', pkg.types);
