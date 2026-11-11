@@ -8,14 +8,14 @@ import type { StarlightUserConfig } from '@astrojs/starlight/types';
 import astroTakumi from 'astro-takumi';
 import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
-import { llmsManifestAppender, DEFAULT_LLMS_SETS, detectSections } from './llms';
+import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { changelogIntegration } from './changelog/integration';
 import type { ChangelogConfig } from './changelog/types';
 
 export type { LlmsTxtConfig } from './llms';
 export type { ChangelogConfig, Release } from './changelog/types';
-export { DEFAULT_LLMS_SETS, detectSections } from './llms';
+export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
 
 export interface DocsConfigOptions {
   site: string;
@@ -89,13 +89,18 @@ export async function defineDocsConfig(
   const fontBuf = Buffer.from(ROBOTO_BASE64, 'base64');
 
   const starlightPlugins = [...plugins];
-  if (llmsTxt !== false) {
-    /* llms.txt generation is consumer-managed (see scripts/generate-llms.mjs) */
-  }
+
 
   const sidebarWithChangelog = changelog
     ? [...sidebar, { label: changelog.sidebarLabel ?? 'Changelog', link: changelog.pagePath ?? '/changelog/' }]
     : sidebar;
+
+  let headLink: any = undefined;
+  let resolvedLlms: any = undefined;
+  if (llmsTxt !== false) {
+    resolvedLlms = resolveLlmsConfig(llmsTxt ?? {}, { title, description, site, source: undefined });
+    if (resolvedLlms.outputs.headLink) headLink = llmsHeadLink();
+  }
 
   const starlightOptions: StarlightUserConfig = {
     routeMiddleware,
@@ -111,6 +116,7 @@ export async function defineDocsConfig(
     ...(defaultLocale ? { defaultLocale } : {}),
     plugins: starlightPlugins,
     ...(changelog ? { head: [{ tag: 'link', attrs: { rel: 'alternate', type: 'application/rss+xml', title: changelog.pageTitle ?? `${title} changelog`, href: changelog.rssPath ?? '/changelog.xml' } }] } : {}),
+    head: [...((extraStarlight as any)?.head ?? []), ...(headLink ? [headLink] : [])],
     sidebar: sidebarWithChangelog,
     ...extraStarlight,
   };
@@ -130,8 +136,8 @@ export async function defineDocsConfig(
     } as unknown as Parameters<typeof astroTakumi>[0]),
   ];
 
-  if (llmsTxt !== false) {
-    integrations.push(llmsManifestAppender());
+  if (llmsTxt !== false && resolvedLlms) {
+    integrations.push(llmsIntegration(resolvedLlms));
   }
 
   if (changelog) {
