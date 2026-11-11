@@ -14,33 +14,9 @@ export function changelogIntegration(opts: Required<ChangelogConfig>): AstroInte
           opts.changelogPath,
         );
         if (!fs.existsSync(absPath)) {
-          throw new Error(`[changelog] CHANGELOG.md not found at ${absPath}`);
-        }
-
-        const tmpDir = path.join(fileURLToPath(config.root), '.astro');
-        fs.mkdirSync(tmpDir, { recursive: true });
-        fs.writeFileSync(
-          path.join(tmpDir, 'changelog.json'),
-          JSON.stringify({
-            absPath,
-            repo: opts.repo,
-            title: opts.pageTitle,
-            description: opts.description,
-          }),
-        );
-
-        // Walk up from the built file location to find the toolkit root.
-        // Works whether bundled into dist/config-X.mjs or dist/config/index.mjs.
-        // No module resolution, no @elcoosp/docs-toolkit self-reference.
-        let toolkitRoot = path.dirname(fileURLToPath(import.meta.url));
-        while (toolkitRoot !== '/') {
-          const candidate = path.join(toolkitRoot, 'src', 'config', 'changelog', 'page.astro');
-          if (fs.existsSync(candidate)) break;
-          toolkitRoot = path.dirname(toolkitRoot);
-        }
-        const pageEntry = path.join(toolkitRoot, 'src', 'config', 'changelog', 'page.astro');
-        if (!fs.existsSync(pageEntry)) {
-          throw new Error(`[changelog] could not locate page.astro (searched from ${fileURLToPath(import.meta.url)})`);
+          console.warn(`[changelog] CHANGELOG.md not found at ${absPath} — skipping changelog route`);
+          return;
+        })`);
         }
         // tsdown emits the entry as dist/config/changelog/rss.mjs.
         // integration.ts is bundled into dist/config-XXXX.mjs,
