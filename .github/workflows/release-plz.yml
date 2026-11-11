@@ -31,6 +31,7 @@ jobs:
   release-pr:
     name: Release PR
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     concurrency:
       group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
@@ -40,6 +41,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
@@ -63,6 +65,7 @@ jobs:
         if: inputs.dry_run == true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          RUST_LOG: info,release_plz_core=debug
         run: |
           release-plz update --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
           echo "::group::git diff"
@@ -78,6 +81,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     concurrency:
       group: release-plz-release-${{ github.ref }}
       cancel-in-progress: false
@@ -87,6 +91,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
@@ -104,6 +109,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          RUST_LOG: info,release_plz_core=debug
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           ARGS=(release --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN")
