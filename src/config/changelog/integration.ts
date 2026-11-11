@@ -29,9 +29,19 @@ export function changelogIntegration(opts: Required<ChangelogConfig>): AstroInte
           }),
         );
 
-        const pageEntry = fileURLToPath(
-          new URL('../../../src/config/changelog/page.astro', import.meta.url)
-        );
+        // Walk up from the built file location to find the toolkit root.
+        // Works whether bundled into dist/config-X.mjs or dist/config/index.mjs.
+        // No module resolution, no @elcoosp/docs-toolkit self-reference.
+        let toolkitRoot = path.dirname(fileURLToPath(import.meta.url));
+        while (toolkitRoot !== '/') {
+          const candidate = path.join(toolkitRoot, 'src', 'config', 'changelog', 'page.astro');
+          if (fs.existsSync(candidate)) break;
+          toolkitRoot = path.dirname(toolkitRoot);
+        }
+        const pageEntry = path.join(toolkitRoot, 'src', 'config', 'changelog', 'page.astro');
+        if (!fs.existsSync(pageEntry)) {
+          throw new Error(`[changelog] could not locate page.astro (searched from ${fileURLToPath(import.meta.url)})`);
+        }
         const rssEntry = fileURLToPath(
           new URL('./rss.mjs', import.meta.url)
         );
