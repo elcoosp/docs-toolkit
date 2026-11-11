@@ -60,3 +60,56 @@ commit_parsers = [
   { message = "^chore", group = "Miscellaneous" },
   { message = "^revert", group = "Revert" },
 ]
+
+# ── glyim internal crates ──
+[[package]]
+name = "glyim-test"
+publish = false
+release = false
+
+[[package]]
+name = "glyim-bench"
+publish = false
+release = false
+
+[[package]]
+name = "glyim-pilot"
+publish = false
+release = false
+
+[[package]]
+name = "ledger-schema"
+publish = false
+release = false
+
+[[package]]
+name = "glyim-ledger"
+publish = false
+release = false
+
+# ── rsmack internal crates ──
+[[package]]
+name = "rsmack-ui-tests"
+publish = false
+release = false
+
+[[package]]
+name = "rsmack-example-macros"
+publish = false
+release = false
+
+# ── gpui-navi test/example crates ──
+[[package]]
+name = "navi-test"
+publish = false
+release = false
+
+[[package]]
+name = "example-app"
+publish = false
+release = false
+
+[[package]]
+name = "history-navigation"
+publish = false
+release = false
