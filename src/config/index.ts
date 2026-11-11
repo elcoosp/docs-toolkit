@@ -8,7 +8,7 @@ import type { StarlightUserConfig } from '@astrojs/starlight/types';
 import astroTakumi from 'astro-takumi';
 import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
-import { makeLlmsTxtPlugin, llmsManifestAppender, DEFAULT_LLMS_SETS, detectSections } from './llms';
+import { llmsManifestAppender, DEFAULT_LLMS_SETS, detectSections } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { changelogIntegration } from './changelog/integration';
 import type { ChangelogConfig } from './changelog/types';
@@ -90,7 +90,7 @@ export async function defineDocsConfig(
 
   const starlightPlugins = [...plugins];
   if (llmsTxt !== false) {
-    starlightPlugins.push(makeLlmsTxtPlugin(llmsTxt));
+    /* llms.txt generation is consumer-managed (see scripts/generate-llms.mjs) */
   }
 
   const sidebarWithChangelog = changelog

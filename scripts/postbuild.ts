@@ -56,30 +56,6 @@ console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 
 
 
-{
-  const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
-  const entries = await readdir(pluginDir).catch(() => [] as string[]);
-  let copied = 0;
-  for (const f of entries) {
-    if (f === 'index.ts') continue;
-    if (!f.endsWith('.ts') && !f.endsWith('.d.ts')) continue;
-    await copyFile(path.join(pluginDir, f), path.join('dist', f));
-    copied++;
-  }
-  console.log(`postbuild: copied ${copied} .ts source file(s) from starlight-llms-txt into dist/`);
-}
 
-{
-  const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
-  const entries = await readdir(pluginDir).catch(() => [] as string[]);
-  let copied = 0;
-  for (const f of entries) {
-    if (f === 'index.ts') continue;
-    if (!f.endsWith('.ts') && !f.endsWith('.d.ts')) continue;
-    await copyFile(path.join(pluginDir, f), path.join('dist', f));
-    copied++;
-  }
-  console.log(`postbuild: copied ${copied} .ts source file(s) from starlight-llms-txt into dist/`);
-}
 
 console.log('postbuild: root types =', pkg.types);

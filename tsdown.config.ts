@@ -22,9 +22,7 @@ export default defineConfig({
   // ESM-only: default is already false, set explicitly so it never drifts.
 
   deps: {
-    alwaysBundle: ['starlight-llms-txt'],
     neverBundle: [
-      'starlight-llms-txt',
       'astro',
       'astro/config',
       '@astrojs/starlight',

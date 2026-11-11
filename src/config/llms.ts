@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import starlightLlmsTxt from 'starlight-llms-txt';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
 import type { AstroIntegration } from 'astro';
 
@@ -75,24 +74,6 @@ export const DEFAULT_LLMS_SETS = [
   { label: 'Explanation', paths: ['explanation/**'] },
 ];
 
-export function makeLlmsTxtPlugin(config: LlmsTxtConfig = {}): StarlightPlugin {
-  let customSets: Array<{ label: string; paths: string[] }> | undefined;
-
-  if (config.flat) {
-    customSets = undefined;
-  } else if (config.customSets) {
-    customSets = config.customSets;
-  } else {
-    customSets = detectSections(config.contentRoot) ?? DEFAULT_LLMS_SETS;
-  }
-
-  return starlightLlmsTxt({
-    ...(customSets ? { customSets } : {}),
-    ...(config.promote ? { promote: config.promote } : {}),
-    ...(config.demote ? { demote: config.demote } : {}),
-    ...(config.domain ? { domain: config.domain } : {}),
-  }) as unknown as StarlightPlugin;
-}
 
 /**
  * Integration that appends a "## Documentation Sets" section to llms.txt.
