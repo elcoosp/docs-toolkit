@@ -65,7 +65,7 @@ jobs:
           echo "── config lines: $(wc -l < /tmp/release-plz.toml)"
           echo "── workspace members:"
           cargo metadata --no-deps --format-version 1 2>/dev/null | \
-            python3 -c "import sys,json; [print(f'  {p["name"]} {p["version"]}') for p in json.load(sys.stdin)['packages']]"
+            jq -r '.packages[] | "  \(.name) \(.version)"'
           echo "::notice::dry_run — config valid, workspace readable, no PR opened"
       - name: release-plz release-pr
         if: inputs.dry_run == false
