@@ -39,17 +39,11 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
-      - name: Fetch canonical config (via GitHub API)
-        env:
-          CONFIG_URL: ${{ inputs.config_url }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Fetch canonical config
         run: |
-          STRIPPED="${CONFIG_URL#https://raw.githubusercontent.com/}"
-          REPO_PATH=$(echo "$STRIPPED" | awk -F'/' '{print $1"/"$2}')
-          FILE_PATH=$(echo "$STRIPPED" | awk -F'/' '{for(i=4;i<=NF;i++) printf "%s%s", (i>4?"/":""), $i}')
-          echo "  repo: $REPO_PATH  file: $FILE_PATH  ref: main"
-          gh api "repos/$REPO_PATH/contents/$FILE_PATH?ref=main" \
-            -H "Accept: application/vnd.github.raw" > /tmp/release-plz.toml
+          SHA=$(git ls-remote https://github.com/elcoosp/docs-toolkit.git main | cut -f1)
+          echo "  docs-toolkit@$SHA"
+          curl -sfL "https://raw.githubusercontent.com/elcoosp/docs-toolkit/$SHA/release-plz.toml" > /tmp/release-plz.toml
           echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
       - name: Preview (config + version check only)
         if: inputs.dry_run == true
@@ -88,16 +82,12 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: release-plz
-      - name: Fetch canonical config (via GitHub API)
-        env:
-          CONFIG_URL: ${{ inputs.config_url }}
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Fetch canonical config
         run: |
-          STRIPPED="${CONFIG_URL#https://raw.githubusercontent.com/}"
-          REPO_PATH=$(echo "$STRIPPED" | awk -F'/' '{print $1"/"$2}')
-          FILE_PATH=$(echo "$STRIPPED" | awk -F'/' '{for(i=4;i<=NF;i++) printf "%s%s", (i>4?"/":""), $i}')
-          gh api "repos/$REPO_PATH/contents/$FILE_PATH?ref=main" \
-            -H "Accept: application/vnd.github.raw" > /tmp/release-plz.toml
+          SHA=$(git ls-remote https://github.com/elcoosp/docs-toolkit.git main | cut -f1)
+          echo "  docs-toolkit@$SHA"
+          curl -sfL "https://raw.githubusercontent.com/elcoosp/docs-toolkit/$SHA/release-plz.toml" > /tmp/release-plz.toml
+          echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
       - name: release-plz release
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
