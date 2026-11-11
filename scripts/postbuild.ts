@@ -52,4 +52,12 @@ pkg.bin = {
 
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
+// Copy llms-custom.txt.ts from starlight-llms-txt into dist
+const llmsSrc = path.join(process.cwd(), 'node_modules/starlight-llms-txt/dist/llms-custom.txt.ts');
+const llmsDest = path.join(process.cwd(), 'dist/llms-custom.txt.ts');
+if (fs.existsSync(llmsSrc)) {
+  fs.copyFileSync(llmsSrc, llmsDest);
+  console.log('postbuild: copied llms-custom.txt.ts');
+}
+
 console.log('postbuild: root types =', pkg.types);
