@@ -13,6 +13,14 @@ import type { LlmsTxtConfig } from './llms';
 import { changelogIntegration } from './changelog/integration';
 import type { ChangelogConfig } from './changelog/types';
 
+import starlightTelescope from 'starlight-telescope';
+import starlightFullviewMode from 'starlight-fullview-mode';
+import starlightTags from 'starlight-tags';
+import starlightScrollToTop from 'starlight-scroll-to-top';
+import starlightAnnouncement from 'starlight-announcement';
+import { pluginCollapsible } from 'expressive-code-collapsible';
+
+
 export type { LlmsTxtConfig } from './llms';
 export type { ChangelogConfig, Release } from './changelog/types';
 export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
@@ -104,7 +112,10 @@ export async function defineDocsConfig(
 
   const starlightOptions: StarlightUserConfig = {
     routeMiddleware,
-    expressiveCode,
+    expressiveCode: {
+      ...expressiveCode,
+      plugins: [...(expressiveCode?.plugins ?? []), pluginCollapsible()],
+    },
     title,
     description,
     logo: { src: logoPath },

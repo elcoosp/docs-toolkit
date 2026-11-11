@@ -44,14 +44,20 @@
     "prebuild": "node scripts/prebuild.ts"
   },
   "dependencies": {
-    "sharp": "^0.35.5",
     "@astrojs/rss": "^4.0.12",
-    "marked": "^15.0.7"
+    "marked": "^15.0.7",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "expressive-code-collapsible": "^1.1.0",
+    "starlight-announcement": "^2.0.0",
+    "starlight-fullview-mode": "^0.2.6",
+    "starlight-scroll-to-top": "^2.0.0",
+    "starlight-tags": "^2.0.0",
+    "starlight-telescope": "^2.0.0",
     "tsdown": "^0.23.7",
     "typescript": "~6.0.3"
   },
