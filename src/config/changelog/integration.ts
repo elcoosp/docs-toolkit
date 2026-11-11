@@ -42,9 +42,19 @@ export function changelogIntegration(opts: Required<ChangelogConfig>): AstroInte
         if (!fs.existsSync(pageEntry)) {
           throw new Error(`[changelog] could not locate page.astro (searched from ${fileURLToPath(import.meta.url)})`);
         }
-        const rssEntry = fileURLToPath(
-          new URL('./rss.mjs', import.meta.url)
-        );
+        // tsdown emits the entry as dist/config/changelog/rss.mjs.
+        // integration.ts is bundled into dist/config-XXXX.mjs,
+        // so we must locate the emitted file explicitly.
+        let rssRoot = path.dirname(fileURLToPath(import.meta.url));
+        while (rssRoot !== '/') {
+          const candidate = path.join(rssRoot, 'config', 'changelog', 'rss.mjs');
+          if (fs.existsSync(candidate)) break;
+          rssRoot = path.dirname(rssRoot);
+        }
+        const rssEntry = path.join(rssRoot, 'config', 'changelog', 'rss.mjs');
+        if (!fs.existsSync(rssEntry)) {
+          throw new Error(`[changelog] could not locate rss.mjs (searched from ${fileURLToPath(import.meta.url)})`);
+        }
 
         if (!opts.disablePage) {
           injectRoute({ pattern: opts.pagePath, entrypoint: pageEntry });

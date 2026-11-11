@@ -53,11 +53,36 @@ pkg.bin = {
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 
-// Copy starlight-llms-txt's route file into dist (bundled plugin expects it there).
-const llmsSrc = path.join(process.cwd(), 'node_modules/starlight-llms-txt/llms-custom.txt.ts');
-const llmsDest = path.join('dist', 'llms-custom.txt.ts');
-if (await exists(llmsSrc)) {
-  await copyFile(llmsSrc, llmsDest);
-  console.log('postbuild: copied llms-custom.txt.ts → dist/');
+// Copy every route .ts file starlight-llms-txt ships into dist.
+// The bundled plugin does new URL('./<name>.txt.ts', import.meta.url)
+// for each, and when bundled those URLs resolve relative to dist/.
+{
+  const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
+  const entries = await readdir(pluginDir).catch(() => [] as string[]);
+  let copied = 0;
+  for (const f of entries) {
+    if (/^llms.*\.txt\.ts$/.test(f)) {
+      await copyFile(path.join(pluginDir, f), path.join('dist', f));
+      copied++;
+    }
+  }
+  console.log(`postbuild: copied ${copied} llms*.txt.ts route file(s) into dist/`);
 }
+
+// Copy every route .ts file starlight-llms-txt ships into dist.
+// The bundled plugin does new URL('./<name>.txt.ts', import.meta.url)
+// for each, and when bundled those URLs resolve relative to dist/.
+{
+  const pluginDir = path.join(process.cwd(), 'node_modules/starlight-llms-txt');
+  const entries = await readdir(pluginDir).catch(() => [] as string[]);
+  let copied = 0;
+  for (const f of entries) {
+    if (/^llms.*\.txt\.ts$/.test(f)) {
+      await copyFile(path.join(pluginDir, f), path.join('dist', f));
+      copied++;
+    }
+  }
+  console.log(`postbuild: copied ${copied} llms*.txt.ts route file(s) into dist/`);
+}
+
 console.log('postbuild: root types =', pkg.types);
