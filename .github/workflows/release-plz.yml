@@ -48,7 +48,7 @@ jobs:
       - name: Preview (config + version check only)
         if: inputs.dry_run == true
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "── config lines: $(wc -l < /tmp/release-plz.toml)"
           echo "── workspace members:"
@@ -90,7 +90,7 @@ jobs:
           echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
       - name: release-plz release
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RUST_LOG: info,release_plz_core=debug
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
