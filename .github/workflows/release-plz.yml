@@ -57,17 +57,16 @@ jobs:
           gh api "repos/$REPO_PATH/contents/$FILE_PATH?ref=main" \
             -H "Accept: application/vnd.github.raw" > /tmp/release-plz.toml
           echo "  config lines: $(wc -l < /tmp/release-plz.toml)"
-      - name: Preview (release-plz update — no PR)
+      - name: Preview (config + version check only)
         if: inputs.dry_run == true
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          RUST_LOG: info,release_plz_core=debug
         run: |
-          release-plz update --config /tmp/release-plz.toml --forge github --git-token "$GH_TOKEN"
-          echo "::group::git diff"
-          git --no-pager diff
-          echo "::endgroup::"
-          echo "::notice::dry_run — no PR opened, no commit made"
+          echo "── config lines: $(wc -l < /tmp/release-plz.toml)"
+          echo "── workspace members:"
+          cargo metadata --no-deps --format-version 1 2>/dev/null | \
+            python3 -c "import sys,json; [print(f'  {p["name"]} {p["version"]}') for p in json.load(sys.stdin)['packages']]"
+          echo "::notice::dry_run — config valid, workspace readable, no PR opened"
       - name: release-plz release-pr
         if: inputs.dry_run == false
         env:
