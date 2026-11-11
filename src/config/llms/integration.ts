@@ -12,14 +12,13 @@ export function llmsIntegration(cfg: ResolvedLlmsConfig): AstroIntegration {
       'astro:build:done': async ({ dir, logger }) => {
         const distDir = fileURLToPath(dir);
         const contentRoot = path.resolve(process.cwd(), 'src/content/docs');
-        logger.info('Generating llms.txt artifacts...');
-
+        logger.info('llms: collecting pages...');
         try {
           const pages = collectPages(contentRoot);
-          emitAll(distDir, pages, cfg);
-          logger.info(`Generated: llms.txt, llms-full.txt, llms-small.txt, llms.json, and ${pages.length} .md twins.`);
+          logger.info(`llms: ${pages.length} pages collected`);
+          emitAll(distDir, pages, cfg, (msg) => logger.info(`llms:${msg}`));
         } catch (e) {
-          logger.error(`Failed to generate llms.txt: ${e}`);
+          logger.error(`llms: FAILED — ${e instanceof Error ? e.stack : String(e)}`);
         }
       }
     }
