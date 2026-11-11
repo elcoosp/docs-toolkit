@@ -1,6 +1,6 @@
 {
   "name": "@elcoosp/docs-toolkit",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -23,7 +23,8 @@
       "import": "./dist/config/index.mjs"
     },
     "./package.json": "./package.json",
-    "./src/*": "./src/*"
+    "./src/*": "./src/*",
+    "./PageActions.astro": "./src/config/components/PageActions.astro"
   },
   "bin": {
     "docs-toolkit-qa-components": "./dist/qa/components.mjs",

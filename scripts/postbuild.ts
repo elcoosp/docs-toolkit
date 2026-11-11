@@ -46,6 +46,7 @@ pkg.exports = exportsMap;
 // resolve PageActions.astro, llms/*, changelog/* directly from src/ — this
 // subpath is not derivable from dist/ and must not be clobbered by postbuild.
 pkg.exports['./src/*'] = './src/*';
+pkg.exports['./PageActions.astro'] = './src/config/components/PageActions.astro';
 pkg.main = './' + SUBS['.'];
 pkg.types = rootTypes;
 pkg.bin = {
