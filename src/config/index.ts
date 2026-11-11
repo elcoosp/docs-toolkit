@@ -19,6 +19,12 @@ import starlightTags from 'starlight-tags';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightAnnouncement from 'starlight-announcement';
 
+import starlightSeo from 'starlight-seo';
+import starlightBlog from 'starlight-blog';
+import starlightGiscus from 'starlight-giscus';
+import mermaid from 'astro-mermaid';
+
+
 
 export type { LlmsTxtConfig } from './llms';
 export type { ChangelogConfig, Release } from './changelog/types';
@@ -48,6 +54,7 @@ export interface DocsConfigOptions {
   extraVite?: Record<string, unknown>;
   /** Configure starlight-llms-txt. `false` disables the plugin entirely. */
   llmsTxt?: LlmsTxtConfig | false;
+  giscus?: any;
   changelog?: ChangelogConfig;
 }
 
@@ -110,6 +117,9 @@ export async function defineDocsConfig(
   }
 
   const starlightOptions: StarlightUserConfig = {
+    components: {
+      PageTitle: './src/config/components/PageActions.astro',
+    },
     routeMiddleware,
     expressiveCode,
     title,
@@ -129,6 +139,7 @@ export async function defineDocsConfig(
   };
 
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
+    mermaid(), // MUST be before starlight
     starlight(starlightOptions),
     ...extraIntegrations,
     astroTakumi({
