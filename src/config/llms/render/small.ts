@@ -1,4 +1,5 @@
 import { PageEntry, ResolvedLlmsConfig } from '../types.js';
+import { renderFull } from './full.js';
 
 export function renderSmall(pages: PageEntry[], cfg: ResolvedLlmsConfig): string {
   // Curated subset: pages with `order: N` where N < 99, OR type === 'overview'
