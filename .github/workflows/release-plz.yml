@@ -22,9 +22,9 @@ on:
         description: 'crates.io token. Required for real releases; not for dry-run.'
 
 permissions:
-      id-token: write
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release-pr:
@@ -77,6 +77,9 @@ jobs:
     name: Release
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
     concurrency:
       group: release-plz-release-${{ github.ref }}
       cancel-in-progress: false
