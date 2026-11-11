@@ -151,7 +151,7 @@ export async function defineDocsConfig(
   }
 
   return defineConfig({
-    vite: { ssr: { external: ['jsdom', 'astro-takumi'] }, ...extraVite },
+    vite: { ssr: { external: ['jsdom', 'astro-takumi'], noExternal: ['starlight-llms-txt'] }, ...extraVite },
     ...(site ? { site } : {}),
     ...(base ? { base } : {}),
     integrations,
