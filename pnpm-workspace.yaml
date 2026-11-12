@@ -1,6 +1,5 @@
 allowBuilds:
   esbuild: set this to true or false
-  tsdown: true
 onlyBuiltDependencies:
 - esbuild
-- sharp
+- tsdown
