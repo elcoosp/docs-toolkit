@@ -129,7 +129,7 @@ export async function defineDocsConfig(
     customCss,
     social,
     ...(editLink ? { editLink } : {}),
-    ...(locales ? { locales } : {}),
+    locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
     plugins: starlightPlugins,
     ...(changelog ? { head: [{ tag: 'link', attrs: { rel: 'alternate', type: 'application/rss+xml', title: changelog.pageTitle ?? `${title} changelog`, href: changelog.rssPath ?? '/changelog.xml' } }] } : {}),
