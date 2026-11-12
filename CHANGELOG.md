@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/elcoosp/docs-toolkit/compare/v1.0.0...v1.0.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* trigger release-please to test the workflow ([fec062a](https://github.com/elcoosp/docs-toolkit/commit/fec062abe657cc8fa9b894dbfccff33a18a3ced4))
+
 ## 1.0.0 (2026-11-12)
 
 
