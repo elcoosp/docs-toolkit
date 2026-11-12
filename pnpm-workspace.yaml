@@ -1,8 +1,6 @@
-# pnpm 12 requires explicit allowlist for packages with native postinstall scripts.
 allowBuilds:
-  esbuild: true
-  sharp: true
-
+  esbuild: set this to true or false
+  tsdown: true
 onlyBuiltDependencies:
-  - esbuild
-  - sharp
+- esbuild
+- sharp
