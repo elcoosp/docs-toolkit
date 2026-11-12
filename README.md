@@ -16,3 +16,5 @@ export { onRequest } from '@elcoosp/docs-toolkit/og/routeData';
 ```
 
 Features: auto-derived accent, per-page OG PNGs, section badges, config wrapper with `extraStarlight`/`extraIntegrations`/`extraVite`/`accentOverride` hooks.
+<!-- trigger release-please -->
+<!-- trigger release-please -->
