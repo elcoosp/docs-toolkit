@@ -118,7 +118,7 @@ export async function defineDocsConfig(
 
   const starlightOptions: StarlightUserConfig = {
     components: {
-      PageTitle: '@elcoosp/docs-toolkit/src/config/components/PageActions.astro',
+      PageTitle: '@elcoosp/docs-toolkit/PageActions.astro',
     },
     routeMiddleware,
     expressiveCode,
