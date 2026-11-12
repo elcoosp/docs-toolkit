@@ -10,8 +10,6 @@ import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
-import { changelogIntegration } from './changelog/integration';
-import type { ChangelogConfig } from './changelog/types';
 
 import starlightTelescope from 'starlight-telescope';
 import starlightFullviewMode from 'starlight-fullview-mode';
@@ -20,14 +18,12 @@ import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightAnnouncement from 'starlight-announcement';
 
 import starlightSeo from 'starlight-seo';
-import starlightBlog from 'starlight-blog';
-import starlightGiscus from 'starlight-giscus';
 import mermaid from 'astro-mermaid';
+import starlightChangelogs, { makeChangelogsSidebarLinks } from 'starlight-changelogs';
 
 
 
 export type { LlmsTxtConfig } from './llms';
-export type { ChangelogConfig, Release } from './changelog/types';
 export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
 
 export interface DocsConfigOptions {
@@ -55,7 +51,7 @@ export interface DocsConfigOptions {
   /** Configure starlight-llms-txt. `false` disables the plugin entirely. */
   llmsTxt?: LlmsTxtConfig | false;
   giscus?: any;
-  changelog?: ChangelogConfig;
+  blog?: boolean | Record<string, unknown>;
 }
 
 export async function defineDocsConfig(
@@ -84,7 +80,6 @@ export async function defineDocsConfig(
     extraIntegrations = [],
     extraVite = {},
     llmsTxt = {},
-    changelog,
   } = options;
 
   const accent = accentOverride
@@ -102,12 +97,29 @@ export async function defineDocsConfig(
 
   const fontBuf = Buffer.from(ROBOTO_BASE64, 'base64');
 
-  const starlightPlugins = [...plugins];
+  const starlightPlugins = [...plugins, starlightChangelogs()];
+  // Giscus — lazy-loaded only when opted in. Dynamic import avoids resolving
+  // starlight-giscus's raw .ts entry at config-load time (Node >= 22.18 refuses
+  // type-stripping under node_modules: ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING).
+  if (options.giscus) {
+    const giscusMod: any = await import('starlight-giscus');
+    starlightPlugins.push(giscusMod.default(options.giscus));
+  }
+  // Blog — same rationale.
+  if ((options as any).blog) {
+    const blogMod: any = await import('starlight-blog');
+    const blogOpts = (options as any).blog === true ? {} : (options as any).blog;
+    starlightPlugins.push(blogMod.default(blogOpts));
+  }
 
 
-  const sidebarWithChangelog = changelog
-    ? [...sidebar, { label: changelog.sidebarLabel ?? 'Changelog', link: changelog.pagePath ?? '/changelog/' }]
-    : sidebar;
+
+  const changelogGroup = {
+    label: 'Changelog',
+    items: makeChangelogsSidebarLinks([
+      { type: 'all', base: 'changelog', label: 'All versions' },
+    ]),
+  };
 
   let headLink: any = undefined;
   let resolvedLlms: any = undefined;
@@ -116,11 +128,25 @@ export async function defineDocsConfig(
     if (resolvedLlms.outputs.headLink) headLink = llmsHeadLink();
   }
 
+  // Merge plugins/sidebar from extraStarlight instead of letting the trailing
+  // extraStarlight spread clobber injected plugins or the changelog sidebar.
+  const {
+    plugins: _extraPlugins = [] as StarlightUserConfig['plugins'],
+    sidebar: _extraSidebar,
+    ...extraStarlightRest
+  } = (extraStarlight as any) ?? {};
+
+  const mergedPlugins = [...((_extraPlugins as any[]) ?? []), ...starlightPlugins];
+  const mergedSidebar = (Array.isArray(_extraSidebar) && _extraSidebar.length > 0)
+    ? [..._extraSidebar, changelogGroup]
+    : [...sidebar, changelogGroup];
+
   const starlightOptions: StarlightUserConfig = {
     components: {
       PageTitle: '@elcoosp/docs-toolkit/PageActions.astro',
     },
     routeMiddleware,
+    disable404Route: true,
     expressiveCode,
     title,
     description,
@@ -131,11 +157,10 @@ export async function defineDocsConfig(
     ...(editLink ? { editLink } : {}),
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
-    plugins: starlightPlugins,
-    ...(changelog ? { head: [{ tag: 'link', attrs: { rel: 'alternate', type: 'application/rss+xml', title: changelog.pageTitle ?? `${title} changelog`, href: changelog.rssPath ?? '/changelog.xml' } }] } : {}),
+    plugins: mergedPlugins,
     head: [...((extraStarlight as any)?.head ?? []), ...(headLink ? [headLink] : [])],
-    sidebar: sidebarWithChangelog,
-    ...extraStarlight,
+    sidebar: mergedSidebar,
+    ...extraStarlightRest,
   };
 
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
@@ -158,24 +183,8 @@ export async function defineDocsConfig(
     integrations.push(llmsIntegration(resolvedLlms));
   }
 
-  if (changelog) {
-    integrations.push(
-      changelogIntegration({
-        repo: changelog.repo,
-        changelogPath: changelog.changelogPath ?? '../CHANGELOG.md',
-        pagePath: changelog.pagePath ?? '/changelog',
-        rssPath: changelog.rssPath ?? '/changelog.xml',
-        sidebarLabel: changelog.sidebarLabel ?? 'Changelog',
-        pageTitle: changelog.pageTitle ?? `${title} changelog`,
-        description: changelog.description ?? description,
-        disableRss: changelog.disableRss ?? false,
-        disablePage: changelog.disablePage ?? false,
-      }),
-    );
-  }
-
   return defineConfig({
-    vite: { ssr: { external: ['jsdom', 'astro-takumi'], noExternal: ['starlight-llms-txt'] }, ...extraVite },
+    vite: { build: { chunkSizeWarningLimit: 1000 }, ssr: { external: ['jsdom', 'astro-takumi'], noExternal: ['starlight-llms-txt'] }, ...extraVite },
     ...(site ? { site } : {}),
     ...(base ? { base } : {}),
     integrations,

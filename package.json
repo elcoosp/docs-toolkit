@@ -1,6 +1,6 @@
 {
   "name": "@elcoosp/docs-toolkit",
-  "version": "0.5.6",
+  "version": "0.5.17",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -44,7 +44,8 @@
     "build": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/prebuild.ts",
-    "prepublishOnly": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts"
+    "prepublishOnly": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts && pnpm check:dist",
+    "check:dist": "! grep -rE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist' && exit 1)"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
@@ -53,7 +54,9 @@
     "starlight-seo": "^1.0.0",
     "astro-mermaid": "^2.2.0",
     "starlight-blog": "^0.30.2",
-    "starlight-giscus": "^1.2.0"
+    "starlight-giscus": "^1.2.0",
+    "starlight-changelogs": "^0.7.1",
+    "tsx": "^4.19.2"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

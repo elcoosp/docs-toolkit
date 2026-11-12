@@ -1,6 +1,7 @@
 ---
 import type { Props } from '@astrojs/starlight/props';
 const { editUrl } = Astro.props;
+const isDev = import.meta.env.DEV;
 const pagePath = Astro.url.pathname;
 const markdownPath = pagePath.replace(/\/$/, '') + '.md';
 const pageUrl = Astro.site ? new URL(pagePath, Astro.site).toString() : pagePath;

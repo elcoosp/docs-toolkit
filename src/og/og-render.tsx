@@ -118,7 +118,7 @@ export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, proje
           <div tw="flex items-center justify-between">
             <div tw="flex items-center" style={{ gap: 20, alignItems: "center" }}>
               <img src={logoDataUrl} style={{ width: 160, height: 160, objectFit: "contain", display: "block" }} alt="" />
-              <span style={{ fontSize: 52, fontWeight: 800, color: "#09090b", letterSpacing: "-0.045em", lineHeight: 1, marginTop: 4 }}>{projectName}</span>
+              <span style={{ fontSize: 58, fontWeight: 800, color: "#09090b", letterSpacing: "-0.045em", lineHeight: 1, marginTop: 4 }}>{projectName}</span>
             </div>
             <div tw="flex items-center" style={{
               borderWidth: 1, borderStyle: "solid",
@@ -127,7 +127,7 @@ export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, proje
               borderRadius: 4, gap: 10,
             }}>
               <div style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: accentHex }} />
-              <span style={{ color: accentHex, fontSize: 12, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>{section}</span>
+              <span style={{ color: accentHex, fontSize: 20, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>{section}</span>
             </div>
           </div>
 
@@ -138,14 +138,14 @@ export const makeRender = ({ logoDataUrl, accentHex, accentHexA12, domain, proje
             <div style={{ width: 60, height: 5, backgroundColor: accentHex, marginBottom: 20 }} />
             <h1 style={{ fontSize: titleSize, fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em", color: "#09090b", maxWidth: 1020, margin: 0 }}>{title}</h1>
             {description && !is404 && (
-              <p style={{ fontSize: 21, lineHeight: 1.5, color: "#52525b", letterSpacing: "-0.008em", maxWidth: 880, margin: 0, marginTop: 18 }}>{description}</p>
+              <p style={{ fontSize: 34, lineHeight: 1.35, color: "#3f3f46", letterSpacing: "-0.008em", maxWidth: 1020, margin: 0, marginTop: 20 }}>{description}</p>
             )}
           </div>
 
           {/* Footer — stronger border */}
           <div tw="flex items-center justify-between" style={{ marginTop: 28, paddingTop: 20, borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "rgba(0,0,0,0.14)" }}>
-            <span style={{ fontSize: 10, letterSpacing: "0.22em", color: "#a1a1aa", fontWeight: 700 }}>DOCUMENTATION</span>
-            <span style={{ fontSize: 15, fontFamily: "monospace", color: "#71717a", letterSpacing: "-0.01em" }}>{domain}{cleanPath ? "/" + cleanPath : ""}</span>
+            <span style={{ fontSize: 15, letterSpacing: "0.22em", color: "#71717a", fontWeight: 700 }}>DOCUMENTATION</span>
+            <span style={{ fontSize: 24, fontFamily: "monospace", color: "#52525b", letterSpacing: "-0.01em" }}>{domain}{cleanPath ? "/" + cleanPath : ""}</span>
           </div>
 
         </div>
