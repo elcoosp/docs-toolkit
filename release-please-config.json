@@ -1,0 +1,9 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "initial-version": "0.5.4",
+      "bootstrap-sha": "HEAD"
+    }
+  }
+}
