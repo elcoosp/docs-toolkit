@@ -5,7 +5,6 @@ import { esmExternalRequirePlugin } from 'vite';
 import type { AstroUserConfig } from 'astro';
 import starlight from '@astrojs/starlight';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
-import astroTakumi from '@elcoosp/astro-takumi';
 import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
@@ -63,6 +62,9 @@ export async function defineDocsConfig(
     expressiveCode = { themes: ['github-light', 'github-dark'] },
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
+
+  // Dynamic import to avoid CJS crash in Vite's ssrLoadModule when toolkit is linked
+  const { default: astroTakumi } = await import('@elcoosp/astro-takumi');
 
   const accent = accentOverride ? { hex: accentOverride, hexA12: accentOverride + '1a' } : await deriveAccent(logoPath);
   const logoB64 = fs.readFileSync(logoPath).toString('base64');
