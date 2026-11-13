@@ -1,15 +1,16 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
-import { esmExternalRequirePlugin } from 'vite';
 import type { AstroUserConfig } from 'astro';
 import starlight from '@astrojs/starlight';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
+import astroTakumi from '@elcoosp/astro-takumi';
 import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
+import mermaid from 'astro-mermaid';
 import starlightChangelogs, { makeChangelogsSidebarLinks } from 'starlight-changelogs';
 import starlightBlog from 'starlight-blog';
 import starlightViewModes from 'starlight-view-modes';
@@ -62,9 +63,6 @@ export async function defineDocsConfig(
     expressiveCode = { themes: ['github-light', 'github-dark'] },
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
-
-  // Dynamic import to avoid CJS crash in Vite's ssrLoadModule when toolkit is linked
-  const { default: astroTakumi } = await import('@elcoosp/astro-takumi');
 
   const accent = accentOverride ? { hex: accentOverride, hexA12: accentOverride + '1a' } : await deriveAccent(logoPath);
   const logoB64 = fs.readFileSync(logoPath).toString('base64');
@@ -141,7 +139,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
   };
 
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
-    starlight(starlightOptions), ...extraIntegrations,
+    mermaid(), starlight(starlightOptions), ...extraIntegrations,
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
   ];
 
@@ -149,11 +147,22 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
 
   return defineConfig({
     vite: {
-      optimizeDeps: { exclude: ['@takumi-rs/core'] },
-      ssr: {
-        external: ['@takumi-rs/core'],
-        noExternal: true,
-      }, ...extraVite },
+      plugins: [
+
+    {
+      name: 'docs-toolkit:resolve-image-zoom-virtual',
+      resolveId(id) {
+        if (id === 'virtual:starlight-image-zoom-config') {
+          return '\0virtual:starlight-image-zoom-config';
+        }
+      },
+      load(id) {
+        if (id === '\0virtual:starlight-image-zoom-config') {
+          return 'export default {};';
+        }
+      },
+    },
+      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { external: ['jsdom', '@elcoosp/astro-takumi'], noExternal: true }, ...extraVite },
     ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
   });
 }

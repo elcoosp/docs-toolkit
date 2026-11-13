@@ -1,5 +1,5 @@
 minimumReleaseAgeExclude:
-  - '@elcoosp/astro-takumi@2.1.0'
+  - '@elcoosp/astro-takumi@2.1.0 || 2.1.1'
 permissions:
   esbuild:
     build: true
