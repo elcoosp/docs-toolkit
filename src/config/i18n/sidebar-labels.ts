@@ -2,6 +2,7 @@
 // Used by autoTranslateSidebar() in defineDocsConfig. Site-provided
 // translations always win; this is a fallback for untranslated labels.
 export const SIDEBAR_LABEL_FR: Record<string, string> = {
+  'All versions': 'Toutes les versions',
   'Architecture': 'Architecture',
   'CLI': 'CLI',
   'Changelog': 'Journal des modifications',
