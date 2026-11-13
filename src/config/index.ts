@@ -147,7 +147,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
   return defineConfig({
     vite: {
       optimizeDeps: {
-        exclude: ['@elcoosp/astro-takumi', 'linkedom', 'astro-mermaid'],
+        include: ['@elcoosp/astro-takumi', 'linkedom', '@takumi-rs/core'],
       },
       plugins: [
 

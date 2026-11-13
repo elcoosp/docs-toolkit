@@ -1,6 +1,6 @@
 {
   "name": "@elcoosp/docs-toolkit",
-  "version": "0.5.47",
+  "version": "0.5.48",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "type": "module",
   "main": "./dist/index.mjs",
