@@ -49,7 +49,6 @@
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
-    "astro-mermaid": "^2.2.0",
     "github-slugger": "^2.0.0",
     "marked": "^15.0.7",
     "sharp": "^0.35.5",

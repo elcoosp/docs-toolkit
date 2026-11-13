@@ -26,9 +26,6 @@ importers:
       astro-d2:
         specifier: ^0.14.1
         version: 0.14.1(astro@7.4.11(@astrojs/markdown-remark@7.3.8)(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
-      astro-mermaid:
-        specifier: ^2.2.0
-        version: 2.2.0(astro@7.4.11(@astrojs/markdown-remark@7.3.8)(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))(mermaid@11.17.2)
       github-slugger:
         specifier: ^2.0.0
         version: 2.0.0
@@ -1452,16 +1449,6 @@ packages:
     resolution: {integrity: sha512-LUpQmmvzr90JXP5QIAopgdjlOKLuT3x0wlPAUpc4OZtPtFS8sbflPcGPpL/lG3pQuUCQV2CXUFgYNBYNu9tphA==}
     peerDependencies:
       astro: ^4.0.0-beta || ^5.0.0-beta || ^3.3.0 || ^6.0.0-beta || ^7.0.0
-
-  astro-mermaid@2.2.0:
-    resolution: {integrity: sha512-EqkDnv7BaSIW3dQicT4u8zJDfaeoIpyeRVYL0YosJU109TGlxKAUR5xF2qf0LlhJEoG+new41mHNIW7LwPuVwA==}
-    peerDependencies:
-      '@mermaid-js/layout-elk': ^0.2.0 || ^1.0.0
-      astro: '>=4'
-      mermaid: ^10.0.0 || ^11.0.0 || ^12.0.0
-    peerDependenciesMeta:
-      '@mermaid-js/layout-elk':
-        optional: true
 
   astro@7.4.11:
     resolution: {integrity: sha512-c8gibLFCnzuXCXqsvTiMXbjCnuIjxGhWw6TO5n11cXzNrw36P3ZgBzsOoRUR4raG1r6cKWeE5oXQu4F3GCBofg==}
@@ -4331,14 +4318,6 @@ snapshots:
       astro: 7.4.11(@astrojs/markdown-remark@7.3.8)(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)
       rehype-expressive-code: 0.44.3
       url-extras: 0.1.0
-
-  astro-mermaid@2.2.0(astro@7.4.11(@astrojs/markdown-remark@7.3.8)(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))(mermaid@11.17.2):
-    dependencies:
-      astro: 7.4.11(@astrojs/markdown-remark@7.3.8)(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)
-      import-meta-resolve: 4.2.0
-      mdast-util-to-string: 4.0.0
-      mermaid: 11.17.2
-      unist-util-visit: 5.2.0
 
   astro@7.4.11(@astrojs/markdown-remark@7.3.8)(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:

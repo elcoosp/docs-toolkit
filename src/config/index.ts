@@ -10,7 +10,6 @@ import { deriveAccent } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
-import mermaid from 'astro-mermaid';
 import starlightChangelogs, { makeChangelogsSidebarLinks } from 'starlight-changelogs';
 import starlightBlog from 'starlight-blog';
 import starlightViewModes from 'starlight-view-modes';
@@ -139,7 +138,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
   };
 
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
-    mermaid(), starlight(starlightOptions), ...extraIntegrations,
+    starlight(starlightOptions), ...extraIntegrations,
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
   ];
 
