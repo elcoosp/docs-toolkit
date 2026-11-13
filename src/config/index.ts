@@ -147,24 +147,13 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
   return defineConfig({
     vite: {
       optimizeDeps: {
-        include: ['@elcoosp/astro-takumi', 'linkedom', '@takumi-rs/core'],
+        exclude: ['@takumi-rs/core'],
+        include: ['@elcoosp/docs-toolkit > @elcoosp/astro-takumi'],
       },
-      plugins: [
-
-    {
-      name: 'docs-toolkit:resolve-image-zoom-virtual',
-      resolveId(id) {
-        if (id === 'virtual:starlight-image-zoom-config') {
-          return '\0virtual:starlight-image-zoom-config';
-        }
-      },
-      load(id) {
-        if (id === '\0virtual:starlight-image-zoom-config') {
-          return 'export default {};';
-        }
-      },
-    },
-      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { external: ['jsdom', '@elcoosp/astro-takumi'], noExternal: true }, ...extraVite },
+      ssr: {
+        external: ['@takumi-rs/core'],
+        noExternal: true,
+      }, ...extraVite },
     ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
   });
 }
