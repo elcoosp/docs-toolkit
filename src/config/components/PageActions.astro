@@ -123,3 +123,18 @@ const pageUrl = Astro.site ? new URL(pagePath, Astro.site).toString() : pagePath
     display: flex;
   }
 </style>
+
+
+
+<style is:global>
+  /* Force all large images in the main content to be constrained */
+  main img:not([class*="avatar"]):not(.sl-blog-author-image) {
+    max-height: 400px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 2rem auto !important;
+    border-radius: 8px;
+  }
+</style>
