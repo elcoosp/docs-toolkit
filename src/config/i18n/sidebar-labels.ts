@@ -201,6 +201,7 @@ export const SIDEBAR_LABEL_FR: Record<string, string> = {
 export function autoTranslateSidebar<T>(sidebar: T): T {
   if (!Array.isArray(sidebar)) return sidebar;
   return sidebar.map((item: any) => {
+    if (typeof item === 'string') return item;
     const result: any = { ...item };
     if (typeof result.label === 'string' && !result.translations?.fr) {
       const fr = SIDEBAR_LABEL_FR[result.label];
