@@ -1,6 +1,6 @@
 {
   "name": "@elcoosp/docs-toolkit",
-  "version": "0.5.45",
+  "version": "0.5.46",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -67,7 +67,8 @@
     "starlight-heading-badges": "*",
     "astro-d2": "^0.14.1",
     "@d2lang/d2": "^0.1.34",
-    "@elcoosp/astro-takumi": "^2.1.0"
+    "@elcoosp/astro-takumi": "^2.1.1",
+    "linkedom": "^0.18.15"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
