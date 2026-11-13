@@ -27,6 +27,7 @@ export default defineConfig({
       'starlight-heading-badges',
       'astro-d2',
       '@d2lang/d2',
+      '@elcoosp/astro-takumi',
     ],
   },
 });

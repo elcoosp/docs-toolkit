@@ -4,7 +4,7 @@ import { defineConfig } from 'astro/config';
 import type { AstroUserConfig } from 'astro';
 import starlight from '@astrojs/starlight';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
-import astroTakumi from 'astro-takumi';
+import astroTakumi from '@elcoosp/astro-takumi';
 import { makeRender } from '../og/og-render';
 import { deriveAccent } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
@@ -162,7 +162,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
         }
       },
     },
-      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { external: ['jsdom', 'astro-takumi'], noExternal: true }, ...extraVite },
+      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { external: ['jsdom', '@elcoosp/astro-takumi'], noExternal: true }, ...extraVite },
     ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
   });
 }

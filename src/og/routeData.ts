@@ -1,4 +1,4 @@
-import { getImagePath } from 'astro-takumi';
+import { getImagePath } from '@elcoosp/astro-takumi';
 
 interface MetaTag {
   tag: 'meta';
