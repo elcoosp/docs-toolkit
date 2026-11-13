@@ -162,7 +162,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
         }
       },
     },
-      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { external: ['jsdom', '@elcoosp/astro-takumi'], noExternal: true }, ...extraVite },
+      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { noExternal: [] }, ...extraVite },
     ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
   });
 }
