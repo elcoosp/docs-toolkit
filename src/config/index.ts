@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
+import { esmExternalRequirePlugin } from 'vite';
 import type { AstroUserConfig } from 'astro';
 import starlight from '@astrojs/starlight';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
@@ -146,10 +147,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
 
   return defineConfig({
     vite: {
-      optimizeDeps: {
-        exclude: ['@takumi-rs/core'],
-        include: ['@elcoosp/docs-toolkit > @elcoosp/astro-takumi'],
-      },
+      optimizeDeps: { exclude: ['@takumi-rs/core'] },
       ssr: {
         external: ['@takumi-rs/core'],
         noExternal: true,
