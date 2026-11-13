@@ -19,6 +19,7 @@ import starlightSeo from 'starlight-seo';
 import starlightAnnouncement from 'starlight-announcement';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import GithubSlugger from 'github-slugger';
+import { autoTranslateSidebar } from './i18n/sidebar-labels';
 
 export type { LlmsTxtConfig } from './llms';
 export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
@@ -122,7 +123,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
 
   const { plugins: _extraPlugins = [], sidebar: _extraSidebar, ...extraStarlightRest } = (extraStarlight as any) ?? {};
   const mergedPlugins = [...((_extraPlugins as any[]) ?? []), ...starlightPlugins];
-  const mergedSidebar = (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) ? [..._extraSidebar, changelogGroup] : [...sidebar, changelogGroup];
+  const mergedSidebar = autoTranslateSidebar((Array.isArray(_extraSidebar) && _extraSidebar.length > 0) ? [..._extraSidebar, changelogGroup] : [...sidebar, changelogGroup]);
 
   const starlightOptions: StarlightUserConfig = {
     components: { MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro' },
