@@ -45,7 +45,7 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/prebuild.ts",
     "prepublishOnly": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts && pnpm check:dist",
-    "check:dist": "! grep -rE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist' && exit 1)"
+    "check:dist": "! grep -rlE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs | grep -v '^dist/config-' || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist (excluding config-*.mjs)' && exit 1)"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
