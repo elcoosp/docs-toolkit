@@ -136,7 +136,6 @@ export async function defineDocsConfig(
     : [{
         icon: 'github' as const,
         label: 'GitHub',
-        translations: { fr: 'GitHub' },
         href: `https://github.com/${githubRepo}`,
       }];
   const finalEditLink = editLink ?? {
