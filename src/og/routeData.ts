@@ -5,86 +5,47 @@ interface MetaTag {
   attrs: Record<string, string>;
 }
 
-interface ScriptTag {
-  tag: 'script';
-  attrs: Record<string, string>;
-  content: string;
-}
-
 interface StarlightRoute {
-  head: Array<MetaTag | ScriptTag>;
+  head: MetaTag[];
   entry?: { data?: { title?: string; description?: string } };
 }
 
 export interface RouteContext {
   url: URL;
   site?: URL;
-  locals: { starlightRoute: StarlightRoute };
+  locals: { starlightRoute?: StarlightRoute };
 }
 
+/**
+ * 404-only metadata.
+ *
+ * starlight-seo excludes /404/ and /404.html by default ("the 404 page
+ * always keeps whatever the site gives it"). Every other page is written
+ * by the plugin middleware. This branch keeps the 404's social card —
+ * which the plugin intentionally does not touch — and uses takumi's
+ * getImagePath so the 404's og:image matches the file actually emitted
+ * to disk (the recon shows every site's 404 emits /index.png).
+ *
+ * Fixes the previous bug: the old `is404` check only matched /404 and
+ * missed /<locale>/404, which caused the wrong inLanguage on French
+ * 404 pages (recon §5, INLANG BAD: /fr/404 html=fr jsonld=en).
+ */
 export const onRequest = (context: RouteContext): void => {
   const route = context.locals.starlightRoute;
+  if (!route) return;
+
   const pathname = context.url.pathname;
-  const is404 =
-    pathname === '/404' ||
-    pathname === '/404/' ||
-    pathname === '/404.html';
+  if (!/(^|\/)([a-z]{2}\/)?404(\/|\.html)?$/.test(pathname)) return;
 
   const ogImageUrl = getImagePath({ url: context.url, site: context.site });
   const title = route.entry?.data?.title ?? '';
   const description = route.entry?.data?.description;
 
   route.head.push({ tag: 'meta', attrs: { property: 'og:title', content: title } });
-  route.head.push({ tag: 'meta', attrs: { property: 'og:type', content: 'website' } });
   route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
   route.head.push({ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } });
   route.head.push({ tag: 'meta', attrs: { name: 'twitter:image', content: ogImageUrl } });
-
   if (description) {
     route.head.push({ tag: 'meta', attrs: { property: 'og:description', content: description } });
-  }
-
-  // 404 pages: no JSON-LD (no schema for error pages), no breadcrumb.
-  if (is404 || !context.site) return;
-
-  const fullUrl = new URL(pathname, context.site).toString();
-
-  // TechArticle on every non-404 page.
-  const techArticle = {
-    '@context': 'https://schema.org',
-    '@type': 'TechArticle',
-    headline: title,
-    description: description ?? undefined,
-    url: fullUrl,
-    image: ogImageUrl,
-    inLanguage: 'en',
-    isPartOf: {
-      '@type': 'WebSite',
-      name: context.site.hostname,
-      url: context.site.origin,
-    },
-  };
-
-  route.head.push({
-    tag: 'script',
-    attrs: { type: 'application/ld+json' },
-    content: JSON.stringify(techArticle),
-  });
-
-  // Breadcrumb only on non-home pages (a 1-item breadcrumb is noise).
-  if (pathname !== '/' && pathname !== '') {
-    const breadcrumb = {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: context.site.origin },
-        { '@type': 'ListItem', position: 2, name: title || pathname, item: fullUrl },
-      ],
-    };
-    route.head.push({
-      tag: 'script',
-      attrs: { type: 'application/ld+json' },
-      content: JSON.stringify(breadcrumb),
-    });
   }
 };

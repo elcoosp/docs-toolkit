@@ -159,7 +159,44 @@ export async function defineDocsConfig(
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }));
   starlightPlugins.push(starlightViewModes({ zenModeSettings: { enabled: true } }));
-starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name: 'Elcoosp', url: 'https://github.com/elcoosp' } }));
+starlightPlugins.push(starlightSeo({
+    site: {
+      name: title,
+      alternateName: domain,
+      description: description,
+      about: {
+        name: projectName ?? title,
+        url: `https://github.com/elcoosp/${githubRepo}`,
+        sameAs: `https://github.com/elcoosp/${githubRepo}`,
+      },
+    },
+    publisher: {
+      type: 'Organization',
+      name: 'Elcoosp',
+      url: 'https://github.com/elcoosp',
+      logo: `https://${domain}/logo.png`,
+      sameAs: ['https://github.com/elcoosp'],
+    },
+    title: {
+      max: 60,
+      min: 30,
+      brand: 'auto',
+      templates: [
+        { match: '/**', template: '{title} — {site} documentation' },
+      ],
+    },
+    types: [
+      { match: '/blog/*/', type: 'BlogPosting', section: 'Blog' },
+      { match: '/changelog/*/', type: 'Article', section: 'Changelog' },
+    ],
+    image: {
+      src: '/{slug}/index.png',
+      width: 1200,
+      height: 630,
+      alt: '{title}',
+    },
+    audit: { failOn: 'warn' },
+  }));
   starlightPlugins.push(starlightScrollToTop());
   starlightPlugins.push(starlightAutoSidebar());
   starlightPlugins.push(starlightChangelogs());
