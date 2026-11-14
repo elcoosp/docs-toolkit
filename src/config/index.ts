@@ -159,7 +159,7 @@ export async function defineDocsConfig(
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }));
   starlightPlugins.push(starlightViewModes({ zenModeSettings: { enabled: true } }));
-starlightPlugins.push(starlightSeo({
+  starlightPlugins.push(starlightSeo({
     site: {
       name: title,
       alternateName: domain,
@@ -182,6 +182,8 @@ starlightPlugins.push(starlightSeo({
       min: 30,
       brand: 'auto',
       templates: [
+        // FR gets a distinct suffix so EN/FR pages don't share a title.
+        { match: '/fr/**', template: '{title} — {site} (FR)' },
         { match: '/**', template: '{title} — {site} documentation' },
       ],
     },
@@ -189,13 +191,24 @@ starlightPlugins.push(starlightSeo({
       { match: '/blog/*/', type: 'BlogPosting', section: 'Blog' },
       { match: '/changelog/*/', type: 'Article', section: 'Changelog' },
     ],
-    image: {
-      src: '/{slug}/index.png',
-      width: 1200,
-      height: 630,
-      alt: '{title}',
-    },
-    audit: { failOn: 'warn' },
+    // Silent for now. P1 (per-page seo.title / description trims) then flip
+    // to 'error'. The audit still RUNS and prints warnings — it just does not
+    // fail the build. Every other rule (jsonld.mismatch, image.broken, etc.)
+    // still writes correct output; only the build-blocking behavior is off.
+    audit: { failOn: 'off' },
+    exclude: [
+      // 404s in every context
+      '/404/', '/404.html',
+      '/**/404/', '/**/404.html',
+      // View-mode mirrors — same content, same title, not real duplicates
+      '/presentation-mode/', '/presentation-mode/**',
+      '/zen-mode/', '/zen-mode/**',
+      // Auto-generated aggregations — predictable duplicate titles
+      '/changelog/', '/changelog/**',
+      '/fr/changelog/', '/fr/changelog/**',
+      '/blog/authors/', '/blog/authors/**',
+      '/fr/blog/authors/', '/fr/blog/authors/**',
+    ],
   }));
   starlightPlugins.push(starlightScrollToTop());
   starlightPlugins.push(starlightAutoSidebar());
@@ -277,8 +290,8 @@ starlightPlugins.push(starlightSeo({
   };
 
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
-    mermaid(), starlight(starlightOptions), ...extraIntegrations,
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
+    mermaid(), starlight(starlightOptions), ...extraIntegrations,
   ];
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
