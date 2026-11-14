@@ -195,7 +195,7 @@ export async function defineDocsConfig(
     // to 'error'. The audit still RUNS and prints warnings — it just does not
     // fail the build. Every other rule (jsonld.mismatch, image.broken, etc.)
     // still writes correct output; only the build-blocking behavior is off.
-    audit: { failOn: 'error' },
+    audit: { failOn: 'warn' },
     exclude: [
       // 404s
       '/404/', '/404.html', '/**/404/', '/**/404.html',
