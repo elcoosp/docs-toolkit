@@ -197,17 +197,19 @@ export async function defineDocsConfig(
     // still writes correct output; only the build-blocking behavior is off.
     audit: { failOn: 'warn' },
     exclude: [
-      // 404s in every context
-      '/404/', '/404.html',
-      '/**/404/', '/**/404.html',
-      // View-mode mirrors — same content, same title, not real duplicates
-      '/presentation-mode/', '/presentation-mode/**',
-      '/zen-mode/', '/zen-mode/**',
-      // Auto-generated aggregations — predictable duplicate titles
-      '/changelog/', '/changelog/**',
-      '/fr/changelog/', '/fr/changelog/**',
-      '/blog/authors/', '/blog/authors/**',
-      '/fr/blog/authors/', '/fr/blog/authors/**',
+      // 404s
+      '/404/', '/404.html', '/**/404/', '/**/404.html',
+      // View-mode mirrors
+      '/presentation-mode/', '/presentation-mode/**', '/**/presentation-mode/**',
+      '/zen-mode/', '/zen-mode/**', '/**/zen-mode/**',
+      // Blog (index, welcome, authors) — starlight-blog autogen, no .mdx
+      '/blog', '/blog/', '/blog/**', '/**/blog/**',
+      '/fr/blog', '/fr/blog/', '/fr/blog/**', '/**/fr/blog/**',
+      // Changelog autogen
+      '/changelog', '/changelog/', '/changelog/**',
+      '/**/changelog', '/**/changelog/**',
+      '/fr/changelog', '/fr/changelog/', '/fr/changelog/**',
+      '/**/fr/changelog/**',
     ],
   }));
   starlightPlugins.push(starlightScrollToTop());
