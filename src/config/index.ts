@@ -190,15 +190,21 @@ export async function defineDocsConfig(
       { match: '/blog/*/', type: 'BlogPosting', section: 'Blog' },
       { match: '/changelog/*/', type: 'Article', section: 'Changelog' },
     ],
-    audit: { failOn: 'warn' },
-    exclude: [
-      '/404/', '/404.html', '/**/404/', '/**/404.html',
-      '/presentation-mode/**', '/**/presentation-mode/**',
-      '/zen-mode/**', '/**/zen-mode/**',
-      '/blog/**', '/**/blog/**', '/fr/blog/**', '/**/fr/blog/**',
-      '/changelog/**', '/**/changelog/**',
-      '/fr/changelog/**', '/**/fr/changelog/**',
-    ],
+    audit: {
+      failOn: 'error',
+      rules: {
+        'title.duplicate': 'warn',
+        'description.duplicate': 'warn',
+      },
+      exclude: [
+        '/404/', '/404.html', '/**/404/', '/**/404.html',
+        '/presentation-mode/**', '/**/presentation-mode/**',
+        '/zen-mode/**', '/**/zen-mode/**',
+        '/blog/**', '/**/blog/**', '/fr/blog/**', '/**/fr/blog/**',
+        '/changelog/**', '/**/changelog/**',
+        '/fr/changelog/**', '/**/fr/changelog/**',
+      ],
+    },
   }));
   starlightPlugins.push(starlightScrollToTop());
   starlightPlugins.push(starlightAutoSidebar());
