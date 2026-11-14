@@ -1,17 +1,36 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2024",
+      "DOM"
+    ],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["node"],
+    "types": [
+      "node",
+      "astro/client"
+    ],
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "starlight-view-modes": [
+        "./src/stubs/starlight-view-modes.d.ts"
+      ],
+      "starlight-telescope": [
+        "./src/stubs/starlight-telescope.d.ts"
+      ]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "tsdown.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts",
+    "tsdown.config.ts"
+  ]
 }

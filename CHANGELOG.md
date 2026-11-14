@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.7.1 (2026-11-14)
+
+### Bug Fixes
+
+* **config:** `zenModeEnabled` → `zenModeSettings.enabled`
+* **config:** `variant: 'note' as const`
+* **config:** `await marked.parse(...)`
+* **tsconfig:** `lib: ES2024`, `types: node,astro/client`
+* **types:** `src/env.d.ts` ambient stubs for `virtual:starlight-*`, `starlight-view-modes`, `starlight-telescope` (no runtime change)
+* **postbuild:** unconditional shebang + `chmod 0o755` + bare bin paths
+
+### Dependencies
+
+* **major:** `marked` 15 → 18
+* **major:** `mermaid` 11 → 12
+* **major:** `@types/node` 24 → 26
+* **major:** `typescript` 6 → 7
+* **minor:** `@astrojs/rss` → `^4.0.19`, `tsx` → `^4.23.15`, `zod` → `^4.6.7`
+* **pin:** `starlight-heading-badges` `*` → `^0.8.0`
+
+`pnpm typecheck` is now green.
+
 ## 0.7.0 (2026-11-14)
 
 ### Features

@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile, copyFile, mkdir, access } from 'node:fs/promises';
+import { readdir, readFile, writeFile, copyFile, mkdir, access , chmod } from 'node:fs/promises';
 import path from 'node:path';
 
 const exists = async (p) => { try { await access(p); return true; } catch { return false; } };
@@ -15,7 +15,9 @@ for (const f of await readdir('dist/qa')) {
   if (!f.endsWith('.mjs')) continue;
   const p = path.join('dist/qa', f);
   const src = await readFile(p, 'utf8');
-  if (!src.startsWith('#!')) await writeFile(p, SHEBANG + src);
+  const body = src.startsWith('#!') ? src : SHEBANG + src;
+    await writeFile(p, body);
+    await chmod(p, 0o755);
 }
 
 // 3) regenerate exports/main/types from what was actually emitted
@@ -50,9 +52,9 @@ pkg.exports['./PageActions.astro'] = './src/config/components/PageActions.astro'
 pkg.main = './' + SUBS['.'];
 pkg.types = rootTypes;
 pkg.bin = {
-  'docs-toolkit-qa-components': './dist/qa/components.mjs',
-  'docs-toolkit-qa-screenshots': './dist/qa/screenshots.mjs',
-  'docs-toolkit-bootstrap-artifacts': './dist/qa/bootstrap-artifacts.mjs',
+  'docs-toolkit-qa-components': 'dist/qa/components.mjs',
+  'docs-toolkit-qa-screenshots': 'dist/qa/screenshots.mjs',
+  'docs-toolkit-bootstrap-artifacts': 'dist/qa/bootstrap-artifacts.mjs',
 };
 
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');

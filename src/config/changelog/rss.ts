@@ -13,11 +13,11 @@ export async function GET(context: { site: URL }) {
     title: cfg.title,
     description: cfg.description,
     site: context.site,
-    items: releases.map((r) => ({
+    items: await Promise.all(releases.map(async (r) => ({
       title: `v${r.version}`,
       pubDate: new Date(r.date),
       link: r.link,
-      content: marked.parse(r.body),
-    })),
+      content: await marked.parse(r.body),
+    }))),
   });
 }

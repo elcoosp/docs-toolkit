@@ -158,7 +158,7 @@ export async function defineDocsConfig(
 
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }));
-  starlightPlugins.push(starlightViewModes({ zenModeEnabled: true }));
+  starlightPlugins.push(starlightViewModes({ zenModeSettings: { enabled: true } }));
 starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name: 'Elcoosp', url: 'https://github.com/elcoosp' } }));
   starlightPlugins.push(starlightScrollToTop());
   starlightPlugins.push(starlightAutoSidebar());
@@ -188,7 +188,7 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
             end.setDate(end.getDate() + 30);
             endDate = end.toISOString().split('T')[0];
           }
-          announcement = { id: 'latest-release', content: { en: `New release: v${version} — see what changed.`, fr: `Nouvelle version : v${version} — voir les changements.` }, link: { href: `/changelog/#${slug}`, text: { en: 'Read changelog', fr: 'Lire le journal' } }, variant: 'note', ...(startDate ? { startDate, endDate } : {}) };
+          announcement = { id: 'latest-release', content: { en: `New release: v${version} — see what changed.`, fr: `Nouvelle version : v${version} — voir les changements.` }, link: { href: `/changelog/#${slug}`, text: { en: 'Read changelog', fr: 'Lire le journal' } }, variant: 'note' as const, ...(startDate ? { startDate, endDate } : {}) };
         }
       }
     }
