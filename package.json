@@ -54,7 +54,7 @@
     "astro-mermaid": "^2.2.0",
     "github-slugger": "^2.0.0",
     "linkedom": "^0.18.15",
-    "marked": "^18.0.0",
+    "marked": "^18.2.0",
     "sharp": "^0.35.5",
     "starlight-announcement": "^2.0.0",
     "starlight-auto-sidebar": "^0.4.1",
@@ -66,27 +66,27 @@
     "starlight-scroll-to-top": "^2.0.0",
     "starlight-seo": "^1.0.0",
     "starlight-telescope": "^2.0.0",
-    "starlight-view-modes": "^0.15.4",
+    "starlight-view-modes": "^0.16.0",
     "tsx": "^4.23.15",
     "zod": "^4.6.7",
     "starlight-links-validator": "^0.27.0"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "esbuild": "^0.28.2",
     "expressive-code-collapsible": "^1.1.0",
-    "mermaid": "^12.0.0",
+    "mermaid": "^12.3.0",
     "starlight-fullview-mode": "^0.2.6",
     "starlight-tags": "^2.0.0",
     "tsdown": "^0.23.7",
-    "typescript": "~7.0.2"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
-    "@astrojs/starlight": "^0.42.0",
+    "@astrojs/starlight": "^0.43.0",
     "astro": "^7.0.0",
-    "mermaid": "^11.0.0",
+    "mermaid": "^11.0.0 || ^12.0.0",
     "playwright": "^1.65.0",
     "react": "^19.3.1"
   },
@@ -103,5 +103,5 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "0.8.7"
+  "version": "0.9.0"
 }

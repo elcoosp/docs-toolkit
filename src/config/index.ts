@@ -287,7 +287,7 @@ export async function defineDocsConfig(
 
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
-    mermaid(), starlight(starlightOptions), ...extraIntegrations,
+    mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }), starlight(starlightOptions), ...extraIntegrations,
   ];
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
