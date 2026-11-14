@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import type { AstroUserConfig } from 'astro';
@@ -12,6 +13,7 @@ import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
 import mermaid from 'astro-mermaid';
 import starlightChangelogs, { makeChangelogsSidebarLinks } from 'starlight-changelogs';
+import starlightAutoSidebar from 'starlight-auto-sidebar';
 import starlightBlog from 'starlight-blog';
 import starlightViewModes from 'starlight-view-modes';
 import starlightTelescope from 'starlight-telescope';
@@ -24,8 +26,17 @@ import { autoTranslateSidebar } from './i18n/sidebar-labels';
 export type { LlmsTxtConfig } from './llms';
 export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
 
+export interface SectionSpec {
+  key: string;
+  en: string;
+  fr: string;
+  collapsed?: boolean;
+}
+
 export interface DocsConfigOptions {
   site: string;
+  github?: string;
+  sections?: SectionSpec[];
   domain: string;
   title: string;
   projectName?: string;
@@ -38,7 +49,7 @@ export interface DocsConfigOptions {
   locales?: StarlightUserConfig['locales'];
   defaultLocale?: StarlightUserConfig['defaultLocale'];
   plugins?: StarlightUserConfig['plugins'];
-  sidebar: StarlightUserConfig['sidebar'];
+  sidebar?: StarlightUserConfig['sidebar'];
   routeMiddleware?: string;
   base?: string;
   accentOverride?: string;
@@ -49,6 +60,50 @@ export interface DocsConfigOptions {
   llmsTxt?: LlmsTxtConfig | false;
   giscus?: any;
   blog?: boolean | Record<string, unknown>;
+}
+
+function findDocsRoot(): string {
+  let dir = process.cwd();
+  while (dir !== '/') {
+    const candidate = path.join(dir, 'src/content/docs');
+    if (fs.existsSync(candidate)) return candidate;
+    dir = path.dirname(dir);
+  }
+  return path.join(process.cwd(), 'src/content/docs');
+}
+
+function extractGitHubRepo(options: DocsConfigOptions): string | null {
+  const social = options.social as any[] | undefined;
+  if (social?.[0]?.href) {
+    const m = String(social[0].href).match(/github\.com\/([^/]+\/[^/]+)/);
+    if (m) return m[1];
+  }
+  if (options.editLink?.baseUrl) {
+    const m = options.editLink.baseUrl.match(/github\.com\/([^/]+\/[^/]+)/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function buildSectionsSidebar(
+  sections: SectionSpec[],
+  docsRoot: string,
+): NonNullable<StarlightUserConfig['sidebar']> {
+  const items: any[] = [];
+  if (fs.existsSync(path.join(docsRoot, 'index.mdx')) || fs.existsSync(path.join(docsRoot, 'index.md'))) {
+    items.push({ label: 'Overview', translations: { fr: 'Aperçu' }, link: '/' });
+  }
+  for (const sec of sections) {
+    if (!fs.existsSync(path.join(docsRoot, sec.key))) continue;
+    const collapsed = sec.collapsed ?? (sec.key === 'reference' || sec.key === 'explanation');
+    items.push({
+      label: sec.en,
+      translations: { fr: sec.fr },
+      collapsed,
+      items: [{ autogenerate: { directory: sec.key, collapsed } }],
+    });
+  }
+  return items;
 }
 
 export async function defineDocsConfig(
@@ -64,6 +119,22 @@ export async function defineDocsConfig(
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
 
+  const githubRepo =
+    options.github ??
+    extractGitHubRepo(options) ??
+    `elcoosp/${projectName.toLowerCase().replace(/\s+/g, '-')}`;
+  const finalSocial = social.length > 0
+    ? social
+    : [{
+        icon: 'github' as const,
+        label: 'GitHub',
+        translations: { fr: 'GitHub' },
+        href: `https://github.com/${githubRepo}`,
+      }];
+  const finalEditLink = editLink ?? {
+    baseUrl: `https://github.com/${githubRepo}/edit/main/${path.basename(process.cwd())}/src/content/docs/`,
+  };
+
   const accent = accentOverride ? { hex: accentOverride, hexA12: accentOverride + '1a' } : await deriveAccent(logoPath);
   const logoB64 = fs.readFileSync(logoPath).toString('base64');
   const render = makeRender({ logoDataUrl: 'data:image/png;base64,' + logoB64, accentHex: accent.hex, accentHexA12: accent.hexA12, domain, projectName });
@@ -76,6 +147,7 @@ export async function defineDocsConfig(
   starlightPlugins.push(starlightViewModes({ zenModeEnabled: true }));
 starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name: 'Elcoosp', url: 'https://github.com/elcoosp' } }));
   starlightPlugins.push(starlightScrollToTop());
+  starlightPlugins.push(starlightAutoSidebar());
   starlightPlugins.push(starlightChangelogs());
 
   // Auto-expiring announcement
@@ -123,13 +195,21 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
 
   const { plugins: _extraPlugins = [], sidebar: _extraSidebar, ...extraStarlightRest } = (extraStarlight as any) ?? {};
   const mergedPlugins = [...((_extraPlugins as any[]) ?? []), ...starlightPlugins];
-  const mergedSidebar = autoTranslateSidebar((Array.isArray(_extraSidebar) && _extraSidebar.length > 0) ? [..._extraSidebar, changelogGroup] : [...sidebar, changelogGroup]);
+  let finalSidebarSource: any[];
+  if (options.sections) {
+    finalSidebarSource = buildSectionsSidebar(options.sections, findDocsRoot());
+  } else if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
+    finalSidebarSource = _extraSidebar;
+  } else {
+    finalSidebarSource = sidebar ?? [];
+  }
+  const mergedSidebar = autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
 
   const starlightOptions: StarlightUserConfig = {
     components: { MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro' },
     routeMiddleware, disable404Route: true, expressiveCode, title, description,
-    logo: { src: logoPath }, favicon, customCss, social,
-    ...(editLink ? { editLink } : {}),
+    logo: { src: logoPath }, favicon, customCss, social: finalSocial,
+    editLink: finalEditLink,
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
     plugins: mergedPlugins,

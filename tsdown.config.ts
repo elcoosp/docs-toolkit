@@ -28,6 +28,7 @@ export default defineConfig({
       'astro-d2',
       '@d2lang/d2',
       '@elcoosp/astro-takumi',
+      'starlight-auto-sidebar',
     ],
   },
 });
