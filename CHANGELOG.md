@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.1.0](https://github.com/elcoosp/docs-toolkit/compare/v1.0.1...v1.1.0) (2026-11-14)
+
+
+### Features
+
+* **config:** sections option, github derivation, auto-sidebar plugin, docsMetadataCollection source ([29aef08](https://github.com/elcoosp/docs-toolkit/commit/29aef0859f86cb64bc70380528b4d4f3634f7ec9))
+* **deps:** astro-takumi -&gt; npm:@elcoosp/astro-takumi@^2.1.0 (published package) ([af739d2](https://github.com/elcoosp/docs-toolkit/commit/af739d2bb47e21b69a1ecf5e8f0b0dc71c689772))
+* full changelog integration, OG font fixes, dev PageActions fix ([0ba677e](https://github.com/elcoosp/docs-toolkit/commit/0ba677e94091f99c7d05e13460ca85af3c9d10d2))
+* **i18n:** add en/fr translations and default locales to root+fr ([4d93eb6](https://github.com/elcoosp/docs-toolkit/commit/4d93eb62d2c1691b5a47e0cb8215880fb6ba7cbd))
+* **i18n:** autoTranslateSidebar with 188 FR sidebar labels ([8200ed6](https://github.com/elcoosp/docs-toolkit/commit/8200ed688ed91c725c03b68e94fc9878af84f998))
+* **ui:** use Lucide SVGs for PageActions instead of emojis ([9ff2e2b](https://github.com/elcoosp/docs-toolkit/commit/9ff2e2b049f3962b5592b9775ad6b2115e2bcf68))
+
+
+### Bug Fixes
+
+* audit disable, markdown content, remove pagetitle override ([256a137](https://github.com/elcoosp/docs-toolkit/commit/256a137efe2a6c13ff3e4847219daf0ca44f9ca2))
+* **config:** drop raw content.ts export, correct check:dist to allow config entrypoint imports ([e45d652](https://github.com/elcoosp/docs-toolkit/commit/e45d65282392518ae60421a6208e5392e8e45123))
+* **config:** use dynamic import for astro-takumi to avoid CJS crash in ssrLoadModule ([5a79a36](https://github.com/elcoosp/docs-toolkit/commit/5a79a3661c503446a9abf3ebfa442fe0c1e89ae0))
+* **deps:** jsdom→linkedom (fork 2.1.1, explicit linkedom) ([659141e](https://github.com/elcoosp/docs-toolkit/commit/659141ec672fe9828fbb8bd16357f0b528aebf8e))
+* **i18n:** add 'All versions' to dict (plugin-injected universal label) — release 0.5.43 ([355741f](https://github.com/elcoosp/docs-toolkit/commit/355741f6724b8aaa4df124f310e515413a33e509))
+* **i18n:** restore autoTranslateSidebar import+call in config (was reverted by Phase 71) — release 0.5.42 ([933575e](https://github.com/elcoosp/docs-toolkit/commit/933575e7e9274ff35c2f8a7288a8dacee114eafe))
+* **i18n:** skip string sidebar items in autoTranslateSidebar; release 0.5.39 ([e120083](https://github.com/elcoosp/docs-toolkit/commit/e12008391685d82717a685d52a10c94e828fcaea))
+* **vite:** exclude CJS deps from dev server optimizer (Vite 8 compat) ([82cddc9](https://github.com/elcoosp/docs-toolkit/commit/82cddc9a75a0a8facd30fff089d71a3361555662))
+* **vite:** externalize @takumi-rs/core native binding, bundle wrapper via pnpm &gt; notation ([1779b00](https://github.com/elcoosp/docs-toolkit/commit/1779b00df474efaeb806e5b8749542858d48e0fa))
+* **vite:** pre-bundle CJS deps to resolve 'require is not defined' in Vite 8 dev server ([87b34b6](https://github.com/elcoosp/docs-toolkit/commit/87b34b6d371791fce5ecb3d7d89d0f80e3015854))
+* **vite:** remove astro-mermaid to fix Vite 8 'require is not defined' dev server crash ([8861e64](https://github.com/elcoosp/docs-toolkit/commit/8861e64cbd2cd79e885d4f88d019fc5c58b1422b))
+* **vite:** remove noExternal:true (was force-bundling CJS deps causing 'require is not defined' in dev) ([638a6ab](https://github.com/elcoosp/docs-toolkit/commit/638a6abe90449a73dc5488a685a7c1b0834f8f13))
+* **vite:** use esmExternalRequirePlugin to convert CJS require to ESM import for @takumi-rs/core ([442df03](https://github.com/elcoosp/docs-toolkit/commit/442df0327cb9dcc4b85a29795c6a6cf6d292e6bf))
+
 ## [1.0.1](https://github.com/elcoosp/docs-toolkit/compare/v1.0.0...v1.0.1) (2026-11-12)
 
 
