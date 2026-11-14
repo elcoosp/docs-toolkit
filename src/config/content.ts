@@ -7,23 +7,17 @@ type BlogSchemaFn = (ctx: any) => any;
 interface MakeDocsOpts { blogSchema?: BlogSchemaFn }
 
 /**
- * Build the Starlight `docs` collection.
+ * Passthrough for the site's blogSchema, with one addition: `date` gets a
+ * Zod default. starlight-blog's `validateBlogEntry` throws "Missing date
+ * for blog entry" at build time even though its Zod schema marks date
+ * optional via `.partial()`. A Zod default satisfies both Zod and the
+ * runtime validator.
  *
- * Passthrough for the caller's `blogSchema` — identical behavior to
- * `docsSchema({ extend: (ctx) => blogSchema(ctx) })`, the standard pattern
- * from starlight-blog's own docs. No seoSchema.
- *
- * Why no seoSchema: starlight-seo@1.0.0's seoSchema() cannot be composed
- * with starlight-blog@0.30.2 + @astrojs/starlight@0.42.11 without breaking
- * the refined `sidebar` field. Verified empirically across 6 patterns.
- *
- * SEO output comes from:
- *   - title.templates (plugin) — auto suffix
- *   - title: + description: frontmatter
- *   - types: mapping (plugin)
- *   - routeData.ts getImagePath (og:image)
- *   - plugin middleware (JSON-LD @graph)
- *   - audit.failOn='warn' (warnings logged, build never blocked)
+ * No seoSchema. `seo:` frontmatter isn't needed — plugin's title.templates
+ * + description: frontmatter + routeData og:image + JSON-LD @graph cover
+ * all SEO output. seoSchema was the trigger for a `sidebar` ZodEffects
+ * collision against starlight 0.42.11 + starlight-blog 0.30.2 that we
+ * couldn't compose around.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function makeDocsCollection(opts: MakeDocsOpts = {}): any {
@@ -32,8 +26,10 @@ export function makeDocsCollection(opts: MakeDocsOpts = {}): any {
     schema: docsSchema({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       extend: (ctx: any) => {
-        if (opts.blogSchema) return opts.blogSchema(ctx) as any;
-        return z.object({});
+        if (!opts.blogSchema) return z.object({});
+        return (opts.blogSchema(ctx) as any).extend({
+          date: z.date().default(() => new Date()),
+        });
       },
     }) as any,
   });

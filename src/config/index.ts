@@ -182,7 +182,6 @@ export async function defineDocsConfig(
       min: 30,
       brand: 'auto',
       templates: [
-        // FR gets a distinct suffix so EN/FR pages don't share a title.
         { match: '/fr/**', template: '{title} — {site} (FR)' },
         { match: '/**', template: '{title} — {site} documentation' },
       ],
@@ -191,25 +190,14 @@ export async function defineDocsConfig(
       { match: '/blog/*/', type: 'BlogPosting', section: 'Blog' },
       { match: '/changelog/*/', type: 'Article', section: 'Changelog' },
     ],
-    // Silent for now. P1 (per-page seo.title / description trims) then flip
-    // to 'error'. The audit still RUNS and prints warnings — it just does not
-    // fail the build. Every other rule (jsonld.mismatch, image.broken, etc.)
-    // still writes correct output; only the build-blocking behavior is off.
     audit: { failOn: 'warn' },
     exclude: [
-      // 404s
       '/404/', '/404.html', '/**/404/', '/**/404.html',
-      // View-mode mirrors
-      '/presentation-mode/', '/presentation-mode/**', '/**/presentation-mode/**',
-      '/zen-mode/', '/zen-mode/**', '/**/zen-mode/**',
-      // Blog (index, welcome, authors) — starlight-blog autogen, no .mdx
-      '/blog', '/blog/', '/blog/**', '/**/blog/**',
-      '/fr/blog', '/fr/blog/', '/fr/blog/**', '/**/fr/blog/**',
-      // Changelog autogen
-      '/changelog', '/changelog/', '/changelog/**',
-      '/**/changelog', '/**/changelog/**',
-      '/fr/changelog', '/fr/changelog/', '/fr/changelog/**',
-      '/**/fr/changelog/**',
+      '/presentation-mode/**', '/**/presentation-mode/**',
+      '/zen-mode/**', '/**/zen-mode/**',
+      '/blog/**', '/**/blog/**', '/fr/blog/**', '/**/fr/blog/**',
+      '/changelog/**', '/**/changelog/**',
+      '/fr/changelog/**', '/**/fr/changelog/**',
     ],
   }));
   starlightPlugins.push(starlightScrollToTop());
