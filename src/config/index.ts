@@ -14,6 +14,7 @@ import { ROBOTO_BASE64 } from '../assets/font-b64';
 import mermaid from 'astro-mermaid';
 import starlightChangelogs, { makeChangelogsSidebarLinks } from 'starlight-changelogs';
 import starlightAutoSidebar from 'starlight-auto-sidebar';
+import starlightLinksValidator from 'starlight-links-validator';
 import starlightBlog from 'starlight-blog';
 import starlightViewModes from 'starlight-view-modes';
 import starlightTelescope from 'starlight-telescope';
@@ -149,6 +150,12 @@ export async function defineDocsConfig(
 
   const starlightPlugins: any[] = [];
 
+  // Mandatory: starlight-links-validator runs only on `astro build` and fails
+  // the production build on broken internal links. `astro dev` and
+  // `astro preview` are unaffected. There is no opt-out — every fleet site
+  // is link-checked, and a broken internal link blocks deploy.
+  starlightPlugins.push(starlightLinksValidator());
+
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }));
   starlightPlugins.push(starlightViewModes({ zenModeEnabled: true }));
@@ -201,7 +208,13 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
   }
 
   const { plugins: _extraPlugins = [], sidebar: _extraSidebar, ...extraStarlightRest } = (extraStarlight as any) ?? {};
-  const mergedPlugins = [...((_extraPlugins as any[]) ?? []), ...starlightPlugins];
+  // Both `plugins` (documented) and `extraStarlight.plugins` (escape hatch) are
+  // honored. Previously `options.plugins` was destructured but silently dropped.
+  const mergedPlugins = [
+    ...((plugins as any[]) ?? []),
+    ...((_extraPlugins as any[]) ?? []),
+    ...starlightPlugins,
+  ];
   let finalSidebarSource: any[];
   if (!Array.isArray(_extraSidebar) || _extraSidebar.length === 0) {
     // Canonical path: no explicit sidebar override → derive from filesystem

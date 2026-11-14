@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 (2026-11-14)
+
+### Features
+
+* **config:** integrate `starlight-links-validator` as a mandatory plugin — production builds now fail on broken internal links (no opt-out)
+* **config:** honor `options.plugins` in the merged plugin array (previously destructured but silently discarded)
+
+### Bug Fixes
+
+* **config:** wire `options.plugins` into `mergedPlugins`
+* **repo:** remove stale `src/config/index.ts.bak`
+
 ## [1.0.1](https://github.com/elcoosp/docs-toolkit/compare/v1.0.0...v1.0.1) (2026-11-12)
 
 
