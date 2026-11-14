@@ -33,6 +33,13 @@ export interface SectionSpec {
   collapsed?: boolean;
 }
 
+const CANONICAL_SECTIONS: SectionSpec[] = [
+  { key: 'tutorials', en: 'Tutorials', fr: 'Tutoriels', collapsed: false },
+  { key: 'guides', en: 'How-to Guides', fr: 'Guides pratiques', collapsed: false },
+  { key: 'reference', en: 'Reference', fr: 'Référence', collapsed: true },
+  { key: 'explanation', en: 'Explanation', fr: 'Explication', collapsed: true },
+];
+
 export interface DocsConfigOptions {
   site: string;
   github?: string;
@@ -196,8 +203,9 @@ starlightPlugins.push(starlightSeo({ audit: { failOn: 'off' }, publisher: { name
   const { plugins: _extraPlugins = [], sidebar: _extraSidebar, ...extraStarlightRest } = (extraStarlight as any) ?? {};
   const mergedPlugins = [...((_extraPlugins as any[]) ?? []), ...starlightPlugins];
   let finalSidebarSource: any[];
-  if (options.sections) {
-    finalSidebarSource = buildSectionsSidebar(options.sections, findDocsRoot());
+  if (!Array.isArray(_extraSidebar) || _extraSidebar.length === 0) {
+    // Canonical path: no explicit sidebar override → derive from filesystem
+    finalSidebarSource = buildSectionsSidebar(options.sections ?? CANONICAL_SECTIONS, findDocsRoot());
   } else if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
     finalSidebarSource = _extraSidebar;
   } else {
