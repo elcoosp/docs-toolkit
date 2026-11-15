@@ -302,6 +302,17 @@ export async function defineDocsConfig(
     head: [...((extraStarlight as any)?.head ?? []), ...(headLink ? [headLink] : [])],
     sidebar: mergedSidebar,
     ...extraStarlightRest,
+    expressiveCode: {
+      themes: ['github-light', 'github-dark'],
+      ...((extraStarlight as any)?.expressiveCode ?? {}),
+      shiki: {
+        langAlias: {
+          'github-actions': 'yaml',
+          ...((extraStarlight as any)?.expressiveCode?.shiki?.langAlias ?? {}),
+        },
+        ...((extraStarlight as any)?.expressiveCode?.shiki ?? {}),
+      },
+    },
     // Safe merge: keep toolkit defaults, let site overrides win only for specific components
     components: {
       Banner: '@elcoosp/docs-toolkit/src/config/components/Banner.astro',
