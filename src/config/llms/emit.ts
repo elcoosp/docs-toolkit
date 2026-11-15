@@ -43,10 +43,10 @@ export function emitAll(
       const line = 'LLM: /llms.txt\n';
       if (fs.existsSync(robotsPath)) {
         const content = fs.readFileSync(robotsPath, 'utf8');
-        if (!content.includes('LLM:')) fs.appendFileSync(robotsPath, `\n${line}`);
+        if (!content.includes('LLM:')) fs.appendFileSync(robotsPath, `\n# ${line}`);
         log('  ✓ robots.txt (appended LLM: /llms.txt)');
       } else {
-        fs.writeFileSync(robotsPath, line);
+        fs.writeFileSync(robotsPath, `# ${line}`);
         log('  ✓ robots.txt (created)');
       }
     } catch (e) {
