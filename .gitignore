@@ -4,3 +4,7 @@ dist/
 .DS_Store
 *.log
 src/assets/font-b64.ts
+
+# Build-time backups
+*.bak
+*.orig
