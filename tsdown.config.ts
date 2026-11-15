@@ -17,6 +17,8 @@ export default defineConfig({
   dts: true,
   deps: {
     neverBundle: [
+      /^astro:/,
+      /^@astrojs\//,
       'starlight-telescope',
       'starlight-scroll-to-top',
       'starlight-view-modes',
