@@ -73,6 +73,35 @@ export interface DocsConfigOptions {
   blog?: boolean | Record<string, unknown>;
 }
 
+function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]): any {
+  const setup = plugin?.hooks?.['config:setup'];
+  if (typeof setup !== 'function') return plugin;
+  return {
+    ...plugin,
+    hooks: {
+      ...plugin.hooks,
+      'config:setup'(ctx: any) {
+        const origWarn = ctx.logger?.warn?.bind(ctx.logger);
+        const filteredLogger = origWarn
+          ? {
+              ...ctx.logger,
+              warn(message: string, ...args: any[]) {
+                if (
+                  typeof message === 'string' &&
+                  componentNames.some((name) => message.includes(name))
+                ) {
+                  return;
+                }
+                return origWarn(message, ...args);
+              },
+            }
+          : ctx.logger;
+        return setup({ ...ctx, logger: filteredLogger });
+      },
+    },
+  };
+}
+
 function findDocsRoot(): string {
   let dir = process.cwd();
   while (dir !== '/') {
@@ -159,9 +188,9 @@ export async function defineDocsConfig(
   starlightPlugins.push(starlightLinksValidator());
 
   starlightPlugins.push(starlightTelescope());
-  starlightPlugins.push(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }));
+  starlightPlugins.push(suppressHandledOverrideWarnings(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }), ['MarkdownContent']));
   starlightPlugins.push(starlightImageZoom());
-        starlightPlugins.push(starlightViewModes({ zenModeSettings: { enabled: true } }));
+        starlightPlugins.push(suppressHandledOverrideWarnings(starlightViewModes({ zenModeSettings: { enabled: true }, presentationModeSettings: { enabled: false } }), ['TableOfContents']));
   starlightPlugins.push(starlightSeo({
     site: {
       name: title,
@@ -317,7 +346,7 @@ return defineConfig({
       },
 
       ], build: {
-        chunkSizeWarningLimit: 1000,
+        chunkSizeWarningLimit: 2500,
         rolldownOptions: {
           onwarn(warning, defaultHandler) {
             const id = warning.id ?? warning.loc?.file ?? '';
