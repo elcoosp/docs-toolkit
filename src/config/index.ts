@@ -83,8 +83,7 @@ function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]):
       'config:setup'(ctx: any) {
         const origWarn = ctx.logger?.warn?.bind(ctx.logger);
         const filteredLogger = origWarn
-          ? {
-              ...ctx.logger,
+          ? Object.assign(Object.create(ctx.logger), {
               warn(message: string, ...args: any[]) {
                 if (
                   typeof message === 'string' &&
@@ -94,7 +93,7 @@ function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]):
                 }
                 return origWarn(message, ...args);
               },
-            }
+            })
           : ctx.logger;
         return setup({ ...ctx, logger: filteredLogger });
       },
@@ -239,7 +238,29 @@ export async function defineDocsConfig(
     },
   }));
   starlightPlugins.push(starlightScrollToTop());
+  starlightPlugins.push({
+    name: 'docs-toolkit:view-modes-sidebar-strip',
+    hooks: {
+      'config:setup'({ addRouteMiddleware }: any) {
+        addRouteMiddleware({
+          entrypoint: '@elcoosp/docs-toolkit/src/config/view-modes-sidebar-strip.ts',
+          order: 'post',
+        });
+      },
+    },
+  });
   starlightPlugins.push(starlightAutoSidebar());
+  starlightPlugins.push({
+    name: 'docs-toolkit:view-modes-sidebar-restore',
+    hooks: {
+      'config:setup'({ addRouteMiddleware }: any) {
+        addRouteMiddleware({
+          entrypoint: '@elcoosp/docs-toolkit/src/config/view-modes-sidebar-restore.ts',
+          order: 'post',
+        });
+      },
+    },
+  });
   starlightPlugins.push(starlightChangelogs());
 
   // Auto-expiring announcement

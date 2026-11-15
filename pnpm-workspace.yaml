@@ -8,3 +8,7 @@ permissions:
   tsdown:
     build: true
     skills: true
+
+peerDependencyRules:
+  allowedVersions:
+    '@ascorbic/loader-utils>astro': '*'
