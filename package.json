@@ -56,20 +56,8 @@
     "linkedom": "^0.18.15",
     "marked": "^18.2.0",
     "sharp": "^0.35.5",
-    "starlight-announcement": "^2.0.0",
-    "starlight-auto-sidebar": "^0.4.1",
-    "starlight-blog": "^0.30.2",
-    "starlight-changelogs": "^0.7.1",
-    "starlight-giscus": "^1.2.0",
-    "starlight-heading-badges": "^0.8.0",
-    "starlight-image-zoom": "^0.16.2",
-    "starlight-scroll-to-top": "^2.0.0",
-    "starlight-seo": "^1.0.0",
-    "starlight-telescope": "^2.0.0",
-    "starlight-view-modes": "^0.16.0",
     "tsx": "^4.23.15",
-    "zod": "^4.6.7",
-    "starlight-links-validator": "^0.27.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -84,11 +72,23 @@
     "typescript": "^7.0.2"
   },
   "peerDependencies": {
-    "@astrojs/starlight": "^0.43.0",
+    "@astrojs/starlight": "^0.43.1",
     "astro": "^7.0.0",
     "mermaid": "^11.0.0 || ^12.0.0",
     "playwright": "^1.65.0",
-    "react": "^19.3.1"
+    "react": "^19.3.1",
+    "starlight-announcement": "^2.0.0",
+    "starlight-auto-sidebar": "^0.4.1",
+    "starlight-blog": "^0.30.2",
+    "starlight-changelogs": "^0.7.1",
+    "starlight-giscus": "^1.2.0",
+    "starlight-heading-badges": "^0.8.0",
+    "starlight-image-zoom": "^0.16.2",
+    "starlight-links-validator": "^0.27.0",
+    "starlight-scroll-to-top": "^2.0.0",
+    "starlight-seo": "^1.0.0",
+    "starlight-telescope": "^2.0.0",
+    "starlight-view-modes": "^0.16.0"
   },
   "peerDependenciesMeta": {
     "playwright": {
@@ -103,5 +103,5 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "0.9.2"
+  "version": "0.9.11"
 }

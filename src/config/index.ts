@@ -21,8 +21,11 @@ import starlightTelescope from 'starlight-telescope';
 import starlightSeo from 'starlight-seo';
 import starlightAnnouncement from 'starlight-announcement';
 import starlightScrollToTop from 'starlight-scroll-to-top';
+import starlightImageZoom from 'starlight-image-zoom';
 import GithubSlugger from 'github-slugger';
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
+
+
 
 export type { LlmsTxtConfig } from './llms';
 export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
@@ -157,7 +160,8 @@ export async function defineDocsConfig(
 
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }));
-  starlightPlugins.push(starlightViewModes({ zenModeSettings: { enabled: true } }));
+  starlightPlugins.push(starlightImageZoom());
+        starlightPlugins.push(starlightViewModes({ zenModeSettings: { enabled: true } }));
   starlightPlugins.push(starlightSeo({
     site: {
       name: title,
@@ -272,7 +276,6 @@ export async function defineDocsConfig(
   const mergedSidebar = autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
 
   const starlightOptions: StarlightUserConfig = {
-    components: { MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro' },
     routeMiddleware, disable404Route: true, expressiveCode, title, description,
     logo: { src: logoPath }, favicon, customCss, social: finalSocial,
     editLink: finalEditLink,
@@ -282,32 +285,37 @@ export async function defineDocsConfig(
     head: [...((extraStarlight as any)?.head ?? []), ...(headLink ? [headLink] : [])],
     sidebar: mergedSidebar,
     ...extraStarlightRest,
+    // Safe merge: keep toolkit defaults, let site overrides win only for specific components
+    components: {
+      MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro',
+      TableOfContents: '@elcoosp/docs-toolkit/src/config/components/TableOfContents.astro',
+      ...((extraStarlight as any)?.components ?? {}),
+    },
   };
 
-  const integrations: NonNullable<AstroUserConfig['integrations']> = [
+const integrations: NonNullable<AstroUserConfig['integrations']> = [
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
-    mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }), starlight(starlightOptions), ...extraIntegrations,
+    mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }), starlight(starlightOptions),  ...extraIntegrations,
   ];
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
-
-  return defineConfig({
+return defineConfig({
     vite: {
       plugins: [
+      {
+        name: 'docs-toolkit:resolve-image-zoom-virtual',
+        resolveId(id) {
+          if (id === 'virtual:starlight-image-zoom-config') {
+            return '\0virtual:starlight-image-zoom-config';
+          }
+        },
+        load(id) {
+          if (id === '\0virtual:starlight-image-zoom-config') {
+            return 'export default {};';
+          }
+        },
+      },
 
-    {
-      name: 'docs-toolkit:resolve-image-zoom-virtual',
-      resolveId(id) {
-        if (id === 'virtual:starlight-image-zoom-config') {
-          return '\0virtual:starlight-image-zoom-config';
-        }
-      },
-      load(id) {
-        if (id === '\0virtual:starlight-image-zoom-config') {
-          return 'export default {};';
-        }
-      },
-    },
       ], build: { chunkSizeWarningLimit: 1000 }, ssr: { noExternal: [] }, ...extraVite },
     ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
   });
