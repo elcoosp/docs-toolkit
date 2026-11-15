@@ -316,7 +316,22 @@ return defineConfig({
         },
       },
 
-      ], build: { chunkSizeWarningLimit: 1000 }, ssr: { noExternal: [] }, ...extraVite },
+      ], build: {
+        chunkSizeWarningLimit: 1000,
+        rolldownOptions: {
+          onwarn(warning, defaultHandler) {
+            const id = warning.id ?? warning.loc?.file ?? '';
+            if (
+              id.includes('node_modules') &&
+              (warning.code === 'MODULE_LEVEL_DIRECTIVE' ||
+                warning.code === 'SOURCEMAP_ERROR')
+            ) {
+              return;
+            }
+            defaultHandler(warning);
+          },
+        },
+      }, ssr: { noExternal: [] }, ...extraVite },
     ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
   });
 }
