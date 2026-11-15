@@ -292,7 +292,7 @@ export async function defineDocsConfig(
     ...((plugins as any[]) ?? []),
     ...((_extraPlugins as any[]) ?? []),
     ...starlightPlugins,
-  ];
+  ].map((p) => suppressHandledOverrideWarnings(p, ['MarkdownContent', 'TableOfContents']));
   let finalSidebarSource: any[];
   if (!Array.isArray(_extraSidebar) || _extraSidebar.length === 0) {
     // Canonical path: no explicit sidebar override → derive from filesystem
