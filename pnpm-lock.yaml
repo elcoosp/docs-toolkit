@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@astrojs/rss':
-        specifier: ^4.0.19
-        version: 4.0.19
       '@astrojs/starlight':
         specifier: ^0.43.1
         version: 0.43.1(@astrojs/markdown-remark@7.3.8(supports-color@10.2.2))(astro@7.4.11(@astrojs/markdown-remark@7.3.8(supports-color@10.2.2))(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))(supports-color@10.2.2)(typescript@7.0.2)
@@ -29,15 +26,9 @@ importers:
       astro-mermaid:
         specifier: ^2.2.0
         version: 2.2.0(astro@7.4.11(@astrojs/markdown-remark@7.3.8(supports-color@10.2.2))(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))(mermaid@12.3.0)
-      github-slugger:
-        specifier: ^2.0.0
-        version: 2.0.0
       linkedom:
         specifier: ^0.18.15
         version: 0.18.15
-      marked:
-        specifier: ^18.2.0
-        version: 18.2.0
       playwright:
         specifier: ^1.65.0
         version: 1.65.0
@@ -2417,11 +2408,6 @@ packages:
 
   marked@16.4.2:
     resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
-    engines: {node: '>= 20'}
-    hasBin: true
-
-  marked@18.2.0:
-    resolution: {integrity: sha512-KaeL+tAbtvI930q7HE2PN5lYXYdT8EiSmxHlN6F3rsfb57wd5mp5W5TLazpdj4inTQBJdgjYwbs40W/0VUGU+Q==}
     engines: {node: '>= 20'}
     hasBin: true
 
@@ -5586,8 +5572,6 @@ snapshots:
   markdown-table@3.1.0: {}
 
   marked@16.4.2: {}
-
-  marked@18.2.0: {}
 
   mdast-util-definitions@6.0.0:
     dependencies:

@@ -1,0 +1,63 @@
+---
+import AnnouncementBanner from 'starlight-announcement/components/AnnouncementBanner.astro';
+import { AnnouncementItem } from 'starlight-announcement/components';
+import { getCollection } from 'astro:content';
+
+let latestReleaseAnnouncement = null;
+
+try {
+  const entries = await getCollection('changelogs');
+  const latest = entries
+    .filter((e) => e.data.base === 'changelog')
+    .toSorted((a, b) => a.data.index - b.data.index)
+    .at(0);
+
+  if (latest) {
+    const releaseDate = latest.data.date;
+    let isActive = true;
+
+    if (releaseDate instanceof Date && !Number.isNaN(releaseDate.getTime())) {
+      const start = new Date(releaseDate);
+      start.setUTCHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setUTCDate(end.getUTCDate() + 30);
+      end.setUTCHours(23, 59, 59, 999);
+      const now = Date.now();
+      isActive = now >= start.getTime() && now <= end.getTime();
+    }
+
+    if (isActive) {
+      const locale = Astro.currentLocale;
+      const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+      const localePrefix = locale ? `/${locale}` : '';
+      const versionLabel = latest.data.title.startsWith('v')
+        ? latest.data.title
+        : `v${latest.data.title}`;
+
+      latestReleaseAnnouncement = {
+        id: 'latest-release',
+        content: {
+          en: `New release: ${versionLabel} — see what changed.`,
+          fr: `Nouvelle version : ${versionLabel} — voir les changements.`,
+        },
+        link: {
+          href: `${base}${localePrefix}/changelog/#${latest.data.slug}`,
+          text: {
+            en: 'Read changelog',
+            fr: 'Lire le journal',
+          },
+        },
+        variant: 'note' as const,
+        dismissible: true,
+        showOn: ['/**'],
+        hideOn: [],
+      };
+    }
+  }
+} catch {
+  // No changelogs collection configured on this site
+}
+---
+
+<AnnouncementBanner {...Astro.props} />
+{latestReleaseAnnouncement && <AnnouncementItem announcement={latestReleaseAnnouncement} />}

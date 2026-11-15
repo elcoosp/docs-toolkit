@@ -22,7 +22,6 @@ import starlightSeo from 'starlight-seo';
 import starlightAnnouncement from 'starlight-announcement';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightImageZoom from 'starlight-image-zoom';
-import GithubSlugger from 'github-slugger';
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 
 
@@ -154,7 +153,7 @@ export async function defineDocsConfig(
     customCss = ['./src/styles/custom.css'], social = [], editLink,
     locales, defaultLocale = 'root', plugins = [], sidebar,
     routeMiddleware = './src/routeData.ts', base, accentOverride,
-    expressiveCode = { themes: ['github-light', 'github-dark'] },
+    expressiveCode = { themes: ['github-light', 'github-dark'], shiki: { langAlias: { 'github-actions': 'yaml' } } },
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
 
@@ -263,39 +262,7 @@ export async function defineDocsConfig(
   });
   starlightPlugins.push(starlightChangelogs());
 
-  // Auto-expiring announcement
-  let announcement = null;
-  try {
-    const changelogPath = fs.existsSync('../../CHANGELOG.md') ? '../../CHANGELOG.md' : fs.existsSync('../CHANGELOG.md') ? '../CHANGELOG.md' : null;
-    if (changelogPath) {
-      const changelog = fs.readFileSync(changelogPath, 'utf8');
-      const lines = changelog.split('\n');
-      const versionLine = lines.find(l => l.startsWith('## ') && !l.toLowerCase().includes('unreleased'));
-      if (versionLine) {
-        const headingText = versionLine.replace(/^##\s+/, '').trim();
-        const versionMatch = headingText.match(/\d+\.\d+\.\d+/);
-        const version = versionMatch ? versionMatch[0] : null;
-        const dateMatch = headingText.match(/\d{4}-\d{2}-\d{2}/);
-        const releaseDate = dateMatch ? dateMatch[0] : null;
-        if (version) {
-          const slugger = new GithubSlugger();
-          const slug = slugger.slug(headingText.replace(/\./g, '-'));
-          let startDate, endDate;
-          if (releaseDate) {
-            startDate = releaseDate;
-            const end = new Date(releaseDate);
-            end.setDate(end.getDate() + 30);
-            endDate = end.toISOString().split('T')[0];
-          }
-          announcement = { id: 'latest-release', content: { en: `New release: v${version} — see what changed.`, fr: `Nouvelle version : v${version} — voir les changements.` }, link: { href: `/changelog/#${slug}`, text: { en: 'Read changelog', fr: 'Lire le journal' } }, variant: 'note' as const, ...(startDate ? { startDate, endDate } : {}) };
-        }
-      }
-    }
-  } catch (e) {}
-
-  if (announcement) {
-    starlightPlugins.push(starlightAnnouncement({ announcements: [announcement] }));
-  }
+  starlightPlugins.push(starlightAnnouncement());
 
   const changelogGroup = { label: 'Changelog', items: makeChangelogsSidebarLinks([{ type: 'all', base: 'changelog', label: 'All versions' }]) };
   let headLink: any = undefined;
@@ -313,7 +280,7 @@ export async function defineDocsConfig(
     ...((plugins as any[]) ?? []),
     ...((_extraPlugins as any[]) ?? []),
     ...starlightPlugins,
-  ].map((p) => suppressHandledOverrideWarnings(p, ['MarkdownContent', 'TableOfContents']));
+  ].map((p) => suppressHandledOverrideWarnings(p, ['Banner', 'MarkdownContent', 'TableOfContents']));
   let finalSidebarSource: any[];
   if (!Array.isArray(_extraSidebar) || _extraSidebar.length === 0) {
     // Canonical path: no explicit sidebar override → derive from filesystem
@@ -337,6 +304,7 @@ export async function defineDocsConfig(
     ...extraStarlightRest,
     // Safe merge: keep toolkit defaults, let site overrides win only for specific components
     components: {
+      Banner: '@elcoosp/docs-toolkit/src/config/components/Banner.astro',
       MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro',
       TableOfContents: '@elcoosp/docs-toolkit/src/config/components/TableOfContents.astro',
       ...((extraStarlight as any)?.components ?? {}),
@@ -350,6 +318,13 @@ const integrations: NonNullable<AstroUserConfig['integrations']> = [
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
 return defineConfig({
+    markdown: {
+      shikiConfig: {
+        langAlias: {
+          'github-actions': 'yaml',
+        },
+      },
+    },
     vite: {
       plugins: [
       {

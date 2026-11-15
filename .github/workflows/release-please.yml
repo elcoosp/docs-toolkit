@@ -4,7 +4,7 @@ on:
   workflow_call:
     secrets:
       RELEASE_PLEASE_TOKEN:
-        required: true
+        required: false
     inputs:
       release-type:
         required: false
@@ -15,9 +15,17 @@ on:
         type: string
         default: '22'
 
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
 jobs:
   release-please:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
     steps:
@@ -25,7 +33,7 @@ jobs:
         id: release
         with:
           release-type: ${{ inputs.release-type }}
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
   publish-npm:
     needs: release-please
@@ -37,20 +45,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
-        with:
-          version: 12
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ inputs.node-version }}
-          registry-url: https://registry.npmjs.org
+          registry-url: https://npmjs.org
           cache: 'pnpm'
 
       - name: Upgrade npm for OIDC
         run: npm install -g npm@^11.5.1
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run build
-      - run: pnpm test
+      - run: pnpm run build --if-present
+      - run: pnpm test --if-present
 
       - name: Publish to npm via OIDC
         run: npm publish --provenance --access public

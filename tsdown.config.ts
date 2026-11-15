@@ -7,7 +7,6 @@ export default defineConfig({
     'src/og/routeData.ts',
     'src/config/index.ts',
 
-    'src/config/changelog/rss.ts',
     'src/qa/components.ts',
     'src/qa/bootstrap-artifacts.ts',
     'src/qa/screenshots.ts',

@@ -47,14 +47,11 @@
     "check:dist": "! grep -rlE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs | grep -v '^dist/config-' || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist (excluding config-*.mjs)' && exit 1)"
   },
   "dependencies": {
-    "@astrojs/rss": "^4.0.19",
     "@d2lang/d2": "^0.1.34",
     "@elcoosp/astro-takumi": "^2.1.2",
     "astro-d2": "^0.14.1",
     "astro-mermaid": "^2.2.0",
-    "github-slugger": "^2.0.0",
     "linkedom": "^0.18.15",
-    "marked": "^18.2.0",
     "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "zod": "^4.6.7"
