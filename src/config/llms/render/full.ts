@@ -1,9 +1,22 @@
 import type { PageEntry, ResolvedLlmsConfig } from '../types.js';
 
-const CANONICAL_SECTION_ORDER = ['index', 'tutorials', 'guides', 'reference', 'explanation', 'blog', 'changelog'];
+const CANONICAL_SECTION_ORDER = [
+  'index',
+  'tutorials',
+  'guides',
+  'reference',
+  'explanation',
+  'blog',
+  'changelog',
+];
 const NL = String.fromCharCode(10);
 
-export function renderFull(pages: PageEntry[], cfg: ResolvedLlmsConfig, locale = 'en', subtitle = 'full documentation'): string {
+export function renderFull(
+  pages: PageEntry[],
+  cfg: ResolvedLlmsConfig,
+  locale = 'en',
+  subtitle = 'full documentation',
+): string {
   const scoped = pages.filter((p) => p.locale === locale);
   const ordered = [...scoped].sort((a, b) => {
     const ia = CANONICAL_SECTION_ORDER.indexOf(a.sectionKey);

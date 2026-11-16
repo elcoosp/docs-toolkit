@@ -16,10 +16,7 @@ function stripModeFromHref(href: string): string {
   return cleaned === '' ? '/' : cleaned;
 }
 
-function walkSidebar(
-  entries: SidebarEntry[],
-  saved: WeakMap<object, string>,
-): void {
+function walkSidebar(entries: SidebarEntry[], saved: WeakMap<object, string>): void {
   for (const entry of entries) {
     if (entry.type === 'group' && Array.isArray(entry.entries)) {
       walkSidebar(entry.entries, saved);

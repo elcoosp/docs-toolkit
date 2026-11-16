@@ -5,12 +5,14 @@ Shared OG image generation, docs config helper, and QA tooling for Starlight sit
 Install: `"@elcoosp/docs-toolkit": "github:elcoosp/docs-toolkit#<sha>"`
 
 astro.config.mjs:
+
 ```js
 import { defineDocsConfig } from '@elcoosp/docs-toolkit/config';
 export default await defineDocsConfig({ site, domain, title, description, plugins, sidebar });
 ```
 
 src/routeData.mjs:
+
 ```js
 export { onRequest } from '@elcoosp/docs-toolkit/og/routeData';
 ```

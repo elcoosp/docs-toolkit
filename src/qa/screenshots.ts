@@ -104,9 +104,7 @@ async function routes() {
       list.push('/404.html');
     } catch {}
   }
-  const sorted = [...new Set(list)].sort((a, b) =>
-    a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b),
-  );
+  const sorted = [...new Set(list)].sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b)));
   return SAMPLE_MODE ? selectSampleRoutes(sorted) : sorted;
 }
 
@@ -140,7 +138,15 @@ for (const route of all) {
 }
 
 process.stdout.write(
-  'QA start: ' + all.length + ' routes (' + jobs.length + ' captures, concurrency=' + CONCURRENCY + ', sample=' + SAMPLE_MODE + ')\n',
+  'QA start: ' +
+    all.length +
+    ' routes (' +
+    jobs.length +
+    ' captures, concurrency=' +
+    CONCURRENCY +
+    ', sample=' +
+    SAMPLE_MODE +
+    ')\n',
 );
 
 let cursor = 0;
@@ -235,12 +241,19 @@ async function worker() {
           vpName,
           theme,
           'logo-upscale',
-          'render ' + probe.logo.renderW + 'x' + probe.logo.renderH + ' > natural ' + probe.logo.naturalW + 'x' + probe.logo.naturalH,
+          'render ' +
+            probe.logo.renderW +
+            'x' +
+            probe.logo.renderH +
+            ' > natural ' +
+            probe.logo.naturalW +
+            'x' +
+            probe.logo.naturalH,
         );
       }
     }
 
-    const slug = route === '/' ? 'index' : route.replace(/^\/|\/$/g, '').replace(/\//g, '_');
+    const slug = route === '/' ? 'index' : route.replaceAll(/^\/|\/$/g, '').replaceAll('/', '_');
     await page.screenshot({
       path: path.join(OUT, slug + '--' + vpName + '--' + theme + '.png'),
       fullPage: true,
@@ -260,55 +273,63 @@ await Promise.all(Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, () 
 await browser.close();
 await srv.close();
 
-const candidateSlugs = all.map((r) => (r === '/' ? 'index' : r.replace(/^\/|\/$/g, '').replace(/\//g, '_')));
+const candidateSlugs = all.map((r) =>
+  r === '/' ? 'index' : r.replaceAll(/^\/|\/$/g, '').replaceAll('/', '_'),
+);
 const guideSlug = candidateSlugs.find((s) => s.startsWith('guides_')) ?? candidateSlugs[1] ?? 'index';
 const blogSlug = candidateSlugs.find((s) => s === 'blog') ?? candidateSlugs[1] ?? 'index';
 const postSlug = candidateSlugs.find((s) => s.startsWith('blog_') && s !== 'blog') ?? blogSlug;
 const tileFiles = [
-guideSlug + '--desktop--dark.png',
-postSlug + '--desktop--light.png',
-'index--desktop--dark.png',
-guideSlug + '--mobile--dark.png',
+  guideSlug + '--desktop--dark.png',
+  postSlug + '--desktop--light.png',
+  'index--desktop--dark.png',
+  guideSlug + '--mobile--dark.png',
 ];
 const tiles: { buf: Buffer; left: number; top: number }[] = [];
 const TILE_W = 720;
 const TILE_H = 700;
 for (let idx = 0; idx < tileFiles.length; idx++) {
-const file = path.join(OUT, tileFiles[idx]!);
-try {
-const buf = await sharp(file)
-.resize({ width: TILE_W })
-.extract({ left: 0, top: 0, width: TILE_W, height: TILE_H })
-.png()
-.toBuffer();
-tiles.push({
-buf,
-left: (idx % 2) * TILE_W,
-top: Math.floor(idx / 2) * TILE_H,
-});
-} catch {}
+  const file = path.join(OUT, tileFiles[idx]!);
+  try {
+    const buf = await sharp(file)
+      .resize({ width: TILE_W })
+      .extract({ left: 0, top: 0, width: TILE_W, height: TILE_H })
+      .png()
+      .toBuffer();
+    tiles.push({
+      buf,
+      left: (idx % 2) * TILE_W,
+      top: Math.floor(idx / 2) * TILE_H,
+    });
+  } catch {}
 }
 if (tiles.length > 0) {
-await sharp({
-create: {
-width: TILE_W * 2,
-height: TILE_H * Math.ceil(tiles.length / 2),
-channels: 4,
-background: { r: 15, g: 23, b: 42, alpha: 1 },
-},
-})
-.composite(tiles.map((t) => ({ input: t.buf, left: t.left, top: t.top })))
-.png()
-.toFile('.qa/collage.png');
+  await sharp({
+    create: {
+      width: TILE_W * 2,
+      height: TILE_H * Math.ceil(tiles.length / 2),
+      channels: 4,
+      background: { r: 15, g: 23, b: 42, alpha: 1 },
+    },
+  })
+    .composite(tiles.map((t) => ({ input: t.buf, left: t.left, top: t.top })))
+    .png()
+    .toFile('.qa/collage.png');
 }
 await writeFile('.qa/failures.json', JSON.stringify(failures, null, 2));
 if (failures.length) {
-console.error('QA FAILED — ' + failures.length + ' issue(s):');
-for (const f of failures) {
-console.error('  [' + f.kind + '] ' + f.route + ' (' + f.viewport + '/' + f.theme + '): ' + f.detail);
-}
-process.exit(1);
+  console.error('QA FAILED — ' + failures.length + ' issue(s):');
+  for (const f of failures) {
+    console.error('  [' + f.kind + '] ' + f.route + ' (' + f.viewport + '/' + f.theme + '): ' + f.detail);
+  }
+  process.exit(1);
 }
 console.log(
-'QA PASSED — ' + all.length + ' routes × 2 viewports × 2 themes (concurrency=' + CONCURRENCY + ', sample=' + SAMPLE_MODE + ')',
+  'QA PASSED — ' +
+    all.length +
+    ' routes × 2 viewports × 2 themes (concurrency=' +
+    CONCURRENCY +
+    ', sample=' +
+    SAMPLE_MODE +
+    ')',
 );

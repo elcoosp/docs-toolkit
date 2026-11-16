@@ -2,7 +2,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-const PLUGIN_TS_RE = /\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(?:starlight-[^/]+|astro-d2)\/.*\.ts$/;
+const PLUGIN_TS_RE =
+  /\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(?:starlight-[^/]+|astro-d2)\/.*\.ts$/;
 
 registerHooks({
   resolve(specifier, context, nextResolve) {

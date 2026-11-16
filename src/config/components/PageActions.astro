@@ -99,11 +99,11 @@ const labels = isFr
   }
 
   const container = document.querySelector('.page-actions-container');
-  const copiedLabel = container?.getAttribute('data-copied-label') ?? 'Copied!';
-  const copyError = container?.getAttribute('data-copy-error') ?? 'Failed to copy Markdown.';
-  const linkCopied = container?.getAttribute('data-link-copied') ?? 'Link copied to clipboard!';
+  const copiedLabel = container?.dataset.copiedLabel ?? 'Copied!';
+  const copyError = container?.dataset.copyError ?? 'Failed to copy Markdown.';
+  const linkCopied = container?.dataset.linkCopied ?? 'Link copied to clipboard!';
 
-  document.getElementById('copy-markdown')?.addEventListener('click', async () => {
+  document.querySelector('#copy-markdown')?.addEventListener('click', async () => {
     const mdUrl = resolveMarkdownUrl(window.location.pathname);
     try {
       const res = await fetch(mdUrl);
@@ -111,7 +111,7 @@ const labels = isFr
       const text = await res.text();
       await navigator.clipboard.writeText(text);
 
-      const btn = document.getElementById('copy-markdown');
+      const btn = document.querySelector('#copy-markdown');
       if (btn) {
         const originalHtml = btn.innerHTML;
         btn.textContent = '✓ ' + copiedLabel;
@@ -124,7 +124,7 @@ const labels = isFr
     }
   });
 
-  document.getElementById('share-page')?.addEventListener('click', async () => {
+  document.querySelector('#share-page')?.addEventListener('click', async () => {
     if (navigator.share) {
       await navigator.share({ title: document.title, url: window.location.href });
     } else {

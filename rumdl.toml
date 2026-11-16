@@ -1,17 +1,6 @@
 [global]
 respect-gitignore = true
-disable = [
-  "MD012",
-  "MD013",
-  "MD028",
-  "MD033",
-  "MD034",
-  "MD036",
-  "MD037",
-  "MD041",
-  "MD042",
-  "MD060",
-]
+disable = ["MD012", "MD013", "MD028", "MD033", "MD034", "MD036", "MD037", "MD041", "MD042", "MD060"]
 
 [per-file-flavor]
 "**/*.mdx" = "mdx"

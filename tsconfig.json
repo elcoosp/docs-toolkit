@@ -1,17 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "ES2024",
-      "DOM"
-    ],
+    "lib": ["ES2024", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": [
-      "node",
-      "astro/client"
-    ],
+    "types": ["node", "astro/client"],
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -19,58 +13,23 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "paths": {
-      "starlight-changelogs": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-auto-sidebar": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-links-validator": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-blog": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-view-modes": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-telescope": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-seo": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-announcement": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-scroll-to-top": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-image-zoom": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-heading-badges": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-github-alerts": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-kbd": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "starlight-giscus": [
-        "./types/starlight-plugins.d.ts"
-      ],
-      "astro-d2": [
-        "./types/starlight-plugins.d.ts"
-      ]
+      "starlight-changelogs": ["./types/starlight-plugins.d.ts"],
+      "starlight-auto-sidebar": ["./types/starlight-plugins.d.ts"],
+      "starlight-links-validator": ["./types/starlight-plugins.d.ts"],
+      "starlight-blog": ["./types/starlight-plugins.d.ts"],
+      "starlight-view-modes": ["./types/starlight-plugins.d.ts"],
+      "starlight-telescope": ["./types/starlight-plugins.d.ts"],
+      "starlight-seo": ["./types/starlight-plugins.d.ts"],
+      "starlight-announcement": ["./types/starlight-plugins.d.ts"],
+      "starlight-scroll-to-top": ["./types/starlight-plugins.d.ts"],
+      "starlight-image-zoom": ["./types/starlight-plugins.d.ts"],
+      "starlight-heading-badges": ["./types/starlight-plugins.d.ts"],
+      "starlight-github-alerts": ["./types/starlight-plugins.d.ts"],
+      "starlight-kbd": ["./types/starlight-plugins.d.ts"],
+      "starlight-giscus": ["./types/starlight-plugins.d.ts"],
+      "astro-d2": ["./types/starlight-plugins.d.ts"]
     },
     "allowImportingTsExtensions": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.d.ts",
-    "tsdown.config.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "tsdown.config.ts"]
 }

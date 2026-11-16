@@ -20,7 +20,9 @@
   border-radius: 999px;
   font-weight: 600;
   white-space: nowrap;
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .hero .actions a:hover {

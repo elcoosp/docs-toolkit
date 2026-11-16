@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-debugger": "error",
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "always"],
+    "no-useless-escape": "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/consistent-type-imports": ["error", { "prefer": "type-imports" }],
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/no-array-sort": "error",
+    "unicorn/no-useless-fallback-in-spread": "error",
+    "unicorn/prefer-string-replace-all": "error",
+    "unicorn/consistent-function-scoping": "error",
+    "unicorn/prefer-dom-node-append": "error",
+    "unicorn/prefer-query-selector": "error",
+    "unicorn/prefer-dom-node-dataset": "error",
+    "unicorn/no-abusive-eslint-disable": "error"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**", "src/qa/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist/**", "node_modules/**", "src/assets/font-b64.ts"]
+}

@@ -15,13 +15,10 @@ import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
 import mermaid from 'astro-mermaid';
 
-
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 import { inlineBashIntegration } from './rehype-inline-bash';
 import { starlightLinkPreview } from '../plugins/link-preview/index';
 import { starlightReadingContext } from '../plugins/reading-context/index';
-
-
 
 export type { LlmsTxtConfig } from './llms';
 export { DEFAULT_SECTIONS as DEFAULT_LLMS_SETS, detectSections } from './llms';
@@ -71,8 +68,18 @@ export interface DocsConfigOptions {
 }
 
 function resolveBareEntrypoint(ep: unknown): unknown {
-  if (typeof ep !== 'string' || ep.startsWith('.') || ep.startsWith('/') || ep.startsWith('@elcoosp/docs-toolkit')) return ep;
-  try { return _toolkitRequire.resolve(ep); } catch { return ep; }
+  if (
+    typeof ep !== 'string' ||
+    ep.startsWith('.') ||
+    ep.startsWith('/') ||
+    ep.startsWith('@elcoosp/docs-toolkit')
+  )
+    return ep;
+  try {
+    return _toolkitRequire.resolve(ep);
+  } catch {
+    return ep;
+  }
 }
 
 function resolvePluginEntrypoints(plugin: any): any {
@@ -84,16 +91,20 @@ function resolvePluginEntrypoints(plugin: any): any {
       ...plugin.hooks,
       'config:setup'(ctx: any) {
         const wrappedCtx = Object.assign(Object.create(ctx), {
-          ...(typeof ctx.injectRoute === 'function' ? {
-            injectRoute(route: any) {
-              return ctx.injectRoute({ ...route, entrypoint: resolveBareEntrypoint(route?.entrypoint) });
-            },
-          } : {}),
-          ...(typeof ctx.addRouteMiddleware === 'function' ? {
-            addRouteMiddleware(mw: any) {
-              return ctx.addRouteMiddleware({ ...mw, entrypoint: resolveBareEntrypoint(mw?.entrypoint) });
-            },
-          } : {}),
+          ...(typeof ctx.injectRoute === 'function'
+            ? {
+                injectRoute(route: any) {
+                  return ctx.injectRoute({ ...route, entrypoint: resolveBareEntrypoint(route?.entrypoint) });
+                },
+              }
+            : {}),
+          ...(typeof ctx.addRouteMiddleware === 'function'
+            ? {
+                addRouteMiddleware(mw: any) {
+                  return ctx.addRouteMiddleware({ ...mw, entrypoint: resolveBareEntrypoint(mw?.entrypoint) });
+                },
+              }
+            : {}),
         });
         return setup(wrappedCtx);
       },
@@ -124,10 +135,7 @@ function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]):
         const filteredLogger = origWarn
           ? Object.assign(Object.create(ctx.logger), {
               warn(message: string, ...args: any[]) {
-                if (
-                  typeof message === 'string' &&
-                  componentNames.some((name) => message.includes(name))
-                ) {
+                if (typeof message === 'string' && componentNames.some((name) => message.includes(name))) {
                   return;
                 }
                 return origWarn(message, ...args);
@@ -138,7 +146,9 @@ function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]):
           fn({ ...route, entrypoint: resolveToolkitEntrypoint(route?.entrypoint) });
         const wrappedCtx = Object.assign(Object.create(Object.getPrototypeOf(ctx)), ctx, {
           logger: filteredLogger,
-          ...(typeof ctx.injectRoute === 'function' ? { injectRoute: wrapInject(ctx.injectRoute.bind(ctx)) } : {}),
+          ...(typeof ctx.injectRoute === 'function'
+            ? { injectRoute: wrapInject(ctx.injectRoute.bind(ctx)) }
+            : {}),
           ...(typeof ctx.addIntegration === 'function'
             ? {
                 addIntegration(integration: any) {
@@ -149,9 +159,10 @@ function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]):
                     hooks: {
                       ...integration.hooks,
                       'astro:config:setup'(astroCtx: any) {
-                        const nextAstroCtx = typeof astroCtx?.injectRoute === 'function'
-                          ? { ...astroCtx, injectRoute: wrapInject(astroCtx.injectRoute.bind(astroCtx)) }
-                          : astroCtx;
+                        const nextAstroCtx =
+                          typeof astroCtx?.injectRoute === 'function'
+                            ? { ...astroCtx, injectRoute: wrapInject(astroCtx.injectRoute.bind(astroCtx)) }
+                            : astroCtx;
                         return origSetup(nextAstroCtx);
                       },
                     },
@@ -192,7 +203,9 @@ function extractGitHubRepo(options: DocsConfigOptions): string | null {
 function findFirstDocLink(docsRoot: string, dir: string): string | null {
   const fullDir = path.join(docsRoot, dir);
   if (!fs.existsSync(fullDir)) return null;
-  const entries = fs.readdirSync(fullDir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  const entries = fs
+    .readdirSync(fullDir, { withFileTypes: true })
+    .sort((a, b) => a.name.localeCompare(b.name));
   for (const e of entries) {
     if (e.isFile() && /\.(md|mdx)$/.test(e.name)) {
       const base = e.name.replace(/\.(md|mdx)$/, '');
@@ -208,11 +221,7 @@ function findFirstDocLink(docsRoot: string, dir: string): string | null {
   return null;
 }
 
-function buildDiataxisTopics(
-  sections: SectionSpec[],
-  docsRoot: string,
-  changelogGroup: any,
-): any[] {
+function buildDiataxisTopics(sections: SectionSpec[], docsRoot: string, changelogGroup: any): any[] {
   const byKey = new Map(sections.map((s) => [s.key, s]));
   const learnItems: any[] = [];
   if (fs.existsSync(path.join(docsRoot, 'index.mdx')) || fs.existsSync(path.join(docsRoot, 'index.md'))) {
@@ -256,10 +265,7 @@ function buildDiataxisTopics(
   }
   expItems.push({ label: 'Blog', translations: { fr: 'Blog' }, link: '/blog/' });
 
-  const learnLink =
-    findFirstDocLink(docsRoot, 'tutorials') ??
-    findFirstDocLink(docsRoot, 'guides') ??
-    '/';
+  const learnLink = findFirstDocLink(docsRoot, 'tutorials') ?? findFirstDocLink(docsRoot, 'guides') ?? '/';
   const topics: any[] = [];
   if (learnItems.length > 0) {
     topics.push({
@@ -314,24 +320,40 @@ const unwrapPlugin = <T>(m: T): T => {
   return cur;
 };
 
-export async function defineDocsConfig(
-  options: DocsConfigOptions,
-): Promise<AstroUserConfig> {
+export async function defineDocsConfig(options: DocsConfigOptions): Promise<AstroUserConfig> {
   const {
-    site, domain, title, projectName = title, description,
-    logoPath = './src/assets/logo.png', favicon = '/favicon.png',
-    customCss = ['./src/styles/custom.css'], social = [], editLink,
-    locales, defaultLocale = 'root', plugins = [], sidebar,
-    routeMiddleware, base, accentOverride,
-    expressiveCode = { themes: ['github-light', 'github-dark'], shiki: { langAlias: { 'github-actions': 'yaml' } } },
-    extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
+    site,
+    domain,
+    title,
+    projectName = title,
+    description,
+    logoPath = './src/assets/logo.png',
+    favicon = '/favicon.png',
+    customCss = ['./src/styles/custom.css'],
+    social = [],
+    editLink,
+    locales,
+    defaultLocale = 'root',
+    plugins = [],
+    sidebar,
+    routeMiddleware,
+    base,
+    accentOverride,
+    expressiveCode = {
+      themes: ['github-light', 'github-dark'],
+      shiki: { langAlias: { 'github-actions': 'yaml' } },
+    },
+    extraStarlight = {},
+    extraIntegrations = [],
+    extraVite = {},
+    llmsTxt = {},
   } = options;
 
-  const resolvedRouteMiddleware = routeMiddleware ?? (
-    fs.existsSync(path.resolve(process.cwd(), 'src/routeData.ts'))
+  const resolvedRouteMiddleware =
+    routeMiddleware ??
+    (fs.existsSync(path.resolve(process.cwd(), 'src/routeData.ts'))
       ? './src/routeData.ts'
-      : '@elcoosp/docs-toolkit/og/routeData'
-  );
+      : '@elcoosp/docs-toolkit/og/routeData');
   const ecConfigFile = path.resolve(process.cwd(), 'ec.config.mjs');
   const srcEcConfigFile = path.resolve(process.cwd(), 'src/ec.config.mjs');
   if (!fs.existsSync(ecConfigFile) && !fs.existsSync(srcEcConfigFile)) {
@@ -394,19 +416,33 @@ export async function defineDocsConfig(
     import('starlight-codeblock-fullscreen'),
   ]);
 
-  const githubRepo =
+  const rawGithubRepo =
     options.github ??
     extractGitHubRepo(options) ??
-    `elcoosp/${projectName.toLowerCase().replace(/\s+/g, '-')}`;
-  const finalSocial = social.length > 0
-    ? social
-    : [{
-        icon: 'github' as const,
-        label: 'GitHub',
-        href: `https://github.com/${githubRepo}`,
-      }];
-  const finalEditLink = editLink ?? {
-    baseUrl: `https://github.com/${githubRepo}/edit/main/${path.basename(process.cwd())}/src/content/docs/`,
+    extractGitHubRepo(extraStarlight as any) ??
+    `elcoosp/${projectName.toLowerCase().replaceAll(/\s+/g, '-')}`;
+  const rawRepo =
+    options.github ??
+    extractGitHubRepo(options) ??
+    extractGitHubRepo(extraStarlight as any) ??
+    `elcoosp/${projectName.toLowerCase().replaceAll(/\s+/g, '-')}`;
+  const githubRepo = (rawRepo.includes('/') ? rawRepo : `elcoosp/${rawRepo}`).replace(
+    /^([^/]+)\/\1\//,
+    '$1/',
+  );
+  const finalSocial =
+    social.length > 0
+      ? social
+      : [
+          {
+            icon: 'github' as const,
+            label: 'GitHub',
+            href: `https://github.com/${githubRepo}`,
+          },
+        ];
+  const cwdFolder = path.basename(process.cwd());
+  const finalEditLink = {
+    baseUrl: `https://github.com/${githubRepo}/edit/main/${cwdFolder}/`,
   };
 
   const accent = accentOverride ? accentFromHex(accentOverride) : await deriveAccent(logoPath);
@@ -437,7 +473,13 @@ export async function defineDocsConfig(
     autoAccentCss.push('./.astro/docs-toolkit-accent.css');
   }
   const logoB64 = fs.readFileSync(logoPath).toString('base64');
-  const render = makeRender({ logoDataUrl: 'data:image/png;base64,' + logoB64, accentHex: accent.hex, accentHexA12: accent.hexA12, domain, projectName });
+  const render = makeRender({
+    logoDataUrl: 'data:image/png;base64,' + logoB64,
+    accentHex: accent.hex,
+    accentHexA12: accent.hexA12,
+    domain,
+    projectName,
+  });
   const fontBuf = Buffer.from(ROBOTO_BASE64, 'base64');
 
   const starlightPlugins: any[] = [];
@@ -449,7 +491,22 @@ export async function defineDocsConfig(
   starlightPlugins.push(unwrapPlugin(starlightLinksValidator)());
 
   starlightPlugins.push(unwrapPlugin(starlightTelescope)());
-  starlightPlugins.push(suppressHandledOverrideWarnings(unwrapPlugin(starlightBlog)({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'elcoosp', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }), ['MarkdownContent']));
+  starlightPlugins.push(
+    suppressHandledOverrideWarnings(
+      unwrapPlugin(starlightBlog)({
+        title: { en: 'Blog', fr: 'Blog' },
+        prefix: 'blog',
+        authors: {
+          elcoosp: {
+            name: 'elcoosp',
+            picture: 'https://github.com/elcoosp.png?size=200',
+            url: 'https://github.com/elcoosp',
+          },
+        },
+      }),
+      ['MarkdownContent'],
+    ),
+  );
   starlightPlugins.push(unwrapPlugin(starlightImageZoom)());
   starlightPlugins.push(unwrapPlugin(starlightHeadingBadges)());
   starlightPlugins.push(unwrapPlugin(starlightGitHubAlerts)());
@@ -463,54 +520,74 @@ export async function defineDocsConfig(
       ],
     }),
   );
-        starlightPlugins.push(suppressHandledOverrideWarnings(unwrapPlugin(starlightViewModes)({ zenModeSettings: { enabled: true }, presentationModeSettings: { enabled: false } }), ['TableOfContents']));
-  starlightPlugins.push(unwrapPlugin(starlightSeo)({
-    site: {
-      name: title,
-      alternateName: domain,
-      description: description,
-      about: {
-        name: projectName ?? title,
-        url: `https://github.com/elcoosp/${githubRepo}`,
-        sameAs: `https://github.com/elcoosp/${githubRepo}`,
+  starlightPlugins.push(
+    suppressHandledOverrideWarnings(
+      unwrapPlugin(starlightViewModes)({
+        zenModeSettings: { enabled: true },
+        presentationModeSettings: { enabled: false },
+      }),
+      ['TableOfContents'],
+    ),
+  );
+  starlightPlugins.push(
+    unwrapPlugin(starlightSeo)({
+      site: {
+        name: title,
+        alternateName: domain,
+        description: description,
+        about: {
+          name: projectName ?? title,
+          url: `https://github.com/${githubRepo}`,
+          sameAs: `https://github.com/${githubRepo}`,
+        },
       },
-    },
-    publisher: {
-      type: 'Organization',
-      name: 'Elcoosp',
-      url: 'https://github.com/elcoosp',
-      logo: `https://${domain}/logo.png`,
-      sameAs: ['https://github.com/elcoosp'],
-    },
-    title: {
-      max: 60,
-      min: 30,
-      brand: 'auto',
-      templates: [
-        { match: '/fr/**', template: '{title} — {site} (FR)' },
-        { match: '/**', template: '{title} — {site} documentation' },
-      ],
-    },
-    types: [
-      { match: '/blog/*/', type: 'BlogPosting', section: 'Blog' },
-      { match: '/changelog/*/', type: 'Article', section: 'Changelog' },
-    ],
-    audit: {
-      failOn: 'error',
-      rules: {
-        'title.duplicate': 'warn',
-        'description.duplicate': 'warn',
+      publisher: {
+        type: 'Organization',
+        name: 'Elcoosp',
+        url: 'https://github.com/elcoosp',
+        logo: `https://${domain}/logo.png`,
+        sameAs: ['https://github.com/elcoosp'],
       },
-      exclude: [
-        '/404/', '/404.html', '/**/404/', '/**/404.html',
-        '/presentation-mode/**', '/**/presentation-mode/**',
-        '/zen-mode/**', '/**/zen-mode/**',
-        '/blog/**', '/**/blog/**', '/fr/blog/**', '/**/fr/blog/**',
-        '/changelog/**', '/**/changelog/**',
-        '/fr/changelog/**', '/**/fr/changelog/**',
+      title: {
+        max: 60,
+        min: 30,
+        brand: 'auto',
+        templates: [
+          { match: '/fr/**', template: '{title} — {site} (FR)' },
+          { match: '/**', template: '{title} — {site} documentation' },
+        ],
+      },
+      types: [
+        { match: '/blog/*/', type: 'BlogPosting', section: 'Blog' },
+        { match: '/changelog/*/', type: 'Article', section: 'Changelog' },
       ],
-    },
-  }));
+      audit: {
+        failOn: 'error',
+        rules: {
+          'title.duplicate': 'warn',
+          'description.duplicate': 'warn',
+        },
+        exclude: [
+          '/404/',
+          '/404.html',
+          '/**/404/',
+          '/**/404.html',
+          '/presentation-mode/**',
+          '/**/presentation-mode/**',
+          '/zen-mode/**',
+          '/**/zen-mode/**',
+          '/blog/**',
+          '/**/blog/**',
+          '/fr/blog/**',
+          '/**/fr/blog/**',
+          '/changelog/**',
+          '/**/changelog/**',
+          '/fr/changelog/**',
+          '/**/fr/changelog/**',
+        ],
+      },
+    }),
+  );
   starlightPlugins.push(unwrapPlugin(starlightScrollToTop)());
   starlightPlugins.push(unwrapPlugin(starlightAutoDrafts)());
   starlightPlugins.push(unwrapPlugin(starlightCodeblockFullscreen)());
@@ -525,10 +602,16 @@ export async function defineDocsConfig(
       },
     },
   });
-  const changelogGroup = { label: 'Changelog', items: makeChangelogsSidebarLinks([{ type: 'all', base: 'changelog', label: 'All versions' }]) };
+  const changelogGroup = {
+    label: 'Changelog',
+    items: makeChangelogsSidebarLinks([{ type: 'all', base: 'changelog', label: 'All versions' }]),
+  };
   const docsRoot = findDocsRoot();
   const resolvedSections = options.sections ?? CANONICAL_SECTIONS;
-  const hasTopics = options.topics === true || options.topics === 'diataxis' || (Array.isArray(options.topics) && options.topics.length > 0);
+  const hasTopics =
+    options.topics === true ||
+    options.topics === 'diataxis' ||
+    (Array.isArray(options.topics) && options.topics.length > 0);
   if (hasTopics) {
     const { default: starlightSidebarTopics } = await import('starlight-sidebar-topics');
     const rawTopics = Array.isArray(options.topics)
@@ -583,23 +666,38 @@ export async function defineDocsConfig(
   let resolvedLlms: any = undefined;
 
   if (llmsTxt !== false) {
-    const inferredSource = typeof finalEditLink?.baseUrl === "string"
-          ? finalEditLink.baseUrl.replace(/\/(?:edit|blob|tree)\/[^/]+.*$/, "")
-          : undefined;
-        const configuredLocales = locales ? Object.keys(locales) : undefined;
-        resolvedLlms = resolveLlmsConfig(llmsTxt ?? {}, { title, description, site, source: inferredSource, locales: configuredLocales });
+    const inferredSource =
+      typeof finalEditLink?.baseUrl === 'string'
+        ? finalEditLink.baseUrl.replace(/\/(?:edit|blob|tree)\/[^/]+.*$/, '')
+        : undefined;
+    const configuredLocales = locales ? Object.keys(locales) : undefined;
+    resolvedLlms = resolveLlmsConfig(llmsTxt ?? {}, {
+      title,
+      description,
+      site,
+      source: inferredSource,
+      locales: configuredLocales,
+    });
     if (resolvedLlms.outputs.headLink) headLink = llmsHeadLink();
   }
 
-  const { plugins: _extraPlugins = [], sidebar: _extraSidebar, ...extraStarlightRest } = (extraStarlight as any) ?? {};
+  const {
+    plugins: _extraPlugins = [],
+    sidebar: _extraSidebar,
+    editLink: _extraEditLink,
+    ...extraStarlightRest
+  } = (extraStarlight as any) ?? {};
   // Both `plugins` (documented) and `extraStarlight.plugins` (escape hatch) are
   // honored. Previously `options.plugins` was destructured but silently dropped.
   const mergedPlugins = [
     ...((plugins as any[]) ?? []),
     ...((_extraPlugins as any[]) ?? []),
     ...starlightPlugins,
-  ].map((p) => resolvePluginEntrypoints(suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents'])));
-
+  ].map((p) =>
+    resolvePluginEntrypoints(
+      suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents']),
+    ),
+  );
 
   let finalSidebarSource: any[];
   if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
@@ -613,8 +711,14 @@ export async function defineDocsConfig(
 
   const existingCustomCss = customCss.filter((rel) => fs.existsSync(path.resolve(process.cwd(), rel)));
   const starlightOptions: StarlightUserConfig = {
-    routeMiddleware: resolvedRouteMiddleware, disable404Route: true, title, description,
-    logo: { src: logoPath }, favicon, customCss: [landingCss, ...autoAccentCss, ...existingCustomCss], social: finalSocial,
+    routeMiddleware: resolvedRouteMiddleware,
+    disable404Route: true,
+    title,
+    description,
+    logo: { src: logoPath },
+    favicon,
+    customCss: [landingCss, ...autoAccentCss, ...existingCustomCss],
+    social: finalSocial,
     editLink: finalEditLink,
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
@@ -627,32 +731,39 @@ export async function defineDocsConfig(
     ],
     ...(hasTopics ? {} : { sidebar: mergedSidebar }),
     ...extraStarlightRest,
-    expressiveCode: expressiveCode === false ? false : {
-      ...(typeof expressiveCode === 'object' ? expressiveCode : {}),
-      ...((extraStarlight as any)?.expressiveCode ?? {}),
-      shiki: {
-        ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki : {}) ?? {}),
-        ...((extraStarlight as any)?.expressiveCode?.shiki ?? {}),
-        langAlias: {
-          'github-actions': 'yaml',
-          ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki?.langAlias : {}) ?? {}),
-          ...((extraStarlight as any)?.expressiveCode?.shiki?.langAlias ?? {}),
-        },
-      },
-    },
+    expressiveCode:
+      expressiveCode === false
+        ? false
+        : {
+            ...(typeof expressiveCode === 'object' ? expressiveCode : {}),
+            ...(extraStarlight as any)?.expressiveCode,
+            shiki: {
+              ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki : {}) ?? {}),
+              ...(extraStarlight as any)?.expressiveCode?.shiki,
+              langAlias: {
+                'github-actions': 'yaml',
+                ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki?.langAlias : {}) ??
+                  {}),
+                ...(extraStarlight as any)?.expressiveCode?.shiki?.langAlias,
+              },
+            },
+          },
     // Safe merge: keep toolkit defaults, let site overrides win only for specific components
     components: {
       Banner: '@elcoosp/docs-toolkit/src/config/components/Banner.astro',
       PageTitle: '@elcoosp/docs-toolkit/src/config/components/PageTitle.astro',
       MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro',
       TableOfContents: '@elcoosp/docs-toolkit/src/config/components/TableOfContents.astro',
-      ...((extraStarlight as any)?.components ?? {}),
+      ...(extraStarlight as any)?.components,
     },
   };
 
-const integrations: NonNullable<AstroUserConfig['integrations']> = [
+  const integrations: NonNullable<AstroUserConfig['integrations']> = [
     inlineBashIntegration(),
-    astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
+    astroTakumi({
+      options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' },
+      render,
+    } as unknown as Parameters<typeof astroTakumi>[0]),
     mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }),
     (() => {
       const sl = starlight(starlightOptions);
@@ -663,14 +774,18 @@ const integrations: NonNullable<AstroUserConfig['integrations']> = [
         hooks: {
           ...sl.hooks,
           'astro:config:setup'(astroCtx: any) {
-            const nextAstroCtx = typeof astroCtx?.injectRoute === 'function'
-              ? {
-                  ...astroCtx,
-                  injectRoute(route: any) {
-                    return astroCtx.injectRoute({ ...route, entrypoint: resolveToolkitEntrypoint(route?.entrypoint) });
-                  },
-                }
-              : astroCtx;
+            const nextAstroCtx =
+              typeof astroCtx?.injectRoute === 'function'
+                ? {
+                    ...astroCtx,
+                    injectRoute(route: any) {
+                      return astroCtx.injectRoute({
+                        ...route,
+                        entrypoint: resolveToolkitEntrypoint(route?.entrypoint),
+                      });
+                    },
+                  }
+                : astroCtx;
             return origSetup(nextAstroCtx);
           },
         },
@@ -680,7 +795,7 @@ const integrations: NonNullable<AstroUserConfig['integrations']> = [
   ];
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
-return defineConfig({
+  return defineConfig({
     markdown: {
       shikiConfig: {
         langAlias: {
@@ -699,7 +814,11 @@ return defineConfig({
           name: 'docs-toolkit:resolve-starlight-plugins',
           enforce: 'pre',
           resolveId(id: string) {
-            if (/^(?:starlight-[^/]+|astro-d2|astro-mermaid|@elcoosp\/astro-takumi|mermaid|react|react-dom)(?:\/|$)/.test(id)) {
+            if (
+              /^(?:starlight-[^/]+|astro-d2|astro-mermaid|@elcoosp\/astro-takumi|mermaid|react|react-dom)(?:\/|$)/.test(
+                id,
+              )
+            ) {
               try {
                 return fileURLToPath(import.meta.resolve(id));
               } catch {
@@ -713,36 +832,40 @@ return defineConfig({
             return null;
           },
         },
-      {
-        name: 'docs-toolkit:resolve-image-zoom-virtual',
-        resolveId(id) {
-          if (id === 'virtual:starlight-image-zoom-config') {
-            return '\0virtual:starlight-image-zoom-config';
-          }
+        {
+          name: 'docs-toolkit:resolve-image-zoom-virtual',
+          resolveId(id) {
+            if (id === 'virtual:starlight-image-zoom-config') {
+              return '\0virtual:starlight-image-zoom-config';
+            }
+          },
+          load(id) {
+            if (id === '\0virtual:starlight-image-zoom-config') {
+              return 'export default {};';
+            }
+          },
         },
-        load(id) {
-          if (id === '\0virtual:starlight-image-zoom-config') {
-            return 'export default {};';
-          }
-        },
-      },
-
-      ], build: {
+      ],
+      build: {
         chunkSizeWarningLimit: 2500,
         rolldownOptions: {
           onwarn(warning, defaultHandler) {
             const id = warning.id ?? warning.loc?.file ?? '';
             if (
               id.includes('node_modules') &&
-              (warning.code === 'MODULE_LEVEL_DIRECTIVE' ||
-                warning.code === 'SOURCEMAP_ERROR')
+              (warning.code === 'MODULE_LEVEL_DIRECTIVE' || warning.code === 'SOURCEMAP_ERROR')
             ) {
               return;
             }
             defaultHandler(warning);
           },
         },
-      }, ssr: { noExternal: [] }, ...extraVite },
-    ...(site ? { site } : {}), ...(base ? { base } : {}), integrations,
+      },
+      ssr: { noExternal: [] },
+      ...extraVite,
+    },
+    ...(site ? { site } : {}),
+    ...(base ? { base } : {}),
+    integrations,
   });
 }

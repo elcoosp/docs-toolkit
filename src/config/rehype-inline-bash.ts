@@ -138,7 +138,15 @@ function tokenizeShell(cmd: string): HastNode[] {
       continue;
     }
 
-    if (tok === '&&' || tok === '||' || tok === '|' || tok === ';' || tok === '>' || tok === '>>' || tok === '<') {
+    if (
+      tok === '&&' ||
+      tok === '||' ||
+      tok === '|' ||
+      tok === ';' ||
+      tok === '>' ||
+      tok === '>>' ||
+      tok === '<'
+    ) {
       seenCommand = false;
       seenSubcommand = false;
       nodes.push(span('#cf222e', '#ff7b72', tok));
@@ -172,12 +180,15 @@ export function satteriInlineBashPlugin() {
     name: 'docs-toolkit:inline-bash',
     element: {
       filter: ['code'],
-      visit(node: HastNode, ctx: {
-        parent: (n: HastNode) => HastNode | undefined;
-        setProperty: (n: HastNode, key: string, value: unknown) => void;
-        removeChildAt: (n: HastNode, index: number) => void;
-        appendChild: (n: HastNode, child: HastNode | HastNode[]) => void;
-      }) {
+      visit(
+        node: HastNode,
+        ctx: {
+          parent: (n: HastNode) => HastNode | undefined;
+          setProperty: (n: HastNode, key: string, value: unknown) => void;
+          removeChildAt: (n: HastNode, index: number) => void;
+          appendChild: (n: HastNode, child: HastNode | HastNode[]) => void;
+        },
+      ) {
         const parent = ctx.parent(node);
         if (parent?.type === 'element' && parent.tagName === 'pre') return;
         if (!Array.isArray(node.children) || node.children.length !== 1) return;
@@ -267,7 +278,7 @@ export function rehypeInlineBash() {
           const match = isInlineShellCommand(raw);
           if (match) {
             child.properties = {
-              ...(child.properties ?? {}),
+              ...child.properties,
               'data-inline-sh': '',
             };
             child.children = tokenizeShell(match.text);

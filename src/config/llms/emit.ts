@@ -55,7 +55,8 @@ export function emitAll(
       const directive = NL + '# LLMs' + NL + 'LLMs-Txt: ' + llmsLocation + NL;
       if (fs.existsSync(robotsPath)) {
         const content = fs.readFileSync(robotsPath, 'utf8');
-        if (!content.includes('LLMs-Txt:') && !content.includes('LLM:')) fs.appendFileSync(robotsPath, directive);
+        if (!content.includes('LLMs-Txt:') && !content.includes('LLM:'))
+          fs.appendFileSync(robotsPath, directive);
         log('  ✓ robots.txt (LLMs-Txt: ' + llmsLocation + ')');
       } else {
         fs.writeFileSync(robotsPath, 'User-agent: *' + NL + 'Allow: /' + NL + directive);

@@ -1,13 +1,13 @@
 [workspace]
-git_release_enable   = true
-git_tag_enable       = true
-git_tag_name         = "v{{ version }}"
-pr_labels            = ["release"]
-semver_check         = false
-dependencies_update  = false
-release_always       = false
-git_only             = true
-publish_timeout      = "2m"
+git_release_enable = true
+git_tag_enable = true
+git_tag_name = "v{{ version }}"
+pr_labels = ["release"]
+semver_check = false
+dependencies_update = false
+release_always = false
+git_only = true
+publish_timeout = "2m"
 
 [changelog]
 header = """

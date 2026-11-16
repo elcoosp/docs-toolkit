@@ -23,7 +23,10 @@ const SECTION_LABELS_FR: Record<string, string> = {
 };
 
 function humanizeDir(d: string): string {
-  return d.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return d
+    .split(/[-_]/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
 function stripFrontmatter(text: string): { fm: string; body: string } {
@@ -34,8 +37,11 @@ function stripFrontmatter(text: string): { fm: string; body: string } {
 
 function unquoteYaml(val: string): string {
   const trimmed = val.trim();
-  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-    return trimmed.slice(1, -1).replace(/\\"/g, '"').replace(/''/g, "'").trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).replaceAll('\\"', '"').replaceAll("''", "'").trim();
   }
   return trimmed;
 }
@@ -71,10 +77,10 @@ function extractOrder(fm: string): number {
 
 function globToRegex(pattern: string): RegExp {
   const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*\*/g, '___DOUBLESTAR___')
-    .replace(/\*/g, '[^/]*')
-    .replace(/___DOUBLESTAR___/g, '.*');
+    .replaceAll(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replaceAll('**', '___DOUBLESTAR___')
+    .replaceAll('*', '[^/]*')
+    .replaceAll('___DOUBLESTAR___', '.*');
   return new RegExp('^' + escaped + '$');
 }
 
@@ -108,65 +114,76 @@ function renderDiataxisItemsToMarkdown(rawTag: string, baseUrl: string): string 
 
 function cleanProseSegment(segment: string, baseUrl: string): string {
   return segment
-    .replace(/^(?:import|export)\s+.*?;?\s*$/gm, '')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    .replace(/<DiataxisGrid\b[\s\S]*?\/>/g, (m) => '\n' + renderDiataxisItemsToMarkdown(m, baseUrl) + '\n')
-    .replace(/<Card\b([^>]*?)\/>/g, (_m, attrs: string) => {
+    .replaceAll(/^(?:import|export)\s+.*?;?\s*$/gm, '')
+    .replaceAll(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replaceAll(/<DiataxisGrid\b[\s\S]*?\/>/g, (m) => '\n' + renderDiataxisItemsToMarkdown(m, baseUrl) + '\n')
+    .replaceAll(/<Card\b([^>]*?)\/>/g, (_m, attrs: string) => {
       const title = (attrs.match(/\btitle=["']([^"']+)["']/) || []).at(1) ?? '';
       const desc = (attrs.match(/\bdescription=["']([^"']+)["']/) || []).at(1) ?? '';
       const rawHref = (attrs.match(/\bhref=["']([^"']+)["']/) || []).at(1) ?? '';
       const href = rawHref.startsWith('/') && baseUrl ? baseUrl + rawHref : rawHref;
       if (!title) return '';
-      return href ? '- [' + title + '](' + href + ')' + (desc ? ': ' + desc : '') : '- **' + title + '**' + (desc ? ': ' + desc : '');
+      return href
+        ? '- [' + title + '](' + href + ')' + (desc ? ': ' + desc : '')
+        : '- **' + title + '**' + (desc ? ': ' + desc : '');
     })
-    .replace(/<LinkCard\b([^>]*?)\/>/g, (_m, attrs: string) => {
+    .replaceAll(/<LinkCard\b([^>]*?)\/>/g, (_m, attrs: string) => {
       const title = attrs.match(/\btitle=["']([^"']+)["']/)?.[1] ?? '';
       const desc = attrs.match(/\bdescription=["']([^"']+)["']/)?.[1] ?? '';
       const rawHref = attrs.match(/\bhref=["']([^"']+)["']/)?.[1] ?? '';
       const href = rawHref.startsWith('/') && baseUrl ? baseUrl + rawHref : rawHref;
       if (!title) return '';
-      return href ? '- [' + title + '](' + href + ')' + (desc ? ': ' + desc : '') : '- **' + title + '**' + (desc ? ': ' + desc : '');
+      return href
+        ? '- [' + title + '](' + href + ')' + (desc ? ': ' + desc : '')
+        : '- **' + title + '**' + (desc ? ': ' + desc : '');
     })
-    .replace(/<LinkButton\b([^>]*)>([\s\S]*?)<\/LinkButton>/g, (_m, attrs: string, label: string) => {
+    .replaceAll(/<LinkButton\b([^>]*)>([\s\S]*?)<\/LinkButton>/g, (_m, attrs: string, label: string) => {
       const rawHref = attrs.match(/\bhref=["']([^"']+)["']/)?.[1] ?? '';
       const href = rawHref.startsWith('/') && baseUrl ? baseUrl + rawHref : rawHref;
       const cleanLabel = label.trim();
       return href && cleanLabel ? '[' + cleanLabel + '](' + href + ')' : cleanLabel;
     })
-    .replace(/<Aside\b([^>]*)>([\s\S]*?)<\/Aside>/g, (_m, attrs: string, inner: string) => {
+    .replaceAll(/<Aside\b([^>]*)>([\s\S]*?)<\/Aside>/g, (_m, attrs: string, inner: string) => {
       const type = attrs.match(/\btype=["']([^"']+)["']/)?.[1] ?? 'note';
       const title = attrs.match(/\btitle=["']([^"']+)["']/)?.[1];
       const heading = title ? type.toUpperCase() + ': ' + title : type.toUpperCase();
-      const lines = inner.trim().split(/\r?\n/).map((l) => ('> ' + l).trimEnd());
+      const lines = inner
+        .trim()
+        .split(/\r?\n/)
+        .map((l) => ('> ' + l).trimEnd());
       return '\n> **' + heading + '**\n' + lines.join('\n') + '\n';
     })
-    .replace(/<Card\b([^>]*)>([\s\S]*?)<\/Card>/g, (_m, attrs: string, inner: string) => {
+    .replaceAll(/<Card\b([^>]*)>([\s\S]*?)<\/Card>/g, (_m, attrs: string, inner: string) => {
       const title = attrs.match(/\btitle=["']([^"']+)["']/)?.[1] ?? '';
       const body = inner.trim();
       return title ? '\n### ' + title + '\n\n' + body + '\n' : '\n' + body + '\n';
     })
-    .replace(/<TabItem\b([^>]*)>([\s\S]*?)<\/TabItem>/g, (_m, attrs: string, inner: string) => {
+    .replaceAll(/<TabItem\b([^>]*)>([\s\S]*?)<\/TabItem>/g, (_m, attrs: string, inner: string) => {
       const label = attrs.match(/\blabel=["']([^"']+)["']/)?.[1] ?? '';
       const body = inner.trim();
       return label ? '\n#### ' + label + '\n\n' + body + '\n' : '\n' + body + '\n';
     })
-    .replace(/<Badge\b([^>]*?)\/>/g, (_m, attrs: string) => {
+    .replaceAll(/<Badge\b([^>]*?)\/>/g, (_m, attrs: string) => {
       const text = attrs.match(/\btext=["']([^"']+)["']/)?.[1] ?? '';
       return text ? String.fromCharCode(96) + text + String.fromCharCode(96) : '';
     })
-    .replace(/<\/?(?:CardGrid|Tabs|Steps|FileTree|ShowcaseProfile|ShowcaseText|ShowcaseImage|ShowcaseCTA)\b[^>]*>/g, '')
-    .replace(/<(?:Icon|CardGrid|Tabs|Steps|FileTree)\b[^>]*\/>/g, '')
-    .replace(/\n{3,}/g, '\n\n');
+    .replaceAll(
+      /<\/?(?:CardGrid|Tabs|Steps|FileTree|ShowcaseProfile|ShowcaseText|ShowcaseImage|ShowcaseCTA)\b[^>]*>/g,
+      '',
+    )
+    .replaceAll(/<(?:Icon|CardGrid|Tabs|Steps|FileTree)\b[^>]*\/>/g, '')
+    .replaceAll(/\n{3,}/g, '\n\n');
 }
 
 export function cleanBody(body: string, baseUrl = ''): string {
   const fence = String.fromCharCode(96).repeat(3);
-  const fenceRe = new RegExp('(' + fence + '[\s\S]?' + fence + '|~~~[\s\S]?~~~)', 'g');
+  const fenceRe = new RegExp('(' + fence + '[s\S]?' + fence + '|~~~[s\S]?~~~)', 'g');
   const parts = body.split(fenceRe);
   return parts
     .map((part, idx) => (idx % 2 === 1 ? part : cleanProseSegment(part, baseUrl)))
     .join('')
-    .replace(/\n{3,}/g, '\n\n').trim();
+    .replaceAll(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 export function collectPages(contentRoot: string, cfg?: ResolvedLlmsConfig): PageEntry[] {
@@ -186,7 +203,8 @@ export function collectPages(contentRoot: string, cfg?: ResolvedLlmsConfig): Pag
       } else if (/.(md|mdx)$/.test(entry.name)) {
         const rel = prefix + entry.name;
         const noExt = rel.replace(/.(md|mdx)$/, '');
-        const normalizedSlug = noExt.endsWith('/index') && noExt !== 'index' ? noExt.slice(0, -'/index'.length) : noExt;
+        const normalizedSlug =
+          noExt.endsWith('/index') && noExt !== 'index' ? noExt.slice(0, -'/index'.length) : noExt;
 
         if (matchesAny(normalizedSlug, excludePatterns)) continue;
 
@@ -203,7 +221,9 @@ export function collectPages(contentRoot: string, cfg?: ResolvedLlmsConfig): Pag
         const isSecondaryLocale = knownLocales.has(firstSeg);
         const locale = isSecondaryLocale ? firstSeg : 'en';
         const unlocalizedSlug = isSecondaryLocale
-          ? segments.length === 1 ? 'index' : segments.slice(1).join('/')
+          ? segments.length === 1
+            ? 'index'
+            : segments.slice(1).join('/')
           : normalizedSlug;
 
         const route = normalizedSlug === 'index' ? '/' : '/' + normalizedSlug + '/';

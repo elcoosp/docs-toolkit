@@ -1,6 +1,29 @@
 {
   "name": "@elcoosp/docs-toolkit",
+  "version": "1.3.4",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elcoosp/docs-toolkit.git"
+  },
+  "bin": {
+    "docs-toolkit-qa-components": "dist/qa/components.mjs",
+    "docs-toolkit-qa-screenshots": "dist/qa/screenshots.mjs",
+    "docs-toolkit-bootstrap-artifacts": "dist/qa/bootstrap-artifacts.mjs",
+    "docs-toolkit-lint": "dist/qa/lint.mjs"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "i18n",
+    "tsconfig.base.json",
+    "ec.config.mjs",
+    "rumdl.toml",
+    "scripts",
+    ".oxlintrc.json",
+    ".oxfmtrc.json"
+  ],
   "type": "module",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -41,30 +64,20 @@
     },
     "./ec.config": "./ec.config.mjs"
   },
-  "bin": {
-    "docs-toolkit-qa-components": "dist/qa/components.mjs",
-    "docs-toolkit-qa-screenshots": "dist/qa/screenshots.mjs",
-    "docs-toolkit-bootstrap-artifacts": "dist/qa/bootstrap-artifacts.mjs",
-    "docs-toolkit-lint": "dist/qa/lint.mjs"
-  },
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "i18n",
-    "tsconfig.base.json",
-    "ec.config.mjs",
-    "rumdl.toml"
-  ],
-  "engines": {
-    "node": ">=22.18.0"
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/prebuild.ts",
     "prepublishOnly": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts && pnpm check:dist",
-    "check:dist": "! grep -rlE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs | grep -vE '^dist/(config|collections)-' || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist (excluding config-*.mjs)' && exit 1)"
+    "check:dist": "! grep -rlE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs | grep -vE '^dist/(config|collections)-' || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist (excluding config-*.mjs)' && exit 1)",
+    "lint": "oxlint -c .oxlintrc.json --deny-warnings",
+    "lint:fix": "oxlint -c .oxlintrc.json --fix",
+    "fmt": "oxfmt -c .oxfmtrc.json",
+    "fmt:check": "oxfmt -c .oxfmtrc.json --check"
   },
   "dependencies": {
     "@d2lang/d2": "^0.1.34",
@@ -77,6 +90,7 @@
     "expressive-code-collapsible": "^1.1.0",
     "linkedom": "^0.18.15",
     "mermaid": "^12.3.0",
+    "motion": "^14.14.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "rumdl": "^0.3.4",
@@ -109,6 +123,8 @@
     "esbuild": "^0.28.2",
     "expressive-code-collapsible": "^1.1.0",
     "mermaid": "^12.3.0",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
     "starlight-auto-drafts": "^0.3.1",
     "starlight-codeblock-fullscreen": "^2.0.0",
     "starlight-package-managers": "^0.13.1",
@@ -126,13 +142,7 @@
       "optional": true
     }
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/elcoosp/docs-toolkit.git"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
-  "version": "1.3.4"
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }

@@ -3,11 +3,21 @@ import sharp from 'sharp';
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
-interface Rgb { r: number; g: number; b: number }
-interface Hsl { h: number; s: number; l: number }
+interface Rgb {
+  r: number;
+  g: number;
+  b: number;
+}
+interface Hsl {
+  h: number;
+  s: number;
+  l: number;
+}
 
 function rgbToHsl(r: number, g: number, b: number): Hsl {
-  r /= 255; g /= 255; b /= 255;
+  r /= 255;
+  g /= 255;
+  b /= 255;
   const mx = Math.max(r, g, b);
   const mn = Math.min(r, g, b);
   const l = (mx + mn) / 2;
@@ -24,11 +34,14 @@ function rgbToHsl(r: number, g: number, b: number): Hsl {
 }
 
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  s /= 100; l /= 100;
+  s /= 100;
+  l /= 100;
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
+  let r = 0,
+    g = 0,
+    b = 0;
   if (h < 60) [r, g, b] = [c, x, 0];
   else if (h < 120) [r, g, b] = [x, c, 0];
   else if (h < 180) [r, g, b] = [0, c, x];
@@ -67,10 +80,7 @@ export interface DeriveAccentOptions {
   style?: AccentStyle;
 }
 
-export async function deriveAccent(
-  logoPath: string,
-  opts: DeriveAccentOptions = {},
-): Promise<AccentResult> {
+export async function deriveAccent(logoPath: string, opts: DeriveAccentOptions = {}): Promise<AccentResult> {
   const { fallbackHex = '#404040', style: forceStyle } = opts;
 
   const fallback = (style: AccentStyle): AccentResult => ({
@@ -136,7 +146,13 @@ export async function deriveAccent(
     chroma: Math.round(chroma),
     logoHex: rgbToHex(...med),
     hsl: {
-      light: { h: lightH, s: lightS, l: lightL, low: Math.min(lightL + 60, 95), high: Math.max(lightL - 8, 2) },
+      light: {
+        h: lightH,
+        s: lightS,
+        l: lightL,
+        low: Math.min(lightL + 60, 95),
+        high: Math.max(lightL - 8, 2),
+      },
       dark: { h: lightH, s: lightS, l: darkL, low: lightL + 20, high: Math.min(darkL + 10, 98) },
     },
   };
@@ -149,7 +165,8 @@ export function accentFromHex(hexInput: string): AccentResult {
   const b = parseInt(clean.slice(4, 6), 16) || 64;
   const { h, s, l } = rgbToHsl(r, g, b);
   const style: AccentStyle = s < 15 ? 'graydark' : 'chroma';
-  const lightL = style === 'graydark' ? clamp(Math.round(l / 5) * 5, 20, 35) : clamp(Math.round(l / 5) * 5, 30, 40);
+  const lightL =
+    style === 'graydark' ? clamp(Math.round(l / 5) * 5, 20, 35) : clamp(Math.round(l / 5) * 5, 30, 40);
   const lightH = style === 'graydark' ? 0 : h;
   const lightS = style === 'graydark' ? 0 : clamp(Math.round(s / 5) * 5, 45, 70);
   const hex = hslToHex(lightH, lightS, lightL);
@@ -161,7 +178,13 @@ export function accentFromHex(hexInput: string): AccentResult {
     chroma: s,
     logoHex: '#' + clean.slice(0, 6),
     hsl: {
-      light: { h: lightH, s: lightS, l: lightL, low: Math.min(lightL + 60, 95), high: Math.max(lightL - 8, 2) },
+      light: {
+        h: lightH,
+        s: lightS,
+        l: lightL,
+        low: Math.min(lightL + 60, 95),
+        high: Math.max(lightL - 8, 2),
+      },
       dark: { h: lightH, s: lightS, l: darkL, low: lightL + 20, high: Math.min(darkL + 10, 98) },
     },
   };

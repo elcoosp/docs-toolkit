@@ -3,23 +3,23 @@
 // translations always win; this is a fallback for untranslated labels.
 export const SIDEBAR_LABEL_FR: Record<string, string> = {
   'All versions': 'Toutes les versions',
-  'Architecture': 'Architecture',
-  'CLI': 'CLI',
-  'Changelog': 'Journal des modifications',
-  'Concepts': 'Concepts',
-  'Crates': 'Crates',
-  'Errors': 'Erreurs',
-  'Explanation': 'Explication',
+  Architecture: 'Architecture',
+  CLI: 'CLI',
+  Changelog: 'Journal des modifications',
+  Concepts: 'Concepts',
+  Crates: 'Crates',
+  Errors: 'Erreurs',
+  Explanation: 'Explication',
   'Feature flags': 'Drapeaux de fonctionnalités',
-  'Guides': 'Guides',
+  Guides: 'Guides',
   'How-to Guides': 'Guides pratiques',
   'How-to guides': 'Guides pratiques',
-  'Installation': 'Installation',
-  'Learn': 'Apprendre',
-  'Macros': 'Macros',
-  'Overview': 'Aperçu',
-  'Reference': 'Référence',
-  'Tutorials': 'Tutoriels',
+  Installation: 'Installation',
+  Learn: 'Apprendre',
+  Macros: 'Macros',
+  Overview: 'Aperçu',
+  Reference: 'Référence',
+  Tutorials: 'Tutoriels',
 };
 
 /**
@@ -35,7 +35,7 @@ export function autoTranslateSidebar<T>(sidebar: T): T {
     if (typeof result.label === 'string' && !result.translations?.fr) {
       const fr = SIDEBAR_LABEL_FR[result.label];
       if (fr) {
-        result.translations = { ...(result.translations ?? {}), fr };
+        result.translations = { ...result.translations, fr };
       }
     }
     if (Array.isArray(result.items)) {

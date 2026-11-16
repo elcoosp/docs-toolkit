@@ -17,7 +17,7 @@ export interface LinkPreviewPluginOptions {
 }
 
 function normalizeRoute(route: string): string {
-  let clean = route.split('#')[0].split('?')[0];
+  let clean = route.replace(/[#?].*$/, '');
   if (!clean.startsWith('/')) clean = '/' + clean;
   if (clean.endsWith('/index.html')) clean = clean.slice(0, -10);
   else if (clean.endsWith('.html')) clean = clean.slice(0, -5);
@@ -39,7 +39,88 @@ function detectSectionLabel(route: string): string {
 
 function estimateReadingLabel(text: string): string {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.round(words / 210))} min`;
+  return Math.max(1, Math.round(words / 210)) + ' min';
+}
+
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replaceAll(/\s+/g, '-');
+}
+
+function buildSourcePreviewIndex(docsDir: string): Record<string, LinkPreviewEntry> {
+  const index: Record<string, LinkPreviewEntry> = {};
+  if (!fs.existsSync(docsDir)) return index;
+
+  function walk(dir: string) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(md|mdx)$/i.test(entry.name)) continue;
+      const rel = path.relative(docsDir, full).replaceAll('\\', '/');
+      const noExt = rel.replace(/\.(md|mdx)$/i, '');
+      const route = normalizeRoute(
+        noExt === 'index'
+          ? '/'
+          : noExt.endsWith('/index')
+            ? '/' + noExt.slice(0, -6) + '/'
+            : '/' + noExt + '/',
+      );
+
+      const raw = fs.readFileSync(full, 'utf8');
+      const [, fm = '', body = raw] = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/) ?? [];
+
+      const [, rawTitle = ''] = fm.match(/^title:\s*["']?(.+?)["']?\s*$/m) ?? [];
+      const [, rawDesc = ''] = fm.match(/^description:\s*["']?(.+?)["']?\s*$/m) ?? [];
+      const title = rawTitle.trim() || path.basename(noExt);
+
+      const strippedBody = body
+        .replaceAll(/```[\s\S]*?```/g, ' ')
+        .replaceAll(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, ' ')
+        .replaceAll(/<[^>]+>/g, ' ')
+        .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replaceAll(/[`*_>#-]/g, ' ');
+
+      let description = rawDesc.trim();
+      if (!description) {
+        description = strippedBody.replaceAll(/\s+/g, ' ').trim().slice(0, 177);
+      }
+      if (description.length > 180) {
+        description = description.slice(0, 177).replace(/\s+\S*$/, '') + '…';
+      }
+
+      const headings: Record<string, string> = {};
+      for (const line of body.split(/\r?\n/)) {
+        const [, rawHeading = ''] = line.match(/^#{2,4}\s+(.+)$/) ?? [];
+        if (rawHeading) {
+          const cleanH = rawHeading
+            .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replaceAll(/[`*_]/g, '')
+            .trim();
+          const slug = slugifyHeading(cleanH);
+          if (slug && cleanH) headings[slug] = cleanH;
+        }
+      }
+
+      index[route] = {
+        title,
+        description,
+        section: detectSectionLabel(route),
+        readingTime: estimateReadingLabel(strippedBody),
+        headings,
+      };
+    }
+  }
+
+  walk(docsDir);
+  return index;
 }
 
 function extractPreviewFromHtml(route: string, html: string): LinkPreviewEntry | null {
@@ -55,8 +136,11 @@ function extractPreviewFromHtml(route: string, html: string): LinkPreviewEntry |
   let description = document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ?? '';
   if (!description) {
     for (const p of Array.from(main.querySelectorAll('.sl-markdown-content p, p'))) {
-      const txt = (p.textContent ?? '').replace(/\s+/g, ' ').trim();
-      if (txt.length >= 24) { description = txt; break; }
+      const txt = (p.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
+      if (txt.length >= 24) {
+        description = txt;
+        break;
+      }
     }
   }
   if (description.length > 180) {
@@ -66,7 +150,7 @@ function extractPreviewFromHtml(route: string, html: string): LinkPreviewEntry |
   const headings: Record<string, string> = {};
   for (const h of Array.from(main.querySelectorAll('h2[id], h3[id], h4[id]'))) {
     const id = h.getAttribute('id');
-    const hText = (h.textContent ?? '').replace(/#$/, '').replace(/\s+/g, ' ').trim();
+    const hText = (h.textContent ?? '').replace(/#$/, '').replaceAll(/\s+/g, ' ').trim();
     if (id && hText) headings[id] = hText;
   }
 
@@ -92,6 +176,9 @@ function walkHtmlFiles(dir: string, baseDir = dir, out: string[] = []): string[]
 
 export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): StarlightPlugin {
   const hoverDelay = options.hoverDelay ?? 180;
+  const virtualId = 'virtual:starlight-link-preview';
+  const resolvedVirtualId = '\0' + virtualId;
+
   return {
     name: 'starlight-link-preview',
     hooks: {
@@ -99,10 +186,31 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
         addIntegration({
           name: 'starlight-link-preview-integration',
           hooks: {
-            'astro:config:setup'({ injectScript }) {
+            'astro:config:setup'({ injectScript, updateConfig }) {
+              updateConfig({
+                vite: {
+                  plugins: [
+                    {
+                      name: 'starlight-link-preview-virtual',
+                      resolveId(id) {
+                        if (id === virtualId) return resolvedVirtualId;
+                      },
+                      load(id) {
+                        if (id === resolvedVirtualId) {
+                          const docsDir = path.resolve(process.cwd(), 'src/content/docs');
+                          const data = buildSourcePreviewIndex(docsDir);
+                          return 'export const LINK_PREVIEWS = ' + JSON.stringify(data) + ';';
+                        }
+                      },
+                    },
+                  ],
+                },
+              });
               injectScript(
                 'page',
-                `import { initLinkPreview } from '@elcoosp/docs-toolkit/src/plugins/link-preview/client.ts'; initLinkPreview({ hoverDelay: ${hoverDelay} });`,
+                'import { initLinkPreview } from "@elcoosp/docs-toolkit/src/plugins/link-preview/client.ts"; initLinkPreview({ hoverDelay: ' +
+                  hoverDelay +
+                  ' });',
               );
             },
             'astro:build:done'({ dir, logger }) {
@@ -110,13 +218,21 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
               const index: Record<string, LinkPreviewEntry> = {};
               let count = 0;
               for (const rel of walkHtmlFiles(outDir)) {
-                const route = normalizeRoute('/' + rel.replace(/\\/g, '/'));
-                if (route.includes('/404/') || route.includes('/zen-mode/') || route.includes('/presentation-mode/')) continue;
+                const route = normalizeRoute('/' + rel.replaceAll('\\', '/'));
+                if (
+                  route.includes('/404/') ||
+                  route.includes('/zen-mode/') ||
+                  route.includes('/presentation-mode/')
+                )
+                  continue;
                 const entry = extractPreviewFromHtml(route, fs.readFileSync(path.join(outDir, rel), 'utf8'));
-                if (entry) { index[route] = entry; count++; }
+                if (entry) {
+                  index[route] = entry;
+                  count++;
+                }
               }
               fs.writeFileSync(path.join(outDir, '_link-previews.json'), JSON.stringify(index));
-              logger.info(`starlight-link-preview: indexed ${count} pages`);
+              logger.info('starlight-link-preview: indexed ' + count + ' pages');
             },
           },
         });

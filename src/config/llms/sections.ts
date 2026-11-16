@@ -9,7 +9,10 @@ export const DEFAULT_SECTIONS = [
 ];
 
 export function humanize(name: string): string {
-  return name.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return name
+    .split(/[-_]/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
 export function detectSections(contentRoot = 'src/content/docs') {

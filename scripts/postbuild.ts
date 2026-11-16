@@ -1,7 +1,14 @@
-import { readdir, readFile, writeFile, copyFile, mkdir, access , chmod } from 'node:fs/promises';
+import { readdir, readFile, writeFile, copyFile, mkdir, access, chmod } from 'node:fs/promises';
 import path from 'node:path';
 
-const exists = async (p: string): Promise<boolean> => { try { await access(p); return true; } catch { return false; } };
+const exists = async (p: string): Promise<boolean> => {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // 1) copy runtime assets
 await mkdir('dist/assets', { recursive: true });
@@ -16,8 +23,8 @@ for (const f of await readdir('dist/qa')) {
   const p = path.join('dist/qa', f);
   const src = await readFile(p, 'utf8');
   const body = src.startsWith('#!') ? src : SHEBANG + src;
-    await writeFile(p, body);
-    await chmod(p, 0o755);
+  await writeFile(p, body);
+  await chmod(p, 0o755);
 }
 
 // 3) regenerate exports/main/types from what was actually emitted
@@ -34,12 +41,17 @@ const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const exportsMap: Record<string, any> = {};
 
 for (const [sub, target] of Object.entries(SUBS)) {
-  if (target === './package.json') { exportsMap[sub] = './package.json'; continue; }
+  if (target === './package.json') {
+    exportsMap[sub] = './package.json';
+    continue;
+  }
   if (!(await exists(target))) throw new Error(`postbuild: missing output ${target}`);
   const base = target.replace(/\.mjs$/, '');
-  const dts = (await exists(base + '.d.mts')) ? base + '.d.mts'
-            : (await exists(base + '.d.ts'))  ? base + '.d.ts'
-            : null;
+  const dts = (await exists(base + '.d.mts'))
+    ? base + '.d.mts'
+    : (await exists(base + '.d.ts'))
+      ? base + '.d.ts'
+      : null;
   exportsMap[sub] = dts ? { types: './' + dts, import: './' + target } : './' + target;
 }
 
@@ -53,8 +65,14 @@ pkg.exports['./PageActions.astro'] = './src/config/components/PageActions.astro'
 pkg.exports['./components'] = './src/components/index.ts';
 pkg.exports['./tsconfig.base.json'] = './tsconfig.base.json';
 pkg.exports['./rumdl.toml'] = './rumdl.toml';
-pkg.exports['./plugins/link-preview'] = { types: './dist/plugins/link-preview/index.d.mts', import: './dist/plugins/link-preview/index.mjs' };
-pkg.exports['./plugins/reading-context'] = { types: './dist/plugins/reading-context/index.d.mts', import: './dist/plugins/reading-context/index.mjs' };
+pkg.exports['./plugins/link-preview'] = {
+  types: './dist/plugins/link-preview/index.d.mts',
+  import: './dist/plugins/link-preview/index.mjs',
+};
+pkg.exports['./plugins/reading-context'] = {
+  types: './dist/plugins/reading-context/index.d.mts',
+  import: './dist/plugins/reading-context/index.mjs',
+};
 pkg.exports['./ec.config'] = './ec.config.mjs';
 pkg.main = './' + SUBS['.'];
 pkg.types = rootTypes;
@@ -67,10 +85,5 @@ pkg.bin = {
 
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
-
-
-
-
-
 
 console.log('postbuild: root types =', pkg.types);

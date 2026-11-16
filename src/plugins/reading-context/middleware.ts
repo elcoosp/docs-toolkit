@@ -4,16 +4,16 @@ import type { ReadingContextData } from './index';
 function estimateTechnicalReadingMinutes(body: string): number {
   if (!body) return 1;
   let codeWords = 0;
-  const proseOnly = body.replace(/```[\s\(\S\)]*?```/g, (block) => {
-    const inner = block.replace(/^```[^\n]*\n?|```$/g, '');
+  const proseOnly = body.replaceAll(/```[\s(\S)]*?```/g, (block) => {
+    const inner = block.replaceAll(/^```[^\n]*\n?|```$/g, '');
     codeWords += inner.trim().split(/\s+/).filter(Boolean).length;
     return ' ';
   });
   const cleanedProse = proseOnly
     .replace(/^---[\s\S]*?---/, '')
-    .replace(/^import\s+.*$/gm, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/[#>*_`\[\]()|-]/g, ' ');
+    .replaceAll(/^import\s+.*$/gm, '')
+    .replaceAll(/<[^>]+>/g, ' ')
+    .replaceAll(/[#>*_`[\]()|-]/g, ' ');
   const proseWords = cleanedProse.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(proseWords / 220 + codeWords / 110));
 }
