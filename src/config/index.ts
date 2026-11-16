@@ -22,6 +22,7 @@ import starlightSeo from 'starlight-seo';
 import starlightAnnouncement from 'starlight-announcement';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightImageZoom from 'starlight-image-zoom';
+import starlightHeadingBadges from 'starlight-heading-badges';
 import starlightGitHubAlerts from 'starlight-github-alerts';
 import starlightKbd from 'starlight-kbd';
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
@@ -190,6 +191,7 @@ export async function defineDocsConfig(
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(suppressHandledOverrideWarnings(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }), ['MarkdownContent']));
   starlightPlugins.push(starlightImageZoom());
+  starlightPlugins.push(starlightHeadingBadges());
   starlightPlugins.push(starlightGitHubAlerts());
   starlightPlugins.push(
     starlightKbd({
