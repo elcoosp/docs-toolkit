@@ -1,11 +1,12 @@
 ---
 import { Icon } from '@astrojs/starlight/components';
+import type { StarlightIcon } from '@astrojs/starlight/types';
 
 export interface DiataxisItem {
   title: string;
   description: string;
   href: string;
-  icon?: 'rocket' | 'puzzle' | 'open-book' | 'information' | 'document' | 'terminal' | 'laptop' | 'approve-check' | 'code-branch' | 'setting' | 'star' | 'magnifier';
+  icon?: StarlightIcon;
   badge?: string;
 }
 
@@ -14,7 +15,7 @@ interface Props {
   stagger?: boolean;
 }
 
-const DEFAULT_ICONS: DiataxisItem['icon'][] = ['rocket', 'puzzle', 'open-book', 'information'];
+const DEFAULT_ICONS: StarlightIcon[] = ['rocket', 'puzzle', 'open-book', 'information'];
 
 const { items, stagger = false } = Astro.props;
 ---

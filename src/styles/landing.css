@@ -5,7 +5,7 @@
 }
 
 .hero .copy {
-  max-width: 42rem;
+  max-width: 44rem;
 }
 
 .hero .actions {
@@ -19,11 +19,27 @@
 .hero .actions a {
   border-radius: 999px;
   font-weight: 600;
+  white-space: nowrap;
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
 .hero .actions a:hover {
   transform: translateY(-1px);
+}
+
+@media (max-width: 36rem) {
+  .hero .actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 21rem;
+    margin-inline: auto;
+  }
+
+  .hero .actions a {
+    justify-content: center;
+    width: 100%;
+  }
 }
 
 /* Keep wide or square hero logos crisp and balanced */
