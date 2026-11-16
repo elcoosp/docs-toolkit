@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import type { AstroIntegration } from 'astro';
-import { ResolvedLlmsConfig } from './types.js';
+import type { ResolvedLlmsConfig } from './types.js';
 import { collectPages } from './collect.js';
 import { emitAll } from './emit.js';
 

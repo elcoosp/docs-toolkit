@@ -1,4 +1,4 @@
-import { PageEntry } from '../types.js';
+import type { PageEntry } from '../types.js';
 
 export function renderPageMd(p: PageEntry): string {
   let out = `# ${p.title}\n\n`;

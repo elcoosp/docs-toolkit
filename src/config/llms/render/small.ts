@@ -1,4 +1,4 @@
-import { PageEntry, ResolvedLlmsConfig } from '../types.js';
+import type { PageEntry, ResolvedLlmsConfig } from '../types.js';
 import { renderFull } from './full.js';
 
 const CORE_SECTIONS = ['tutorials', 'guides', 'reference', 'explanation'];

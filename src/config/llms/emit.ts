@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { PageEntry, ResolvedLlmsConfig } from './types.js';
+import type { PageEntry, ResolvedLlmsConfig } from './types.js';
 import { renderIndex } from './render/index.js';
 import { renderFull } from './render/full.js';
 import { renderSmall } from './render/small.js';

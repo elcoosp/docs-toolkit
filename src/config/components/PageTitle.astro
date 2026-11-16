@@ -1,6 +1,7 @@
 ---
 import DefaultPageTitle from '@astrojs/starlight/components/PageTitle.astro';
 import ViewModesPageTitle from 'starlight-view-modes/components/PageTitle.astro';
+import ReadingContextBar from '../../plugins/reading-context/ReadingContextBar.astro';
 import PageActions from './PageActions.astro';
 
 const is404 = Astro.props.id === '404' || Astro.url.pathname.endsWith('/404') || Astro.url.pathname.endsWith('/404/');
@@ -8,4 +9,5 @@ const is404 = Astro.props.id === '404' || Astro.url.pathname.endsWith('/404') ||
 
 <DefaultPageTitle {...Astro.props} />
 <ViewModesPageTitle {...Astro.props} />
+{!is404 && <ReadingContextBar />}
 {!is404 && <PageActions {...Astro.props} />}

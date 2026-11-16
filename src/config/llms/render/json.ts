@@ -1,4 +1,4 @@
-import { PageEntry, ResolvedLlmsConfig } from '../types.js';
+import type { PageEntry, ResolvedLlmsConfig } from '../types.js';
 
 export function renderJson(pages: PageEntry[], cfg: ResolvedLlmsConfig, locale = 'en'): string {
   const scoped = pages.filter((p) => p.locale === locale);

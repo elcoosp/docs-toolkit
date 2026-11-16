@@ -8,8 +8,8 @@ let latestReleaseAnnouncement = null;
 try {
   const entries = await getCollection('changelogs');
   const latest = entries
-    .filter((e) => e.data.base === 'changelog')
-    .toSorted((a, b) => a.data.index - b.data.index)
+    .filter((e: any) => e.data.base === 'changelog')
+    .toSorted((a: any, b: any) => a.data.index - b.data.index)
     .at(0);
 
   if (latest) {

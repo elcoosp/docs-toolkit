@@ -18,6 +18,8 @@ import mermaid from 'astro-mermaid';
 
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 import { inlineBashIntegration } from './rehype-inline-bash';
+import { starlightLinkPreview } from '../plugins/link-preview/index';
+import { starlightReadingContext } from '../plugins/reading-context/index';
 
 
 
@@ -68,6 +70,48 @@ export interface DocsConfigOptions {
   blog?: boolean | Record<string, unknown>;
 }
 
+function resolveBareEntrypoint(ep: unknown): unknown {
+  if (typeof ep !== 'string' || ep.startsWith('.') || ep.startsWith('/') || ep.startsWith('@elcoosp/docs-toolkit')) return ep;
+  try { return _toolkitRequire.resolve(ep); } catch { return ep; }
+}
+
+function resolvePluginEntrypoints(plugin: any): any {
+  const setup = plugin?.hooks?.['config:setup'];
+  if (typeof setup !== 'function') return plugin;
+  return {
+    ...plugin,
+    hooks: {
+      ...plugin.hooks,
+      'config:setup'(ctx: any) {
+        const wrappedCtx = Object.assign(Object.create(ctx), {
+          ...(typeof ctx.injectRoute === 'function' ? {
+            injectRoute(route: any) {
+              return ctx.injectRoute({ ...route, entrypoint: resolveBareEntrypoint(route?.entrypoint) });
+            },
+          } : {}),
+          ...(typeof ctx.addRouteMiddleware === 'function' ? {
+            addRouteMiddleware(mw: any) {
+              return ctx.addRouteMiddleware({ ...mw, entrypoint: resolveBareEntrypoint(mw?.entrypoint) });
+            },
+          } : {}),
+        });
+        return setup(wrappedCtx);
+      },
+    },
+  };
+}
+
+function resolveToolkitEntrypoint(entrypoint: unknown): unknown {
+  if (typeof entrypoint !== 'string' || entrypoint.startsWith('.') || entrypoint.startsWith('/')) {
+    return entrypoint;
+  }
+  try {
+    return _toolkitRequire.resolve(entrypoint);
+  } catch {
+    return entrypoint;
+  }
+}
+
 function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]): any {
   const setup = plugin?.hooks?.['config:setup'];
   if (typeof setup !== 'function') return plugin;
@@ -90,7 +134,33 @@ function suppressHandledOverrideWarnings(plugin: any, componentNames: string[]):
               },
             })
           : ctx.logger;
-        return setup({ ...ctx, logger: filteredLogger });
+        const wrapInject = (fn: any) => (route: any) =>
+          fn({ ...route, entrypoint: resolveToolkitEntrypoint(route?.entrypoint) });
+        const wrappedCtx = Object.assign(Object.create(Object.getPrototypeOf(ctx)), ctx, {
+          logger: filteredLogger,
+          ...(typeof ctx.injectRoute === 'function' ? { injectRoute: wrapInject(ctx.injectRoute.bind(ctx)) } : {}),
+          ...(typeof ctx.addIntegration === 'function'
+            ? {
+                addIntegration(integration: any) {
+                  const origSetup = integration?.hooks?.['astro:config:setup'];
+                  if (typeof origSetup !== 'function') return ctx.addIntegration(integration);
+                  return ctx.addIntegration({
+                    ...integration,
+                    hooks: {
+                      ...integration.hooks,
+                      'astro:config:setup'(astroCtx: any) {
+                        const nextAstroCtx = typeof astroCtx?.injectRoute === 'function'
+                          ? { ...astroCtx, injectRoute: wrapInject(astroCtx.injectRoute.bind(astroCtx)) }
+                          : astroCtx;
+                        return origSetup(nextAstroCtx);
+                      },
+                    },
+                  });
+                },
+              }
+            : {}),
+        });
+        return setup(wrappedCtx);
       },
     },
   };
@@ -252,18 +322,27 @@ export async function defineDocsConfig(
     logoPath = './src/assets/logo.png', favicon = '/favicon.png',
     customCss = ['./src/styles/custom.css'], social = [], editLink,
     locales, defaultLocale = 'root', plugins = [], sidebar,
-    routeMiddleware = './src/routeData.ts', base, accentOverride,
+    routeMiddleware, base, accentOverride,
     expressiveCode = { themes: ['github-light', 'github-dark'], shiki: { langAlias: { 'github-actions': 'yaml' } } },
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
 
-  const projectRoot = path.dirname(path.dirname(findDocsRoot()));
-  const ecConfigFile = path.join(projectRoot, 'ec.config.mjs');
-  if (!fs.existsSync(ecConfigFile)) {
-    fs.writeFileSync(
-      ecConfigFile,
-      "import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers';\n\nexport default {\n  plugins: [pluginLineNumbers()],\n};\n",
-    );
+  const resolvedRouteMiddleware = routeMiddleware ?? (
+    fs.existsSync(path.resolve(process.cwd(), 'src/routeData.ts'))
+      ? './src/routeData.ts'
+      : '@elcoosp/docs-toolkit/og/routeData'
+  );
+  const ecConfigFile = path.resolve(process.cwd(), 'ec.config.mjs');
+  const srcEcConfigFile = path.resolve(process.cwd(), 'src/ec.config.mjs');
+  if (!fs.existsSync(ecConfigFile) && !fs.existsSync(srcEcConfigFile)) {
+    fs.writeFileSync(ecConfigFile, "export { default } from '@elcoosp/docs-toolkit/ec.config';\n");
+    const gitignorePath = path.resolve(process.cwd(), '.gitignore');
+    if (fs.existsSync(gitignorePath)) {
+      const gi = fs.readFileSync(gitignorePath, 'utf8');
+      if (!gi.split(/\r?\n/).includes('ec.config.mjs')) {
+        fs.writeFileSync(gitignorePath, gi.replace(/\n?$/, '\nec.config.mjs\n'));
+      }
+    }
   }
 
   const landingCss = '@elcoosp/docs-toolkit/src/styles/landing.css';
@@ -497,13 +576,15 @@ export async function defineDocsConfig(
   starlightPlugins.push(unwrapPlugin(starlightChangelogs)());
 
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
+  starlightPlugins.push(starlightLinkPreview());
+  starlightPlugins.push(starlightReadingContext());
 
   let headLink: any = undefined;
   let resolvedLlms: any = undefined;
 
   if (llmsTxt !== false) {
-    const inferredSource = typeof editLink?.baseUrl === "string"
-          ? editLink.baseUrl.replace(/\/(?:edit|blob|tree)\/[^/]+.*$/, "")
+    const inferredSource = typeof finalEditLink?.baseUrl === "string"
+          ? finalEditLink.baseUrl.replace(/\/(?:edit|blob|tree)\/[^/]+.*$/, "")
           : undefined;
         const configuredLocales = locales ? Object.keys(locales) : undefined;
         resolvedLlms = resolveLlmsConfig(llmsTxt ?? {}, { title, description, site, source: inferredSource, locales: configuredLocales });
@@ -517,7 +598,7 @@ export async function defineDocsConfig(
     ...((plugins as any[]) ?? []),
     ...((_extraPlugins as any[]) ?? []),
     ...starlightPlugins,
-  ].map((p) => suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents']));
+  ].map((p) => resolvePluginEntrypoints(suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents'])));
 
 
   let finalSidebarSource: any[];
@@ -530,9 +611,10 @@ export async function defineDocsConfig(
   }
   const mergedSidebar = hasTopics ? [] : autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
 
+  const existingCustomCss = customCss.filter((rel) => fs.existsSync(path.resolve(process.cwd(), rel)));
   const starlightOptions: StarlightUserConfig = {
-    routeMiddleware, disable404Route: true, title, description,
-    logo: { src: logoPath }, favicon, customCss: [landingCss, ...customCss], social: finalSocial,
+    routeMiddleware: resolvedRouteMiddleware, disable404Route: true, title, description,
+    logo: { src: logoPath }, favicon, customCss: [landingCss, ...autoAccentCss, ...existingCustomCss], social: finalSocial,
     editLink: finalEditLink,
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
@@ -545,7 +627,7 @@ export async function defineDocsConfig(
     ],
     ...(hasTopics ? {} : { sidebar: mergedSidebar }),
     ...extraStarlightRest,
-    expressiveCode: {
+    expressiveCode: expressiveCode === false ? false : {
       ...(typeof expressiveCode === 'object' ? expressiveCode : {}),
       ...((extraStarlight as any)?.expressiveCode ?? {}),
       shiki: {
@@ -571,7 +653,30 @@ export async function defineDocsConfig(
 const integrations: NonNullable<AstroUserConfig['integrations']> = [
     inlineBashIntegration(),
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
-    mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }), starlight(starlightOptions),  ...extraIntegrations,
+    mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }),
+    (() => {
+      const sl = starlight(starlightOptions);
+      const origSetup = sl.hooks?.['astro:config:setup'];
+      if (typeof origSetup !== 'function') return sl;
+      return {
+        ...sl,
+        hooks: {
+          ...sl.hooks,
+          'astro:config:setup'(astroCtx: any) {
+            const nextAstroCtx = typeof astroCtx?.injectRoute === 'function'
+              ? {
+                  ...astroCtx,
+                  injectRoute(route: any) {
+                    return astroCtx.injectRoute({ ...route, entrypoint: resolveToolkitEntrypoint(route?.entrypoint) });
+                  },
+                }
+              : astroCtx;
+            return origSetup(nextAstroCtx);
+          },
+        },
+      };
+    })(),
+    ...extraIntegrations,
   ];
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
@@ -584,15 +689,25 @@ return defineConfig({
       },
     },
     vite: {
+      resolve: {
+        alias: {
+          mermaid: fileURLToPath(import.meta.resolve('mermaid')),
+        },
+      },
       plugins: [
         {
           name: 'docs-toolkit:resolve-starlight-plugins',
+          enforce: 'pre',
           resolveId(id: string) {
-            if (/^(?:starlight-[^/]+|astro-d2|astro-mermaid|@elcoosp\/astro-takumi)(?:\/|$)/.test(id)) {
+            if (/^(?:starlight-[^/]+|astro-d2|astro-mermaid|@elcoosp\/astro-takumi|mermaid|react|react-dom)(?:\/|$)/.test(id)) {
               try {
-                return _toolkitRequire.resolve(id);
+                return fileURLToPath(import.meta.resolve(id));
               } catch {
-                return null;
+                try {
+                  return _toolkitRequire.resolve(id);
+                } catch {
+                  return null;
+                }
               }
             }
             return null;

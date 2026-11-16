@@ -1,4 +1,4 @@
-import { LlmsTxtConfig, ResolvedLlmsConfig } from './types.js';
+import type { LlmsTxtConfig, ResolvedLlmsConfig } from './types.js';
 import { detectSections, DEFAULT_SECTIONS } from './sections.js';
 
 export function resolveLlmsConfig(

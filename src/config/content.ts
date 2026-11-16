@@ -1,5 +1,5 @@
 import { defineCollection } from 'astro:content';
-import { z } from 'astro:content';
+import { z } from 'astro/zod';
 import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 
@@ -13,12 +13,14 @@ export function makeDocsCollection(opts: MakeDocsOpts = {}): any {
     loader: docsLoader(),
     schema: docsSchema({
       extend: (ctx: any) => {
-        if (!opts.blogSchema) return z.object({});
+        const extraFields = {
+          status: z.enum(['stable', 'experimental', 'beta', 'deprecated']).optional(),
+          since: z.string().optional(),
+        };
+        if (!opts.blogSchema) return z.object(extraFields);
         const blog = opts.blogSchema(ctx) as any;
         if (blog && typeof blog === 'object' && typeof blog.extend === 'function') {
-          return blog.extend({
-            date: z.coerce.date().default(() => new Date()),
-          });
+          return blog.extend({ ...extraFields, date: z.coerce.date().default(() => new Date()) });
         }
         return blog;
       },

@@ -1,5 +1,5 @@
 ---
-import type { Props } from '@astrojs/starlight/types';
+type Props = Record<string, any>;
 import * as si from 'simple-icons';
 
 const { editUrl } = Astro.props;
@@ -91,7 +91,7 @@ const labels = isFr
 </div>
 
 <script>
-  function resolveMarkdownUrl(pathname) {
+  function resolveMarkdownUrl(pathname: string) {
     const clean = pathname.replace(/\/+$/, '');
     if (clean === '') return '/index.md';
     if (clean === '/fr') return '/fr/index.md';

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { PageEntry, ResolvedLlmsConfig } from './types.js';
+import type { PageEntry, ResolvedLlmsConfig } from './types.js';
 
 const SECTION_LABELS_EN: Record<string, string> = {
   index: 'Overview',

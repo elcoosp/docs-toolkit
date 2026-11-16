@@ -1,0 +1,101 @@
+---
+import type { ReadingContextData } from './index';
+
+const ctx = (Astro.locals as any).readingContext as ReadingContextData | undefined;
+const route = (Astro.locals as any).starlightRoute;
+const template = route?.entry?.data?.template;
+const pathname = Astro.url.pathname;
+const isSplash = template === 'splash';
+const is404 = pathname.endsWith('/404') || pathname.endsWith('/404/');
+const showBar = Boolean(ctx) && !isSplash && !is404;
+---
+
+{showBar && ctx && (
+  <div class="sl-reading-context" aria-label="Page metadata">
+    <div class="sl-reading-context-items">
+      <span class="sl-rc-pill sl-rc-section">{ctx.sectionLabel}</span>
+
+      {ctx.status && ctx.statusLabel && (
+        <span class={`sl-rc-pill sl-rc-status sl-rc-status--${ctx.status}`}>
+          <span class="sl-rc-dot" aria-hidden="true"></span>
+          {ctx.statusLabel}
+        </span>
+      )}
+
+      {ctx.since && <span class="sl-rc-pill sl-rc-since">{ctx.since}</span>}
+
+      <span class="sl-rc-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        <span>{ctx.readingLabel}</span>
+      </span>
+
+      {ctx.updatedLabel && (
+        <span class="sl-rc-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span>{ctx.updatedLabel}</span>
+        </span>
+      )}
+    </div>
+
+    {ctx.editUrl && (
+      <a class="sl-rc-edit" href={ctx.editUrl} target="_blank" rel="noopener noreferrer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+        <span>{ctx.editLabel}</span>
+      </a>
+    )}
+  </div>
+)}
+
+<style>
+  .sl-reading-context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    margin-top: 0.65rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--sl-color-hairline-light, rgba(128, 128, 128, 0.18));
+    font-size: 0.78rem;
+    color: var(--sl-color-gray-3);
+  }
+  .sl-reading-context-items { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.75rem; }
+  .sl-rc-pill {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.14rem 0.52rem; border-radius: 999px;
+    font-size: 0.73rem; font-weight: 600; line-height: 1.35;
+  }
+  .sl-rc-section {
+    color: var(--sl-color-accent-high);
+    background: var(--sl-color-accent-low);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 26%, transparent);
+  }
+  .sl-rc-since {
+    font-family: var(--sl-font-mono, monospace); font-size: 0.71rem;
+    color: var(--sl-color-gray-2);
+    background: var(--sl-color-bg-inline-code, rgba(128, 128, 128, 0.12));
+    border: 1px solid var(--sl-color-hairline, rgba(128, 128, 128, 0.22));
+  }
+  .sl-rc-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .sl-rc-status--stable { color: #16a34a; background: rgba(22, 163, 74, 0.12); border: 1px solid rgba(22, 163, 74, 0.28); }
+  :global([data-theme='dark']) .sl-rc-status--stable { color: #4ade80; background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.28); }
+  .sl-rc-status--experimental, .sl-rc-status--beta { color: #d97706; background: rgba(217, 119, 6, 0.12); border: 1px solid rgba(217, 119, 6, 0.28); }
+  :global([data-theme='dark']) .sl-rc-status--experimental, :global([data-theme='dark']) .sl-rc-status--beta { color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.28); }
+  .sl-rc-status--deprecated { color: #dc2626; background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.28); }
+  :global([data-theme='dark']) .sl-rc-status--deprecated { color: #f87171; background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.28); }
+  .sl-rc-item { display: inline-flex; align-items: center; gap: 0.32rem; font-variant-numeric: tabular-nums; }
+  .sl-rc-item svg, .sl-rc-edit svg { opacity: 0.78; flex-shrink: 0; }
+  .sl-rc-edit { display: inline-flex; align-items: center; gap: 0.32rem; color: var(--sl-color-gray-3); text-decoration: none; font-weight: 500; transition: color 120ms ease; }
+  .sl-rc-edit:hover { color: var(--sl-color-accent-high); }
+</style>

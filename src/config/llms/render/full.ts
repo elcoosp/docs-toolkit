@@ -1,4 +1,4 @@
-import { PageEntry, ResolvedLlmsConfig } from '../types.js';
+import type { PageEntry, ResolvedLlmsConfig } from '../types.js';
 
 const CANONICAL_SECTION_ORDER = ['index', 'tutorials', 'guides', 'reference', 'explanation', 'blog', 'changelog'];
 const NL = String.fromCharCode(10);
