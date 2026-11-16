@@ -15,6 +15,7 @@ export const SIDEBAR_LABEL_FR: Record<string, string> = {
   'How-to Guides': 'Guides pratiques',
   'How-to guides': 'Guides pratiques',
   'Installation': 'Installation',
+  'Learn': 'Apprendre',
   'Macros': 'Macros',
   'Overview': 'Aperçu',
   'Reference': 'Référence',

@@ -55,6 +55,7 @@ export interface DocsConfigOptions {
   defaultLocale?: StarlightUserConfig['defaultLocale'];
   plugins?: StarlightUserConfig['plugins'];
   sidebar?: StarlightUserConfig['sidebar'];
+  topics?: boolean | 'diataxis' | any[];
   routeMiddleware?: string;
   base?: string;
   accentOverride?: string;
@@ -116,6 +117,97 @@ function extractGitHubRepo(options: DocsConfigOptions): string | null {
     if (m) return m[1];
   }
   return null;
+}
+
+function findFirstDocLink(docsRoot: string, dir: string): string | null {
+  const fullDir = path.join(docsRoot, dir);
+  if (!fs.existsSync(fullDir)) return null;
+  const entries = fs.readdirSync(fullDir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  for (const e of entries) {
+    if (e.isFile() && /\.(md|mdx)$/.test(e.name)) {
+      const base = e.name.replace(/\.(md|mdx)$/, '');
+      return base === 'index' ? `/${dir}/` : `/${dir}/${base}/`;
+    }
+  }
+  for (const e of entries) {
+    if (e.isDirectory()) {
+      const nested = findFirstDocLink(docsRoot, `${dir}/${e.name}`);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function buildDiataxisTopics(
+  sections: SectionSpec[],
+  docsRoot: string,
+  changelogGroup: any,
+): any[] {
+  const byKey = new Map(sections.map((s) => [s.key, s]));
+  const learnItems: any[] = [];
+  if (fs.existsSync(path.join(docsRoot, 'index.mdx')) || fs.existsSync(path.join(docsRoot, 'index.md'))) {
+    learnItems.push({ label: 'Overview', translations: { fr: 'Aperçu' }, link: '/' });
+  }
+  for (const key of ['tutorials', 'guides']) {
+    const sec = byKey.get(key);
+    if (sec && fs.existsSync(path.join(docsRoot, sec.key))) {
+      learnItems.push({
+        label: sec.en,
+        translations: { fr: sec.fr },
+        collapsed: false,
+        items: [{ autogenerate: { directory: sec.key, collapsed: false } }],
+      });
+    }
+  }
+
+  const refSec = byKey.get('reference');
+  const refLink = findFirstDocLink(docsRoot, 'reference') ?? '/changelog/';
+  const refItems: any[] = [];
+  if (refSec && fs.existsSync(path.join(docsRoot, 'reference'))) {
+    refItems.push({
+      label: refSec.en,
+      translations: { fr: refSec.fr },
+      collapsed: false,
+      items: [{ autogenerate: { directory: 'reference', collapsed: false } }],
+    });
+  }
+  refItems.push(changelogGroup);
+
+  const expSec = byKey.get('explanation');
+  const expLink = findFirstDocLink(docsRoot, 'explanation') ?? '/blog/';
+  const expItems: any[] = [];
+  if (expSec && fs.existsSync(path.join(docsRoot, 'explanation'))) {
+    expItems.push({
+      label: expSec.en,
+      translations: { fr: expSec.fr },
+      collapsed: false,
+      items: [{ autogenerate: { directory: 'explanation', collapsed: false } }],
+    });
+  }
+  expItems.push({ label: 'Blog', translations: { fr: 'Blog' }, link: '/blog/' });
+
+  const topics: any[] = [];
+  if (learnItems.length > 0) {
+    topics.push({
+      label: { en: 'Learn', fr: 'Apprendre' },
+      link: '/',
+      icon: 'rocket',
+      items: learnItems,
+    });
+  }
+  topics.push({
+    label: { en: 'Reference', fr: 'Référence' },
+    link: refLink,
+    icon: 'open-book',
+    items: refItems,
+  });
+  topics.push({
+    label: { en: 'Architecture', fr: 'Architecture' },
+    link: expLink,
+    icon: 'puzzle',
+    items: expItems,
+  });
+  return topics;
 }
 
 function buildSectionsSidebar(
@@ -364,15 +456,35 @@ export async function defineDocsConfig(
     ...((_extraPlugins as any[]) ?? []),
     ...starlightPlugins,
   ].map((p) => suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents']));
+  const docsRoot = findDocsRoot();
+  const resolvedSections = options.sections ?? CANONICAL_SECTIONS;
+  const hasTopics = options.topics === true || options.topics === 'diataxis' || (Array.isArray(options.topics) && options.topics.length > 0);
+  if (hasTopics) {
+    const { default: starlightSidebarTopics } = await import('starlight-sidebar-topics');
+    const rawTopics = Array.isArray(options.topics)
+      ? options.topics
+      : buildDiataxisTopics(resolvedSections, docsRoot, changelogGroup);
+    const translatedTopics = rawTopics.map((t: any) => ({
+      ...t,
+      ...(Array.isArray(t.items) ? { items: autoTranslateSidebar(t.items) } : {}),
+    }));
+    mergedPlugins.push(
+      suppressHandledOverrideWarnings(
+        unwrapPlugin(starlightSidebarTopics)(translatedTopics),
+        ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents'],
+      ),
+    );
+  }
+
   let finalSidebarSource: any[];
   if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
     finalSidebarSource = _extraSidebar;
   } else if (Array.isArray(sidebar) && sidebar.length > 0) {
     finalSidebarSource = sidebar;
   } else {
-    finalSidebarSource = buildSectionsSidebar(options.sections ?? CANONICAL_SECTIONS, findDocsRoot());
+    finalSidebarSource = buildSectionsSidebar(resolvedSections, docsRoot);
   }
-  const mergedSidebar = autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
+  const mergedSidebar = hasTopics ? [] : autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
 
   const starlightOptions: StarlightUserConfig = {
     routeMiddleware, disable404Route: true, title, description,
@@ -387,7 +499,7 @@ export async function defineDocsConfig(
       ...((extraStarlight as any)?.head ?? []),
       ...(headLink ? [headLink] : []),
     ],
-    sidebar: mergedSidebar,
+    ...(hasTopics ? {} : { sidebar: mergedSidebar }),
     ...extraStarlightRest,
     expressiveCode: {
       ...(typeof expressiveCode === 'object' ? expressiveCode : {}),
