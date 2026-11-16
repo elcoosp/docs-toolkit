@@ -439,9 +439,22 @@ export async function defineDocsConfig(
       ...t,
       ...(Array.isArray(t.items) ? { items: autoTranslateSidebar(t.items) } : {}),
     }));
+    const defaultExclude = [
+      '/404',
+      '/fr/404',
+      '/zen-mode',
+      '/zen-mode/**/*',
+      '/fr/zen-mode',
+      '/fr/zen-mode/**/*',
+      '/presentation-mode',
+      '/presentation-mode/**/*',
+      '/fr/presentation-mode',
+      '/fr/presentation-mode/**/*',
+    ];
     const topicOptions = Array.isArray(options.topics)
-      ? undefined
+      ? { exclude: defaultExclude }
       : {
+          exclude: defaultExclude,
           topics: {
             reference: ['/changelog', '/changelog/**/*', '/fr/changelog', '/fr/changelog/**/*'],
             architecture: ['/blog', '/blog/**/*', '/fr/blog', '/fr/blog/**/*'],
