@@ -3,7 +3,6 @@ const _toolkitRequire = createRequire(import.meta.url);
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers';
 import { defineConfig } from 'astro/config';
 import type { AstroUserConfig } from 'astro';
 import starlight from '@astrojs/starlight';
@@ -524,16 +523,6 @@ export async function defineDocsConfig(
     expressiveCode: {
       ...(typeof expressiveCode === 'object' ? expressiveCode : {}),
       ...((extraStarlight as any)?.expressiveCode ?? {}),
-      defaultProps: {
-        showLineNumbers: false,
-        ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.defaultProps : {}) ?? {}),
-        ...((extraStarlight as any)?.expressiveCode?.defaultProps ?? {}),
-      },
-      plugins: [
-        pluginLineNumbers(),
-        ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.plugins : []) ?? []),
-        ...((extraStarlight as any)?.expressiveCode?.plugins ?? []),
-      ],
       shiki: {
         ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki : {}) ?? {}),
         ...((extraStarlight as any)?.expressiveCode?.shiki ?? {}),
