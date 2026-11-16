@@ -266,7 +266,7 @@ export async function defineDocsConfig(
     );
   }
 
-  const landingCss = fileURLToPath(new URL('../../src/styles/landing.css', import.meta.url));
+  const landingCss = '@elcoosp/docs-toolkit/src/styles/landing.css';
   const toolkitI18nDir = fileURLToPath(new URL('../../i18n', import.meta.url));
   const siteI18nDir = path.join(path.dirname(findDocsRoot()), 'i18n');
   if (fs.existsSync(toolkitI18nDir)) {
