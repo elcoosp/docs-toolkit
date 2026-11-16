@@ -111,6 +111,14 @@ function cleanProseSegment(segment: string, baseUrl: string): string {
     .replace(/^(?:import|export)\s+.*?;?\s*$/gm, '')
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     .replace(/<DiataxisGrid\b[\s\S]*?\/>/g, (m) => '\n' + renderDiataxisItemsToMarkdown(m, baseUrl) + '\n')
+    .replace(/<Card\b([^>]*?)\/>/g, (_m, attrs: string) => {
+      const title = (attrs.match(/\btitle=["']([^"']+)["']/) || []).at(1) ?? '';
+      const desc = (attrs.match(/\bdescription=["']([^"']+)["']/) || []).at(1) ?? '';
+      const rawHref = (attrs.match(/\bhref=["']([^"']+)["']/) || []).at(1) ?? '';
+      const href = rawHref.startsWith('/') && baseUrl ? baseUrl + rawHref : rawHref;
+      if (!title) return '';
+      return href ? '- [' + title + '](' + href + ')' + (desc ? ': ' + desc : '') : '- **' + title + '**' + (desc ? ': ' + desc : '');
+    })
     .replace(/<LinkCard\b([^>]*?)\/>/g, (_m, attrs: string) => {
       const title = attrs.match(/\btitle=["']([^"']+)["']/)?.[1] ?? '';
       const desc = attrs.match(/\bdescription=["']([^"']+)["']/)?.[1] ?? '';
