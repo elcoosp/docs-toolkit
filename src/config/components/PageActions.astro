@@ -197,25 +197,28 @@ const labels = isFr
     gap: 0.55rem;
     padding: 0.45rem 0.8rem;
     text-decoration: none;
-color: var(--sl-color-text);
-font-size: 0.82rem;
-white-space: nowrap;
-}
-.dropdown-menu a svg {
-flex-shrink: 0;
-}
-.dropdown-menu a:hover,
-.dropdown-menu a:focus-visible {
-background: var(--sl-color-bg-sidebar);
-color: var(--sl-color-text-accent);
-}
-main img:not([class*="avatar"]):not(.sl-blog-author-image) {
-max-height: 440px !important;
-max-width: 100% !important;
-width: auto !important;
-object-fit: contain !important;
-display: block !important;
-margin: 2rem auto !important;
-border-radius: 8px;
-}
+    color: var(--sl-color-text);
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .dropdown-menu a svg {
+    flex-shrink: 0;
+  }
+  .dropdown-menu a:hover,
+  .dropdown-menu a:focus-visible {
+    background: var(--sl-color-bg-sidebar);
+    color: var(--sl-color-text-accent);
+  }
+</style>
 
+<style is:global>
+  main img:not([class*="avatar"]):not(.sl-blog-author-image) {
+    max-height: 440px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 2rem auto !important;
+    border-radius: 8px;
+  }
+</style>
