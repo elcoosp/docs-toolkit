@@ -5,7 +5,7 @@ export default defineConfig({
     'src/index.ts',
     'src/og/index.ts',
     'src/og/routeData.ts',
-    'src/config/index.ts',
+    'src/config/index.ts', 'src/config/collections.ts',
     'src/qa/components.ts',
     'src/qa/bootstrap-artifacts.ts',
     'src/qa/screenshots.ts',

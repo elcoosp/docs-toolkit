@@ -141,3 +141,28 @@ export async function deriveAccent(
     },
   };
 }
+
+export function accentFromHex(hexInput: string): AccentResult {
+  const clean = hexInput.replace(/^#/, '');
+  const r = parseInt(clean.slice(0, 2), 16) || 64;
+  const g = parseInt(clean.slice(2, 4), 16) || 64;
+  const b = parseInt(clean.slice(4, 6), 16) || 64;
+  const { h, s, l } = rgbToHsl(r, g, b);
+  const style: AccentStyle = s < 15 ? 'graydark' : 'chroma';
+  const lightL = style === 'graydark' ? clamp(Math.round(l / 5) * 5, 20, 35) : clamp(Math.round(l / 5) * 5, 30, 40);
+  const lightH = style === 'graydark' ? 0 : h;
+  const lightS = style === 'graydark' ? 0 : clamp(Math.round(s / 5) * 5, 45, 70);
+  const hex = hslToHex(lightH, lightS, lightL);
+  const darkL = 100 - lightL;
+  return {
+    hex,
+    hexA12: hex + '1a',
+    style,
+    chroma: s,
+    logoHex: '#' + clean.slice(0, 6),
+    hsl: {
+      light: { h: lightH, s: lightS, l: lightL, low: Math.min(lightL + 60, 95), high: Math.max(lightL - 8, 2) },
+      dark: { h: lightH, s: lightS, l: darkL, low: lightL + 20, high: Math.min(darkL + 10, 98) },
+    },
+  };
+}

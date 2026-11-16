@@ -37,3 +37,7 @@ declare module 'starlight-telescope' {
   const plugin: (opts?: Record<string, unknown>) => unknown;
   export default plugin;
 }
+
+declare module 'virtual:starlight-changelogs/config' {
+  export function setLoaderConfig(config: unknown): void;
+}

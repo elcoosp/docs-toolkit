@@ -9,24 +9,13 @@ import starlight from '@astrojs/starlight';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
 import astroTakumi from '@elcoosp/astro-takumi';
 import { makeRender } from '../og/og-render';
-import { deriveAccent } from '../og/accent';
+import { deriveAccent, accentFromHex } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
 import mermaid from 'astro-mermaid';
-import starlightChangelogs, { makeChangelogsSidebarLinks } from 'starlight-changelogs';
-import starlightAutoSidebar from 'starlight-auto-sidebar';
-import starlightLinksValidator from 'starlight-links-validator';
-import starlightBlog from 'starlight-blog';
-import starlightViewModes from 'starlight-view-modes';
-import starlightTelescope from 'starlight-telescope';
-import starlightSeo from 'starlight-seo';
-import starlightAnnouncement from 'starlight-announcement';
-import starlightScrollToTop from 'starlight-scroll-to-top';
-import starlightImageZoom from 'starlight-image-zoom';
-import starlightHeadingBadges from 'starlight-heading-badges';
-import starlightGitHubAlerts from 'starlight-github-alerts';
-import starlightKbd from 'starlight-kbd';
+
+
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 
 
@@ -182,6 +171,36 @@ export async function defineDocsConfig(
     }
   }
 
+  const [
+    { default: starlightChangelogs, makeChangelogsSidebarLinks },
+    { default: starlightAutoSidebar },
+    { default: starlightLinksValidator },
+    { default: starlightBlog },
+    { default: starlightViewModes },
+    { default: starlightTelescope },
+    { default: starlightSeo },
+    { default: starlightAnnouncement },
+    { default: starlightScrollToTop },
+    { default: starlightImageZoom },
+    { default: starlightHeadingBadges },
+    { default: starlightGitHubAlerts },
+    { default: starlightKbd },
+  ] = await Promise.all([
+    import('starlight-changelogs'),
+    import('starlight-auto-sidebar'),
+    import('starlight-links-validator'),
+    import('starlight-blog'),
+    import('starlight-view-modes'),
+    import('starlight-telescope'),
+    import('starlight-seo'),
+    import('starlight-announcement'),
+    import('starlight-scroll-to-top'),
+    import('starlight-image-zoom'),
+    import('starlight-heading-badges'),
+    import('starlight-github-alerts'),
+    import('starlight-kbd'),
+  ]);
+
   const githubRepo =
     options.github ??
     extractGitHubRepo(options) ??
@@ -197,7 +216,33 @@ export async function defineDocsConfig(
     baseUrl: `https://github.com/${githubRepo}/edit/main/${path.basename(process.cwd())}/src/content/docs/`,
   };
 
-  const accent = accentOverride ? { hex: accentOverride, hexA12: accentOverride + '1a' } : await deriveAccent(logoPath);
+  const accent = accentOverride ? accentFromHex(accentOverride) : await deriveAccent(logoPath);
+  const hasCustomAccent = customCss.some((rel) => {
+    const abs = path.resolve(process.cwd(), rel);
+    return fs.existsSync(abs) && fs.readFileSync(abs, 'utf8').includes('--sl-color-accent');
+  });
+  const autoAccentCss: string[] = [];
+  if (!hasCustomAccent) {
+    const astroCacheDir = path.resolve(process.cwd(), '.astro');
+    fs.mkdirSync(astroCacheDir, { recursive: true });
+    const generatedAccentCss = path.join(astroCacheDir, 'docs-toolkit-accent.css');
+    const { light: al, dark: ad } = accent.hsl;
+    fs.writeFileSync(
+      generatedAccentCss,
+      `:root {
+  --sl-color-accent-low: hsl(${al.h} ${al.s}% ${al.low}%);
+  --sl-color-accent: hsl(${al.h} ${al.s}% ${al.l}%);
+  --sl-color-accent-high: hsl(${al.h} ${al.s}% ${al.high}%);
+}
+[data-theme="dark"] {
+  --sl-color-accent-low: hsl(${ad.h} ${ad.s}% ${ad.low}%);
+  --sl-color-accent: hsl(${ad.h} ${ad.s}% ${ad.l}%);
+  --sl-color-accent-high: hsl(${ad.h} ${ad.s}% ${ad.high}%);
+}
+`,
+    );
+    autoAccentCss.push('./.astro/docs-toolkit-accent.css');
+  }
   const logoB64 = fs.readFileSync(logoPath).toString('base64');
   const render = makeRender({ logoDataUrl: 'data:image/png;base64,' + logoB64, accentHex: accent.hex, accentHexA12: accent.hexA12, domain, projectName });
   const fontBuf = Buffer.from(ROBOTO_BASE64, 'base64');
@@ -319,13 +364,12 @@ export async function defineDocsConfig(
     ...starlightPlugins,
   ].map((p) => suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents']));
   let finalSidebarSource: any[];
-  if (!Array.isArray(_extraSidebar) || _extraSidebar.length === 0) {
-    // Canonical path: no explicit sidebar override → derive from filesystem
-    finalSidebarSource = buildSectionsSidebar(options.sections ?? CANONICAL_SECTIONS, findDocsRoot());
-  } else if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
+  if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
     finalSidebarSource = _extraSidebar;
+  } else if (Array.isArray(sidebar) && sidebar.length > 0) {
+    finalSidebarSource = sidebar;
   } else {
-    finalSidebarSource = sidebar ?? [];
+    finalSidebarSource = buildSectionsSidebar(options.sections ?? CANONICAL_SECTIONS, findDocsRoot());
   }
   const mergedSidebar = autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
 
@@ -336,7 +380,12 @@ export async function defineDocsConfig(
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
     plugins: mergedPlugins,
-    head: [...((extraStarlight as any)?.head ?? []), ...(headLink ? [headLink] : [])],
+    head: [
+      { tag: 'link', attrs: { rel: 'icon', type: 'image/png', href: favicon } },
+      { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
+      ...((extraStarlight as any)?.head ?? []),
+      ...(headLink ? [headLink] : []),
+    ],
     sidebar: mergedSidebar,
     ...extraStarlightRest,
     expressiveCode: {

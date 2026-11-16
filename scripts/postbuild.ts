@@ -26,6 +26,7 @@ const SUBS = {
   './og': 'dist/og/index.mjs',
   './og/routeData': 'dist/og/routeData.mjs',
   './config': 'dist/config/index.mjs',
+  './collections': 'dist/config/collections.mjs',
   './package.json': './package.json',
 };
 
