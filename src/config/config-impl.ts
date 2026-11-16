@@ -185,12 +185,16 @@ function buildDiataxisTopics(
   }
   expItems.push({ label: 'Blog', translations: { fr: 'Blog' }, link: '/blog/' });
 
+  const learnLink =
+    findFirstDocLink(docsRoot, 'tutorials') ??
+    findFirstDocLink(docsRoot, 'guides') ??
+    '/';
   const topics: any[] = [];
   if (learnItems.length > 0) {
     topics.push({
       id: 'learn',
       label: { en: 'Learn', fr: 'Apprendre' },
-      link: '/',
+      link: learnLink,
       icon: 'rocket',
       items: learnItems,
     });
