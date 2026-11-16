@@ -22,6 +22,8 @@ import starlightSeo from 'starlight-seo';
 import starlightAnnouncement from 'starlight-announcement';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightImageZoom from 'starlight-image-zoom';
+import starlightGitHubAlerts from 'starlight-github-alerts';
+import starlightKbd from 'starlight-kbd';
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 
 
@@ -188,6 +190,17 @@ export async function defineDocsConfig(
   starlightPlugins.push(starlightTelescope());
   starlightPlugins.push(suppressHandledOverrideWarnings(starlightBlog({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }), ['MarkdownContent']));
   starlightPlugins.push(starlightImageZoom());
+  starlightPlugins.push(starlightGitHubAlerts());
+  starlightPlugins.push(
+    starlightKbd({
+      globalPicker: false,
+      types: [
+        { id: 'mac', label: { en: 'macOS', fr: 'macOS' }, detector: 'apple', default: true },
+        { id: 'windows', label: { en: 'Windows', fr: 'Windows' }, detector: 'windows' },
+        { id: 'linux', label: { en: 'Linux', fr: 'Linux' }, detector: 'linux' },
+      ],
+    }),
+  );
         starlightPlugins.push(suppressHandledOverrideWarnings(starlightViewModes({ zenModeSettings: { enabled: true }, presentationModeSettings: { enabled: false } }), ['TableOfContents']));
   starlightPlugins.push(starlightSeo({
     site: {
@@ -293,7 +306,7 @@ export async function defineDocsConfig(
   const mergedSidebar = autoTranslateSidebar([...finalSidebarSource, changelogGroup]);
 
   const starlightOptions: StarlightUserConfig = {
-    routeMiddleware, disable404Route: true, expressiveCode, title, description,
+    routeMiddleware, disable404Route: true, title, description,
     logo: { src: logoPath }, favicon, customCss, social: finalSocial,
     editLink: finalEditLink,
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
@@ -303,14 +316,16 @@ export async function defineDocsConfig(
     sidebar: mergedSidebar,
     ...extraStarlightRest,
     expressiveCode: {
-      themes: ['github-light', 'github-dark'],
+      ...(typeof expressiveCode === 'object' ? expressiveCode : {}),
       ...((extraStarlight as any)?.expressiveCode ?? {}),
       shiki: {
+        ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki : {}) ?? {}),
+        ...((extraStarlight as any)?.expressiveCode?.shiki ?? {}),
         langAlias: {
           'github-actions': 'yaml',
+          ...((typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki?.langAlias : {}) ?? {}),
           ...((extraStarlight as any)?.expressiveCode?.shiki?.langAlias ?? {}),
         },
-        ...((extraStarlight as any)?.expressiveCode?.shiki ?? {}),
       },
     },
     // Safe merge: keep toolkit defaults, let site overrides win only for specific components

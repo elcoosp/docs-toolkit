@@ -64,6 +64,8 @@
     "expressive-code-collapsible": "^1.1.0",
     "mermaid": "^12.3.0",
     "starlight-fullview-mode": "^0.2.6",
+    "starlight-github-alerts": "^0.5.0",
+    "starlight-kbd": "^0.4.0",
     "starlight-tags": "^2.0.0",
     "tsdown": "^0.23.7",
     "typescript": "^7.0.2"
@@ -79,8 +81,10 @@
     "starlight-blog": "^0.30.2",
     "starlight-changelogs": "^0.7.1",
     "starlight-giscus": "^1.2.0",
+    "starlight-github-alerts": "^0.5.0",
     "starlight-heading-badges": "^0.8.0",
     "starlight-image-zoom": "^0.16.2",
+    "starlight-kbd": "^0.4.0",
     "starlight-links-validator": "^0.27.0",
     "starlight-scroll-to-top": "^2.0.0",
     "starlight-seo": "^1.0.0",
@@ -100,5 +104,5 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "0.9.16"
+  "version": "0.10.0"
 }
