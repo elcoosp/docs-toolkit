@@ -17,6 +17,7 @@ import mermaid from 'astro-mermaid';
 
 
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
+import { rehypeInlineBash } from './rehype-inline-bash';
 
 
 
@@ -555,6 +556,7 @@ const integrations: NonNullable<AstroUserConfig['integrations']> = [
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
 return defineConfig({
     markdown: {
+      rehypePlugins: [rehypeInlineBash],
       shikiConfig: {
         langAlias: {
           'github-actions': 'yaml',

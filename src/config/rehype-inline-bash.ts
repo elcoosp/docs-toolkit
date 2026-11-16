@@ -1,0 +1,197 @@
+const CLI_BINARIES = new Set([
+  'cargo',
+  'rustc',
+  'rustup',
+  'flux',
+  'glyip',
+  'kod',
+  'navi',
+  'nexum',
+  'quoin',
+  'rsmack',
+  'sourcier',
+  'takumi-motion',
+  'vautr-cli',
+  'git',
+  'gh',
+  'pnpm',
+  'npm',
+  'npx',
+  'yarn',
+  'bun',
+  'deno',
+  'node',
+  'python',
+  'python3',
+  'pip',
+  'uv',
+  'docker',
+  'podman',
+  'kubectl',
+  'astro',
+  'brew',
+  'apt',
+  'curl',
+  'wget',
+  'chmod',
+  'mkdir',
+  'cp',
+  'mv',
+  'rm',
+  'cat',
+  'grep',
+  'rg',
+  'find',
+  'ls',
+  'cd',
+  'export',
+  'env',
+  'sudo',
+  'ssh',
+  'tar',
+  'unzip',
+]);
+
+const EXPLICIT_SUFFIX_RE = /\{:(?:sh|bash|shell|zsh)\}$/;
+
+interface HastNode {
+  type: string;
+  tagName?: string;
+  properties?: Record<string, any>;
+  children?: HastNode[];
+  value?: string;
+}
+
+function span(light: string, dark: string, value: string): HastNode {
+  return {
+    type: 'element',
+    tagName: 'span',
+    properties: {
+      style: `color:light-dark(${light},${dark})`,
+    },
+    children: [{ type: 'text', value }],
+  };
+}
+
+function isInlineShellCommand(raw: string): { text: string; forced: boolean } | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.includes('\n') || trimmed.length > 140) return null;
+
+  if (EXPLICIT_SUFFIX_RE.test(trimmed)) {
+    return { text: trimmed.replace(EXPLICIT_SUFFIX_RE, '').trimEnd(), forced: true };
+  }
+
+  // Must have at least 2 tokens so bare words like `cargo` or `git` stay normal inline code
+  const parts = trimmed.split(/\s+/);
+  if (parts.length < 2) return null;
+
+  let idx = 0;
+  if (parts.at(0) === '$') {
+    idx = 1;
+    if (parts.length <= idx) return null;
+  }
+
+  // Skip leading ENV=VALUE assignments
+  while (idx < parts.length && /^[A-Z_][A-Z0-9_]*=/.test(parts.at(idx) ?? '')) {
+    idx++;
+  }
+  const bin = parts.at(idx);
+  if (!bin) return null;
+
+  if (CLI_BINARIES.has(bin) || /^\.\/[a-zA-Z0-9_./-]+$/.test(bin) || /^~\/[a-zA-Z0-9_./-]+$/.test(bin)) {
+    return { text: trimmed, forced: false };
+  }
+
+  return null;
+}
+
+function tokenizeShell(cmd: string): HastNode[] {
+  const tokens = cmd.match(/(\s+|"[^"]*"|'[^']*'|[^\s"']+)/g) ?? [cmd];
+  const nodes: HastNode[] = [];
+  let seenCommand = false;
+  let seenSubcommand = false;
+
+  for (const tok of tokens) {
+    if (/^\s+$/.test(tok)) {
+      nodes.push({ type: 'text', value: tok });
+      continue;
+    }
+
+    if (!seenCommand && tok === '$') {
+      nodes.push(span('#6e7781', '#8b949e', tok));
+      continue;
+    }
+
+    if (!seenCommand && /^[A-Z_][A-Z0-9_]*=/.test(tok)) {
+      nodes.push(span('#953800', '#ffa657', tok));
+      continue;
+    }
+
+    if (!seenCommand) {
+      seenCommand = true;
+      nodes.push(span('#8250df', '#d2a8ff', tok));
+      continue;
+    }
+
+    if (tok === '&&' || tok === '||' || tok === '|' || tok === ';' || tok === '>' || tok === '>>' || tok === '<') {
+      seenCommand = false;
+      seenSubcommand = false;
+      nodes.push(span('#cf222e', '#ff7b72', tok));
+      continue;
+    }
+
+    if ((tok.startsWith('"') && tok.endsWith('"')) || (tok.startsWith("'") && tok.endsWith("'"))) {
+      nodes.push(span('#0a3069', '#a5d6ff', tok));
+      continue;
+    }
+
+    if (tok.startsWith('-')) {
+      nodes.push(span('#0550ae', '#79c0ff', tok));
+      continue;
+    }
+
+    if (!seenSubcommand && /^[a-z][a-z0-9_-]*$/.test(tok)) {
+      seenSubcommand = true;
+      nodes.push(span('#0550ae', '#79c0ff', tok));
+      continue;
+    }
+
+    nodes.push({ type: 'text', value: tok });
+  }
+
+  return nodes;
+}
+
+export function rehypeInlineBash() {
+  return (tree: HastNode) => {
+    const walk = (node: HastNode, inPre: boolean) => {
+      if (!node || !Array.isArray(node.children)) return;
+      const nextInPre = inPre || (node.type === 'element' && node.tagName === 'pre');
+
+      for (const child of node.children) {
+        if (
+          !nextInPre &&
+          child.type === 'element' &&
+          child.tagName === 'code' &&
+          Array.isArray(child.children) &&
+          child.children.length === 1 &&
+          child.children.at(0)?.type === 'text'
+        ) {
+          const raw = child.children.at(0)?.value ?? '';
+          const match = isInlineShellCommand(raw);
+          if (match) {
+            child.properties = {
+              ...(child.properties ?? {}),
+              'data-inline-sh': '',
+            };
+            child.children = tokenizeShell(match.text);
+            continue;
+          }
+        }
+        walk(child, nextInPre);
+      }
+    };
+
+    walk(tree, false);
+  };
+}
