@@ -285,6 +285,8 @@ export async function defineDocsConfig(
     { default: starlightHeadingBadges },
     { default: starlightGitHubAlerts },
     { default: starlightKbd },
+    { default: starlightAutoDrafts },
+    { default: starlightCodeblockFullscreen },
   ] = await Promise.all([
     import('starlight-changelogs'),
     import('starlight-auto-sidebar'),
@@ -299,6 +301,8 @@ export async function defineDocsConfig(
     import('starlight-heading-badges'),
     import('starlight-github-alerts'),
     import('starlight-kbd'),
+    import('starlight-auto-drafts'),
+    import('starlight-codeblock-fullscreen'),
   ]);
 
   const githubRepo =
@@ -419,6 +423,8 @@ export async function defineDocsConfig(
     },
   }));
   starlightPlugins.push(unwrapPlugin(starlightScrollToTop)());
+  starlightPlugins.push(unwrapPlugin(starlightAutoDrafts)());
+  starlightPlugins.push(unwrapPlugin(starlightCodeblockFullscreen)());
   starlightPlugins.push({
     name: 'docs-toolkit:view-modes-sidebar-strip',
     hooks: {

@@ -69,7 +69,10 @@
     "mermaid": "^12.3.0",
     "starlight-sidebar-topics": "^0.9.0",
     "tsdown": "^0.23.7",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "starlight-auto-drafts": "^0.3.1",
+    "starlight-codeblock-fullscreen": "^2.0.0",
+    "starlight-package-managers": "^0.13.1"
   },
   "peerDependencies": {
     "@astrojs/starlight": "^0.43.1",
@@ -90,7 +93,10 @@
     "starlight-scroll-to-top": "^2.0.0",
     "starlight-seo": "^1.0.0",
     "starlight-telescope": "^2.0.0",
-    "starlight-view-modes": "^0.16.0"
+    "starlight-view-modes": "^0.16.0",
+    "starlight-auto-drafts": "^0.3.1",
+    "starlight-codeblock-fullscreen": "^2.0.0",
+    "starlight-package-managers": "^0.13.1"
   },
   "peerDependenciesMeta": {
     "playwright": {
