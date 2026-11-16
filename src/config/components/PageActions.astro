@@ -114,7 +114,7 @@ const labels = isFr
       const btn = document.getElementById('copy-markdown');
       if (btn) {
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<span>✓ ' + copiedLabel + '</span>';
+        btn.textContent = '✓ ' + copiedLabel;
         setTimeout(() => {
           btn.innerHTML = originalHtml;
         }, 2000);
