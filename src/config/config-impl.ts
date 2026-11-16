@@ -168,6 +168,20 @@ export async function defineDocsConfig(
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
 
+  const toolkitI18nDir = fileURLToPath(new URL('../../i18n', import.meta.url));
+  const siteI18nDir = path.join(path.dirname(findDocsRoot()), 'i18n');
+  if (fs.existsSync(toolkitI18nDir)) {
+    fs.mkdirSync(siteI18nDir, { recursive: true });
+    for (const file of fs.readdirSync(toolkitI18nDir)) {
+      if (!file.endsWith('.json')) continue;
+      const srcContent = fs.readFileSync(path.join(toolkitI18nDir, file), 'utf8');
+      const dstFile = path.join(siteI18nDir, file);
+      if (!fs.existsSync(dstFile) || fs.readFileSync(dstFile, 'utf8') !== srcContent) {
+        fs.writeFileSync(dstFile, srcContent);
+      }
+    }
+  }
+
   const githubRepo =
     options.github ??
     extractGitHubRepo(options) ??
@@ -341,6 +355,7 @@ export async function defineDocsConfig(
     // Safe merge: keep toolkit defaults, let site overrides win only for specific components
     components: {
       Banner: '@elcoosp/docs-toolkit/src/config/components/Banner.astro',
+      PageTitle: '@elcoosp/docs-toolkit/src/config/components/PageTitle.astro',
       MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro',
       TableOfContents: '@elcoosp/docs-toolkit/src/config/components/TableOfContents.astro',
       ...((extraStarlight as any)?.components ?? {}),

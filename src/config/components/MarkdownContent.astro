@@ -7,3 +7,51 @@ import ImageZoom from "starlight-image-zoom/components/ImageZoom.astro";
 <StarlightBlogMarkdownContent {...Astro.props}>
   <slot />
 </StarlightBlogMarkdownContent>
+
+<style is:global>
+  pre.mermaid:not([data-processed="true"]) {
+    color: transparent !important;
+    background: var(--sl-color-bg-nav) !important;
+    border: 1px solid var(--sl-color-hairline) !important;
+    border-radius: 0.5rem;
+    min-height: 150px;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    animation: docs-toolkit-mermaid-fallback 0s 3s forwards;
+  }
+  pre.mermaid:not([data-processed="true"])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 9999px;
+    border: 2px solid var(--sl-color-hairline);
+    border-top-color: var(--sl-color-accent);
+    animation: docs-toolkit-mermaid-spin 0.75s linear infinite;
+  }
+  pre.mermaid[data-processed="true"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    display: flex;
+    justify-content: center;
+    animation: docs-toolkit-mermaid-in 0.2s ease-out;
+  }
+  pre.mermaid[data-processed="true"] svg {
+    max-width: 100%;
+    height: auto;
+  }
+  @keyframes docs-toolkit-mermaid-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes docs-toolkit-mermaid-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes docs-toolkit-mermaid-fallback {
+    to { color: var(--sl-color-text); user-select: auto; }
+  }
+</style>
