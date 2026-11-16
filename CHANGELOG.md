@@ -1,5 +1,80 @@
 # Changelog
 
+## [1.1.0](https://github.com/elcoosp/docs-toolkit/compare/v1.0.1...v1.1.0) (2026-11-16)
+
+
+### Features
+
+* **config:** add DRY Diataxis topics option via starlight-sidebar-topics ([6343af5](https://github.com/elcoosp/docs-toolkit/commit/6343af56905a3274aa7a3a3d853d140602a03c2b))
+* **config:** add opt-in @expressive-code/plugin-line-numbers support ([5a9a6e7](https://github.com/elcoosp/docs-toolkit/commit/5a9a6e742523c100800fb8f990fe3647a13a836b))
+* **config:** canonical 4-section defaults when no sidebar override ([4610aa2](https://github.com/elcoosp/docs-toolkit/commit/4610aa297c1def227d5837a108f1fdd0fef1ce63))
+* **config:** export makeDocsCollections, auto-derive logo accent fallback, fix empty sidebar override ([2faa5bd](https://github.com/elcoosp/docs-toolkit/commit/2faa5bd40462532ea53b70a01500df996d3bed30))
+* **config:** integrate starlight-links-validator (mandatory) ([a445d2b](https://github.com/elcoosp/docs-toolkit/commit/a445d2b48905d0dfcdd82543888f0feca327a8bd))
+* **config:** render PageActions under PageTitle, prevent Mermaid flash, auto-sync i18n ([bb18eb8](https://github.com/elcoosp/docs-toolkit/commit/bb18eb8e084d8500cfbfe8381df1e50de79d2098))
+* **config:** sections option, github derivation, auto-sidebar plugin, docsMetadataCollection source ([29aef08](https://github.com/elcoosp/docs-toolkit/commit/29aef0859f86cb64bc70380528b4d4f3634f7ec9))
+* **deps:** astro-takumi -&gt; npm:@elcoosp/astro-takumi@^2.1.0 (published package) ([af739d2](https://github.com/elcoosp/docs-toolkit/commit/af739d2bb47e21b69a1ecf5e8f0b0dc71c689772))
+* **deps:** toolkit 0.9.0 — starlight 0.43, mermaid 12, all majors ([98d2273](https://github.com/elcoosp/docs-toolkit/commit/98d2273615aa096c9c301ceec23bbbaaaaaf4941))
+* full changelog integration, OG font fixes, dev PageActions fix ([0ba677e](https://github.com/elcoosp/docs-toolkit/commit/0ba677e94091f99c7d05e13460ca85af3c9d10d2))
+* **i18n:** add en/fr translations and default locales to root+fr ([4d93eb6](https://github.com/elcoosp/docs-toolkit/commit/4d93eb62d2c1691b5a47e0cb8215880fb6ba7cbd))
+* **i18n:** autoTranslateSidebar with 188 FR sidebar labels ([8200ed6](https://github.com/elcoosp/docs-toolkit/commit/8200ed688ed91c725c03b68e94fc9878af84f998))
+* integrate starlight-github-alerts and starlight-kbd ([d7750ae](https://github.com/elcoosp/docs-toolkit/commit/d7750ae188664c8cd7982c6856b9ad22e49d6390))
+* pre-bundle starlight plugins for native astro build without tsx ([037862c](https://github.com/elcoosp/docs-toolkit/commit/037862c428d0d8e8c214c1f3cdf5bd9461d32362))
+* **seo:** 0.8.4 — audit.failOn='error' (P1 complete) ([59f4f88](https://github.com/elcoosp/docs-toolkit/commit/59f4f8882bc7e9bc1d71c72e4551273e08cca8d6))
+* **seo:** makeDocsCollection + full starlight-seo config, routeData 404-only ([67e5be4](https://github.com/elcoosp/docs-toolkit/commit/67e5be4779d27d4a63af14d7484c08f3b8f43d13))
+* **ui:** add ChatGPT, Claude, and Gemini brand icons to Open in AI menu ([ce50289](https://github.com/elcoosp/docs-toolkit/commit/ce502899fb31cf4a7234b8533fe2501bd4eb5eda))
+* **ui:** add ChatGPT, Claude, and Gemini brand icons to Open in AI menu ([009bdbc](https://github.com/elcoosp/docs-toolkit/commit/009bdbcd8bc1a30a21f0e22aca9011554bd7d130))
+* **ui:** expand Open in AI dropdown with 11 AI platforms and brand icons ([cc8b700](https://github.com/elcoosp/docs-toolkit/commit/cc8b700574834deee8b1c5cd1b644d4e6d960c35))
+* **ui:** use Lucide SVGs for PageActions instead of emojis ([9ff2e2b](https://github.com/elcoosp/docs-toolkit/commit/9ff2e2b049f3962b5592b9775ad6b2115e2bcf68))
+
+
+### Bug Fixes
+
+* audit disable, markdown content, remove pagetitle override ([256a137](https://github.com/elcoosp/docs-toolkit/commit/256a137efe2a6c13ff3e4847219daf0ca44f9ca2))
+* **config:** compose ViewModesPageTitle and precompute AI share URLs in PageActions ([38a3a02](https://github.com/elcoosp/docs-toolkit/commit/38a3a02dbcfdfb1dcd4c2ec42aeb082b44e6383f))
+* **config:** drop raw content.ts export, correct check:dist to allow config entrypoint imports ([e45d652](https://github.com/elcoosp/docs-toolkit/commit/e45d65282392518ae60421a6208e5392e8e45123))
+* **config:** exclude zen-mode, presentation-mode, and 404 routes from sidebar topics ([6bced94](https://github.com/elcoosp/docs-toolkit/commit/6bced94cf4b7e8083d5d032e0ddcda530f4337e2))
+* **config:** keep expressiveCode inline options JSON-serializable for &lt;Code&gt; MDX component ([f277dfc](https://github.com/elcoosp/docs-toolkit/commit/f277dfc8d6ed7dfffe0560bc6af265872787b2b5))
+* **config:** load TS-only Starlight plugins via native registerHooks & Vite resolver ([7a7b814](https://github.com/elcoosp/docs-toolkit/commit/7a7b814c6ac6d082de98d9e75c74b1b372d1b0ee))
+* **config:** point Learn topic link directly to first tutorial or guide ([1b614a9](https://github.com/elcoosp/docs-toolkit/commit/1b614a965442d54b30ecfc8e9b648b39447d8800))
+* **config:** run starlight-sidebar-topics before auto-sidebar and map blog/changelog routes ([c4d1187](https://github.com/elcoosp/docs-toolkit/commit/c4d1187e5309fe260f6715951d12b24b6f13c95c))
+* **config:** silence benign node_modules directive and sourcemap warnings in rolldown ([24c28f1](https://github.com/elcoosp/docs-toolkit/commit/24c28f17bc3955f7ac11da640f8c129eea5f4183))
+* **config:** TOC layout wrapper + image zoom plugin + code cleanup ([ac45bf5](https://github.com/elcoosp/docs-toolkit/commit/ac45bf5378b3bec21804bcb1ecc10476632b49d5))
+* **config:** use dynamic import for astro-takumi to avoid CJS crash in ssrLoadModule ([5a79a36](https://github.com/elcoosp/docs-toolkit/commit/5a79a3661c503446a9abf3ebfa442fe0c1e89ae0))
+* **deps:** 0.9.1 — remove translations from default social ([df186c5](https://github.com/elcoosp/docs-toolkit/commit/df186c5e58eff4e35afd5a04ef4aa19326cc5f0c))
+* **deps:** jsdom→linkedom (fork 2.1.1, explicit linkedom) ([659141e](https://github.com/elcoosp/docs-toolkit/commit/659141ec672fe9828fbb8bd16357f0b528aebf8e))
+* **i18n:** add 'All versions' to dict (plugin-injected universal label) — release 0.5.43 ([355741f](https://github.com/elcoosp/docs-toolkit/commit/355741f6724b8aaa4df124f310e515413a33e509))
+* **i18n:** restore autoTranslateSidebar import+call in config (was reverted by Phase 71) — release 0.5.42 ([933575e](https://github.com/elcoosp/docs-toolkit/commit/933575e7e9274ff35c2f8a7288a8dacee114eafe))
+* **i18n:** skip string sidebar items in autoTranslateSidebar; release 0.5.39 ([e120083](https://github.com/elcoosp/docs-toolkit/commit/e12008391685d82717a685d52a10c94e828fcaea))
+* **llms:** comment out invalid LLM: robots.txt directive; bump 0.9.2 ([f4ee7b7](https://github.com/elcoosp/docs-toolkit/commit/f4ee7b7cc9690fe77ddb9b2cd821365b7e074788))
+* **seo:** 0.8.5 — correct TS types + passthrough schema ([bd716ac](https://github.com/elcoosp/docs-toolkit/commit/bd716acd3278f951e4997e9c9f643d63e9c22146))
+* **seo:** 0.8.6 — failOn='off' (audit informational, never blocks builds) ([96881e1](https://github.com/elcoosp/docs-toolkit/commit/96881e1dfc44c29aa0d851048ab362c4c48aea6d))
+* **seo:** 0.8.7 — per-rule audit (title.duplicate → warn) ([a42647a](https://github.com/elcoosp/docs-toolkit/commit/a42647a3512e3c309cb5e63d5fa061f9ec60e6d2))
+* **seo:** makeDocsCollection accepts blogSchema from caller ([125ab0e](https://github.com/elcoosp/docs-toolkit/commit/125ab0e694372fa3290f002687fcc90f8fe30bfc))
+* **seo:** routeData owns og:image, plugin owns graph+titles+audit ([6655828](https://github.com/elcoosp/docs-toolkit/commit/6655828eff774349e2860629cc7845917bdacc92))
+* **toolkit:** TS green + majors + bins (v0.7.1) ([a564a62](https://github.com/elcoosp/docs-toolkit/commit/a564a622e0dc5ded3cd3a5a9b4e525d750d528cf))
+* **ui:** avoid generic angle brackets in Astro frontmatter and add Meta AI ([ecdfb26](https://github.com/elcoosp/docs-toolkit/commit/ecdfb26f760e0aa3062338a46000d3ef6c98b17b))
+* **ui:** avoid HTML tags inside script block in PageActions.astro ([f757446](https://github.com/elcoosp/docs-toolkit/commit/f757446b8d017eb5ebd6a2d3bc141d3d681af93d))
+* **ui:** build full provider URLs cleanly without literal protocol mangling ([6a46feb](https://github.com/elcoosp/docs-toolkit/commit/6a46febfa5d52293a482257c08599cd3a86075bd))
+* **ui:** clean up style blocks in PageActions.astro ([3723a29](https://github.com/elcoosp/docs-toolkit/commit/3723a298c07ac33b511b442142c0dd5b4e33e877))
+* **ui:** ensure valid https hrefs for all AI providers in PageActions.astro ([daa6deb](https://github.com/elcoosp/docs-toolkit/commit/daa6deb39d5e0f7f457a4d3e20a7d64d14c9cd70))
+* **ui:** fix AI provider query URLs in PageActions.astro ([69e4901](https://github.com/elcoosp/docs-toolkit/commit/69e4901c65ec4d790379d9ea1557d99418c1e530))
+* **ui:** point GitHub Copilot link directly to /copilot/c chat ([29d6525](https://github.com/elcoosp/docs-toolkit/commit/29d652522c0ab406581800ab09eebefc4a755b24))
+* **ui:** remove TS generic angle brackets in client script tag of PageActions.astro ([e41b14f](https://github.com/elcoosp/docs-toolkit/commit/e41b14fd50d21e806fbc25029b6c74152d0c1c51))
+* **ui:** restore closing style tag and use unique tarball for PageActions.astro ([d1d20d3](https://github.com/elcoosp/docs-toolkit/commit/d1d20d3917d615adcc3181b995d3c008a8ae1131))
+* **ui:** switch Copilot link to Microsoft Copilot ?q= chat URL ([4bbe99a](https://github.com/elcoosp/docs-toolkit/commit/4bbe99a2539196de64f62f1d7532940824ef7f90))
+* **ui:** write intact AI provider URLs without chat sanitizer mangling ([8114e2a](https://github.com/elcoosp/docs-toolkit/commit/8114e2ab25dd35c2cf61f963912449076991c719))
+* **vite:** exclude CJS deps from dev server optimizer (Vite 8 compat) ([82cddc9](https://github.com/elcoosp/docs-toolkit/commit/82cddc9a75a0a8facd30fff089d71a3361555662))
+* **vite:** externalize @takumi-rs/core native binding, bundle wrapper via pnpm &gt; notation ([1779b00](https://github.com/elcoosp/docs-toolkit/commit/1779b00df474efaeb806e5b8749542858d48e0fa))
+* **vite:** pre-bundle CJS deps to resolve 'require is not defined' in Vite 8 dev server ([87b34b6](https://github.com/elcoosp/docs-toolkit/commit/87b34b6d371791fce5ecb3d7d89d0f80e3015854))
+* **vite:** remove astro-mermaid to fix Vite 8 'require is not defined' dev server crash ([8861e64](https://github.com/elcoosp/docs-toolkit/commit/8861e64cbd2cd79e885d4f88d019fc5c58b1422b))
+* **vite:** remove noExternal:true (was force-bundling CJS deps causing 'require is not defined' in dev) ([638a6ab](https://github.com/elcoosp/docs-toolkit/commit/638a6abe90449a73dc5488a685a7c1b0834f8f13))
+* **vite:** use esmExternalRequirePlugin to convert CJS require to ESM import for @takumi-rs/core ([442df03](https://github.com/elcoosp/docs-toolkit/commit/442df0327cb9dcc4b85a29795c6a6cf6d292e6bf))
+
+
+### Performance Improvements
+
+* **qa:** parallelize screenshots runner with built-in static server ([e141b23](https://github.com/elcoosp/docs-toolkit/commit/e141b234dec02e70c8711037a021cecb731595c4))
+
 ## 0.7.1 (2026-11-14)
 
 ### Bug Fixes
