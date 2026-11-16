@@ -14,13 +14,13 @@ export function llmsIntegration(cfg: ResolvedLlmsConfig): AstroIntegration {
         const contentRoot = path.resolve(process.cwd(), 'src/content/docs');
         logger.info('llms: collecting pages...');
         try {
-          const pages = collectPages(contentRoot);
-          logger.info(`llms: ${pages.length} pages collected`);
-          emitAll(distDir, pages, cfg, (msg) => logger.info(`llms:${msg}`));
+          const pages = collectPages(contentRoot, cfg);
+          logger.info('llms: ' + pages.length + ' pages collected');
+          emitAll(distDir, pages, cfg, (msg) => logger.info('llms:' + msg));
         } catch (e) {
-          logger.error(`llms: FAILED — ${e instanceof Error ? e.stack : String(e)}`);
+          logger.error('llms: FAILED — ' + (e instanceof Error ? e.stack : String(e)));
         }
-      }
-    }
+      },
+    },
   };
 }

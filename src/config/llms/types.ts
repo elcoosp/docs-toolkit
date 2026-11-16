@@ -1,11 +1,13 @@
 export interface PageEntry {
   slug: string;
+  locale: string;
   route: string;
   markdownRoute: string;
   title: string;
   description: string;
   type: string;
   order: number;
+  sectionKey: string;
   section: string;
   body: string;
 }
@@ -30,5 +32,6 @@ export interface LlmsTxtConfig {
 }
 
 export interface ResolvedLlmsConfig extends Required<Omit<LlmsTxtConfig, 'outputs'>> {
+  locales: string[];
   outputs: Required<NonNullable<LlmsTxtConfig['outputs']>>;
 }

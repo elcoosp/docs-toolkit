@@ -502,7 +502,11 @@ export async function defineDocsConfig(
   let resolvedLlms: any = undefined;
 
   if (llmsTxt !== false) {
-    resolvedLlms = resolveLlmsConfig(llmsTxt ?? {}, { title, description, site, source: undefined });
+    const inferredSource = typeof editLink?.baseUrl === "string"
+          ? editLink.baseUrl.replace(/\/(?:edit|blob|tree)\/[^/]+.*$/, "")
+          : undefined;
+        const configuredLocales = locales ? Object.keys(locales) : undefined;
+        resolvedLlms = resolveLlmsConfig(llmsTxt ?? {}, { title, description, site, source: inferredSource, locales: configuredLocales });
     if (resolvedLlms.outputs.headLink) headLink = llmsHeadLink();
   }
 
