@@ -15,10 +15,6 @@ export default defineConfig({
   dts: true,
   deps: {
     onlyBundle: false,
-    alwaysBundle: [
-      /^starlight-/,
-      'astro-d2',
-    ],
     neverBundle: [
       /^astro$/,
       /^astro:/,
@@ -27,8 +23,10 @@ export default defineConfig({
       /\.astro$/,
       /\.css$/,
       'astro-mermaid',
+      'astro-d2',
       '@d2lang/d2',
       '@elcoosp/astro-takumi',
+      /^starlight-/,
     ],
   },
 });

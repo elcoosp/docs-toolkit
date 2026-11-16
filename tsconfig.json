@@ -19,11 +19,50 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "paths": {
+      "starlight-changelogs": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-auto-sidebar": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-links-validator": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-blog": [
+        "./types/starlight-plugins.d.ts"
+      ],
       "starlight-view-modes": [
-        "./src/stubs/starlight-view-modes.d.ts"
+        "./types/starlight-plugins.d.ts"
       ],
       "starlight-telescope": [
-        "./src/stubs/starlight-telescope.d.ts"
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-seo": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-announcement": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-scroll-to-top": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-image-zoom": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-heading-badges": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-github-alerts": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-kbd": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "starlight-giscus": [
+        "./types/starlight-plugins.d.ts"
+      ],
+      "astro-d2": [
+        "./types/starlight-plugins.d.ts"
       ]
     }
   },

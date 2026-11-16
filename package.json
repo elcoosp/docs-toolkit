@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts",
-    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/prebuild.ts",
     "prepublishOnly": "node scripts/prebuild.ts && tsdown && node scripts/postbuild.ts && pnpm check:dist",
     "check:dist": "! grep -rlE \"from ['\\\"]starlight-(blog|giscus)\" dist/*.mjs | grep -v '^dist/config-' || (echo 'FAIL: eager static import of starlight-(blog|giscus) in dist (excluding config-*.mjs)' && exit 1)"
@@ -63,11 +63,6 @@
     "esbuild": "^0.28.2",
     "expressive-code-collapsible": "^1.1.0",
     "mermaid": "^12.3.0",
-    "starlight-fullview-mode": "^0.2.6",
-    "starlight-github-alerts": "^0.5.0",
-    "starlight-heading-badges": "^0.8.0",
-    "starlight-kbd": "^0.4.0",
-    "starlight-tags": "^2.0.0",
     "tsdown": "^0.23.7",
     "typescript": "^7.0.2"
   },
@@ -105,5 +100,5 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "0.11.0"
+  "version": "0.11.1"
 }
