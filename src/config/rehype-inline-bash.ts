@@ -1,3 +1,8 @@
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { AstroIntegration } from 'astro';
+
 const CLI_BINARIES = new Set([
   'cargo',
   'rustc',
@@ -160,6 +165,87 @@ function tokenizeShell(cmd: string): HastNode[] {
   }
 
   return nodes;
+}
+
+export function satteriInlineBashPlugin() {
+  return {
+    name: 'docs-toolkit:inline-bash',
+    element: {
+      filter: ['code'],
+      visit(node: HastNode, ctx: {
+        parent: (n: HastNode) => HastNode | undefined;
+        setProperty: (n: HastNode, key: string, value: unknown) => void;
+        removeChildAt: (n: HastNode, index: number) => void;
+        appendChild: (n: HastNode, child: HastNode | HastNode[]) => void;
+      }) {
+        const parent = ctx.parent(node);
+        if (parent?.type === 'element' && parent.tagName === 'pre') return;
+        if (!Array.isArray(node.children) || node.children.length !== 1) return;
+        const firstChild = node.children.at(0);
+        if (firstChild?.type !== 'text') return;
+
+        const raw = firstChild.value ?? '';
+        const match = isInlineShellCommand(raw);
+        if (!match) return;
+
+        ctx.setProperty(node, 'data-inline-sh', '');
+        ctx.removeChildAt(node, 0);
+        ctx.appendChild(node, tokenizeShell(match.text));
+      },
+    },
+  };
+}
+
+async function loadSatteriFactory(rootDir: string): Promise<((opts?: any) => any) | null> {
+  const candidates = [rootDir, process.cwd()];
+  for (const dir of candidates) {
+    try {
+      const hostReq = createRequire(path.join(dir, 'package.json'));
+      const astroEntry = hostReq.resolve('astro');
+      const astroReq = createRequire(astroEntry);
+      const satteriEntry = astroReq.resolve('@astrojs/markdown-satteri');
+      const mod = await import(pathToFileURL(satteriEntry).href);
+      if (typeof mod.satteri === 'function') {
+        return mod.satteri;
+      }
+    } catch {
+      // Try next candidate
+    }
+  }
+  return null;
+}
+
+export function inlineBashIntegration(): AstroIntegration {
+  return {
+    name: 'docs-toolkit:inline-bash',
+    hooks: {
+      'astro:config:setup': async ({ config, updateConfig }) => {
+        const plugin = satteriInlineBashPlugin();
+        const existing = config.markdown?.processor as
+          | { name?: string; options?: { hastPlugins?: unknown[] } }
+          | undefined;
+
+        if (existing?.name === 'satteri' && existing.options) {
+          existing.options.hastPlugins = [...(existing.options.hastPlugins ?? []), plugin];
+          return;
+        }
+
+        if (!existing) {
+          const rootDir = config.root ? fileURLToPath(config.root) : process.cwd();
+          const satteri = await loadSatteriFactory(rootDir);
+          if (satteri) {
+            updateConfig({
+              markdown: {
+                processor: satteri({
+                  hastPlugins: [plugin],
+                }),
+              },
+            });
+          }
+        }
+      },
+    },
+  };
 }
 
 export function rehypeInlineBash() {

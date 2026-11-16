@@ -17,7 +17,7 @@ import mermaid from 'astro-mermaid';
 
 
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
-import { rehypeInlineBash } from './rehype-inline-bash';
+import { inlineBashIntegration } from './rehype-inline-bash';
 
 
 
@@ -549,6 +549,7 @@ export async function defineDocsConfig(
   };
 
 const integrations: NonNullable<AstroUserConfig['integrations']> = [
+    inlineBashIntegration(),
     astroTakumi({ options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' }, render } as unknown as Parameters<typeof astroTakumi>[0]),
     mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }), starlight(starlightOptions),  ...extraIntegrations,
   ];
@@ -556,7 +557,6 @@ const integrations: NonNullable<AstroUserConfig['integrations']> = [
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
 return defineConfig({
     markdown: {
-      rehypePlugins: [rehypeInlineBash],
       shikiConfig: {
         langAlias: {
           'github-actions': 'yaml',
