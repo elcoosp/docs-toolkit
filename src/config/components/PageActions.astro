@@ -12,18 +12,18 @@ const openaiPath = 'M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-
 const pickIcon = (key: string, fallback: string): string => (si as any)[key]?.path ?? fallback;
 
 const aiProviders = [
-  { name: 'ChatGPT', href: 'https://chatgpt.com' + aiPrompt, path: openaiPath },
-  { name: 'Claude', href: 'https://claude.ai' + aiPrompt, path: pickIcon('siClaude', openaiPath) },
-  { name: 'Gemini', href: 'https://google.com' + aiPrompt, path: pickIcon('siGooglegemini', openaiPath) },
-  { name: 'Perplexity', href: 'https://perplexity.ai' + aiPrompt, path: pickIcon('siPerplexity', openaiPath) },
-  { name: 'Grok', href: 'https://grok.com' + aiPrompt, path: pickIcon('siX', openaiPath) },
-  { name: 'Mistral Le Chat', href: 'https://mistral.ai' + aiPrompt, path: pickIcon('siMistralai', openaiPath) },
-  { name: 'DeepSeek', href: 'https://deepseek.com' + aiPrompt, path: pickIcon('siDeepseek', openaiPath) },
-  { name: 'Qwen', href: 'https://qwen.ai' + aiPrompt, path: pickIcon('siQwen', openaiPath) },
-  { name: 'GitHub Copilot', href: 'https://github.com' + aiPrompt, path: pickIcon('siGithubcopilot', openaiPath) },
-  { name: 'HuggingChat', href: 'https://huggingface.co' + aiPrompt, path: pickIcon('siHuggingface', openaiPath) },
-  { name: 'Meta AI', href: 'https://meta.ai' + aiPrompt, path: pickIcon('siMeta', openaiPath) },
-  { name: 'Duck.ai', href: 'https://duck.ai' + aiPrompt, path: pickIcon('siDuckduckgo', openaiPath) },
+  { name: 'ChatGPT', href: 'https://' + '://chatgpt.com' + aiPrompt, path: openaiPath },
+  { name: 'Claude', href: 'https://' + 'claude.ai/new?q=' + aiPrompt, path: pickIcon('siClaude', openaiPath) },
+  { name: 'Gemini', href: 'https://' + '://google.com' + aiPrompt, path: pickIcon('siGooglegemini', openaiPath) },
+  { name: 'Perplexity', href: 'https://' + 'www.perplexity.ai/search?q=' + aiPrompt, path: pickIcon('siPerplexity', openaiPath) },
+  { name: 'Grok', href: 'https://' + '://grok.com' + aiPrompt, path: pickIcon('siX', openaiPath) },
+  { name: 'Mistral Le Chat', href: 'https://' + 'chat.mistral.ai/chat?q=' + aiPrompt, path: pickIcon('siMistralai', openaiPath) },
+  { name: 'DeepSeek', href: 'https://' + '://deepseek.com' + aiPrompt, path: pickIcon('siDeepseek', openaiPath) },
+  { name: 'Qwen', href: 'https://' + 'chat.qwen.ai/?q=' + aiPrompt, path: pickIcon('siQwen', openaiPath) },
+  { name: 'GitHub Copilot', href: 'https://' + '://github.com' + aiPrompt, path: pickIcon('siGithubcopilot', openaiPath) },
+  { name: 'HuggingChat', href: 'https://' + 'huggingface.co/chat/?q=' + aiPrompt, path: pickIcon('siHuggingface', openaiPath) },
+  { name: 'Meta AI', href: 'https://' + 'www.meta.ai/?q=' + aiPrompt, path: pickIcon('siMeta', openaiPath) },
+  { name: 'Duck.ai', href: 'https://' + 'duck.ai/?q=' + aiPrompt, path: pickIcon('siDuckduckgo', openaiPath) },
 ];
 
 const labels = isFr
