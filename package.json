@@ -27,7 +27,8 @@
     },
     "./package.json": "./package.json",
     "./src/*": "./src/*",
-    "./PageActions.astro": "./src/config/components/PageActions.astro"
+    "./PageActions.astro": "./src/config/components/PageActions.astro",
+    "./components": "./src/components/index.ts"
   },
   "bin": {
     "docs-toolkit-qa-components": "dist/qa/components.mjs",

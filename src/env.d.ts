@@ -41,3 +41,8 @@ declare module 'starlight-telescope' {
 declare module 'virtual:starlight-changelogs/config' {
   export function setLoaderConfig(config: unknown): void;
 }
+
+declare module '*.astro' {
+  const component: any;
+  export default component;
+}

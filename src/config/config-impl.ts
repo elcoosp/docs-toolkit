@@ -266,6 +266,7 @@ export async function defineDocsConfig(
     );
   }
 
+  const landingCss = fileURLToPath(new URL('../../src/styles/landing.css', import.meta.url));
   const toolkitI18nDir = fileURLToPath(new URL('../../i18n', import.meta.url));
   const siteI18nDir = path.join(path.dirname(findDocsRoot()), 'i18n');
   if (fs.existsSync(toolkitI18nDir)) {
@@ -527,7 +528,7 @@ export async function defineDocsConfig(
 
   const starlightOptions: StarlightUserConfig = {
     routeMiddleware, disable404Route: true, title, description,
-    logo: { src: logoPath }, favicon, customCss, social: finalSocial,
+    logo: { src: logoPath }, favicon, customCss: [landingCss, ...customCss], social: finalSocial,
     editLink: finalEditLink,
     locales: locales || { root: { label: 'English', lang: 'en' }, fr: { label: 'Français', lang: 'fr' } },
     ...(defaultLocale ? { defaultLocale } : {}),
