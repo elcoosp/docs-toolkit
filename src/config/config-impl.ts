@@ -356,7 +356,7 @@ export async function defineDocsConfig(
   starlightPlugins.push(unwrapPlugin(starlightLinksValidator)());
 
   starlightPlugins.push(unwrapPlugin(starlightTelescope)());
-  starlightPlugins.push(suppressHandledOverrideWarnings(unwrapPlugin(starlightBlog)({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'Elcoosp Core Maintainer', title: 'Core Maintainer', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }), ['MarkdownContent']));
+  starlightPlugins.push(suppressHandledOverrideWarnings(unwrapPlugin(starlightBlog)({ title: { en: 'Blog', fr: 'Blog' }, prefix: 'blog', authors: { elcoosp: { name: 'elcoosp', picture: 'https://github.com/elcoosp.png?size=200', url: 'https://github.com/elcoosp' } } }), ['MarkdownContent']));
   starlightPlugins.push(unwrapPlugin(starlightImageZoom)());
   starlightPlugins.push(unwrapPlugin(starlightHeadingBadges)());
   starlightPlugins.push(unwrapPlugin(starlightGitHubAlerts)());
