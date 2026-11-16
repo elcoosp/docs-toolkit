@@ -10,7 +10,9 @@
     "docs-toolkit-qa-components": "dist/qa/components.mjs",
     "docs-toolkit-qa-screenshots": "dist/qa/screenshots.mjs",
     "docs-toolkit-bootstrap-artifacts": "dist/qa/bootstrap-artifacts.mjs",
-    "docs-toolkit-lint": "dist/qa/lint.mjs"
+    "docs-toolkit-lint": "dist/qa/lint.mjs",
+    "docs-toolkit-code-lint": "scripts/code-lint.mjs",
+    "docs-toolkit-code-fmt": "scripts/code-fmt.mjs"
   },
   "files": [
     "dist",
@@ -114,7 +116,9 @@
     "starlight-sidebar-topics": "^0.9.0",
     "starlight-telescope": "^2.0.0",
     "starlight-view-modes": "^0.16.0",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "oxlint": "^1.93.0",
+    "oxfmt": "^0.78.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -123,8 +127,6 @@
     "esbuild": "^0.28.2",
     "expressive-code-collapsible": "^1.1.0",
     "mermaid": "^12.3.0",
-    "oxfmt": "^0.78.0",
-    "oxlint": "^1.93.0",
     "starlight-auto-drafts": "^0.3.1",
     "starlight-codeblock-fullscreen": "^2.0.0",
     "starlight-package-managers": "^0.13.1",
