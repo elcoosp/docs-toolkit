@@ -189,6 +189,7 @@ function buildDiataxisTopics(
   const topics: any[] = [];
   if (learnItems.length > 0) {
     topics.push({
+      id: 'learn',
       label: { en: 'Learn', fr: 'Apprendre' },
       link: '/',
       icon: 'rocket',
@@ -196,12 +197,14 @@ function buildDiataxisTopics(
     });
   }
   topics.push({
+    id: 'reference',
     label: { en: 'Reference', fr: 'Référence' },
     link: refLink,
     icon: 'open-book',
     items: refItems,
   });
   topics.push({
+    id: 'architecture',
     label: { en: 'Architecture', fr: 'Architecture' },
     link: expLink,
     icon: 'puzzle',
@@ -423,6 +426,29 @@ export async function defineDocsConfig(
       },
     },
   });
+  const changelogGroup = { label: 'Changelog', items: makeChangelogsSidebarLinks([{ type: 'all', base: 'changelog', label: 'All versions' }]) };
+  const docsRoot = findDocsRoot();
+  const resolvedSections = options.sections ?? CANONICAL_SECTIONS;
+  const hasTopics = options.topics === true || options.topics === 'diataxis' || (Array.isArray(options.topics) && options.topics.length > 0);
+  if (hasTopics) {
+    const { default: starlightSidebarTopics } = await import('starlight-sidebar-topics');
+    const rawTopics = Array.isArray(options.topics)
+      ? options.topics
+      : buildDiataxisTopics(resolvedSections, docsRoot, changelogGroup);
+    const translatedTopics = rawTopics.map((t: any) => ({
+      ...t,
+      ...(Array.isArray(t.items) ? { items: autoTranslateSidebar(t.items) } : {}),
+    }));
+    const topicOptions = Array.isArray(options.topics)
+      ? undefined
+      : {
+          topics: {
+            reference: ['/changelog', '/changelog/**/*', '/fr/changelog', '/fr/changelog/**/*'],
+            architecture: ['/blog', '/blog/**/*', '/fr/blog', '/fr/blog/**/*'],
+          },
+        };
+    starlightPlugins.push(unwrapPlugin(starlightSidebarTopics)(translatedTopics, topicOptions));
+  }
   starlightPlugins.push(unwrapPlugin(starlightAutoSidebar)());
   starlightPlugins.push({
     name: 'docs-toolkit:view-modes-sidebar-restore',
@@ -439,7 +465,6 @@ export async function defineDocsConfig(
 
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
 
-  const changelogGroup = { label: 'Changelog', items: makeChangelogsSidebarLinks([{ type: 'all', base: 'changelog', label: 'All versions' }]) };
   let headLink: any = undefined;
   let resolvedLlms: any = undefined;
 
@@ -456,25 +481,7 @@ export async function defineDocsConfig(
     ...((_extraPlugins as any[]) ?? []),
     ...starlightPlugins,
   ].map((p) => suppressHandledOverrideWarnings(p, ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents']));
-  const docsRoot = findDocsRoot();
-  const resolvedSections = options.sections ?? CANONICAL_SECTIONS;
-  const hasTopics = options.topics === true || options.topics === 'diataxis' || (Array.isArray(options.topics) && options.topics.length > 0);
-  if (hasTopics) {
-    const { default: starlightSidebarTopics } = await import('starlight-sidebar-topics');
-    const rawTopics = Array.isArray(options.topics)
-      ? options.topics
-      : buildDiataxisTopics(resolvedSections, docsRoot, changelogGroup);
-    const translatedTopics = rawTopics.map((t: any) => ({
-      ...t,
-      ...(Array.isArray(t.items) ? { items: autoTranslateSidebar(t.items) } : {}),
-    }));
-    mergedPlugins.push(
-      suppressHandledOverrideWarnings(
-        unwrapPlugin(starlightSidebarTopics)(translatedTopics),
-        ['Banner', 'PageTitle', 'MarkdownContent', 'TableOfContents'],
-      ),
-    );
-  }
+
 
   let finalSidebarSource: any[];
   if (Array.isArray(_extraSidebar) && _extraSidebar.length > 0) {
