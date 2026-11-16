@@ -257,6 +257,15 @@ export async function defineDocsConfig(
     extraStarlight = {}, extraIntegrations = [], extraVite = {}, llmsTxt = {},
   } = options;
 
+  const projectRoot = path.dirname(path.dirname(findDocsRoot()));
+  const ecConfigFile = path.join(projectRoot, 'ec.config.mjs');
+  if (!fs.existsSync(ecConfigFile)) {
+    fs.writeFileSync(
+      ecConfigFile,
+      "import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers';\n\nexport default {\n  plugins: [pluginLineNumbers()],\n};\n",
+    );
+  }
+
   const toolkitI18nDir = fileURLToPath(new URL('../../i18n', import.meta.url));
   const siteI18nDir = path.join(path.dirname(findDocsRoot()), 'i18n');
   if (fs.existsSync(toolkitI18nDir)) {
