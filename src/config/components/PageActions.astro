@@ -4,6 +4,10 @@ const { editUrl } = Astro.props;
 const isFr = Astro.currentLocale === 'fr' || Astro.url.pathname === '/fr' || Astro.url.pathname.startsWith('/fr/');
 const pagePath = Astro.url.pathname;
 const pageUrl = Astro.site ? new URL(pagePath, Astro.site).toString() : pagePath;
+const aiPrompt = encodeURIComponent(`Read and summarize this documentation: ${pageUrl}`);
+const chatgptUrl = `https://chatgpt.com{aiPrompt}`;
+const claudeUrl = `https://claude.ai{aiPrompt}`;
+const geminiUrl = `https://google.com{aiPrompt}`;
 
 const labels = isFr
   ? {
@@ -46,9 +50,9 @@ const labels = isFr
     </button>
     <div class="dropdown-bridge">
       <div class="dropdown-menu" role="menu">
-        <a role="menuitem" href={`https://chatgpt.com{encodeURIComponent(`Read and summarize this documentation: ${pageUrl}`)}`} target="_blank" rel="noopener">ChatGPT</a>
-        <a role="menuitem" href={`https://claude.ai{encodeURIComponent(`Read and summarize this documentation: ${pageUrl}`)}`} target="_blank" rel="noopener">Claude</a>
-        <a role="menuitem" href={`https://google.com{encodeURIComponent(`Read and summarize this documentation: ${pageUrl}`)}`} target="_blank" rel="noopener">Gemini</a>
+        <a role="menuitem" href={chatgptUrl} target="_blank" rel="noopener">ChatGPT</a>
+        <a role="menuitem" href={claudeUrl} target="_blank" rel="noopener">Claude</a>
+        <a role="menuitem" href={geminiUrl} target="_blank" rel="noopener">Gemini</a>
       </div>
     </div>
   </div>
