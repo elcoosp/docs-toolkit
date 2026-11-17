@@ -19,6 +19,40 @@ import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
 import { staticMermaidIntegration } from './rehype-static-mermaid';
+import type { AstroIntegration } from 'astro';
+
+function parallelBuildDoneIntegration(): AstroIntegration {
+  const HTML_MUTATING_INTEGRATIONS = new Set([
+    "@elcoosp/docs-toolkit/static-mermaid",
+    "starlight-term-glossary",
+    "starlight-term-glossary-integration",
+  ]);
+  let parallelHooks: Array<(ctx: any) => unknown> = [];
+
+  return {
+    name: "@elcoosp/docs-toolkit/parallel-build-done",
+    hooks: {
+      "astro:config:done"({ config }) {
+        const collected: Array<(ctx: any) => unknown> = [];
+        for (const integration of config.integrations) {
+          if (!integration || integration.name === "@elcoosp/docs-toolkit/parallel-build-done") continue;
+          if (HTML_MUTATING_INTEGRATIONS.has(integration.name)) continue;
+          const origDone = integration.hooks?.["astro:build:done"];
+          if (typeof origDone === "function") {
+            collected.push(origDone);
+            integration.hooks["astro:build:done"] = () => {};
+          }
+        }
+        parallelHooks = collected;
+      },
+      async "astro:build:done"(ctx) {
+        if (parallelHooks.length === 0) return;
+        await Promise.all(parallelHooks.map((fn) => Promise.resolve().then(() => fn(ctx))));
+      },
+    },
+  };
+}
+
 
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 import { inlineBashIntegration } from './rehype-inline-bash';
@@ -832,6 +866,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   ];
 
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
+  integrations.push(parallelBuildDoneIntegration());
   return defineConfig({
     markdown: {
       shikiConfig: {
