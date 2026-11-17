@@ -1,10 +1,8 @@
 ---
-import DefaultTOC from '@astrojs/starlight/components/TableOfContents.astro';
-import ViewModesTOC from 'starlight-view-modes/components/TableOfContents.astro';
-import HeadingBadgesTOC from 'starlight-heading-badges/components/HeadingBadgesTableOfContents.astro';
+import DefaultTOC from "@astrojs/starlight/components/TableOfContents.astro";
+import HeadingBadgesTOC from "starlight-heading-badges/components/HeadingBadgesTableOfContents.astro";
 ---
 
-<ViewModesTOC {...Astro.props} />
 <HeadingBadgesTOC {...Astro.props}>
   <DefaultTOC {...Astro.props} />
 </HeadingBadgesTOC>

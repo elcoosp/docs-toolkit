@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { readdir, readFile, writeFile, copyFile, mkdir, access, chmod } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -84,6 +85,12 @@ pkg.bin = {
 };
 
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
+const binSrc = 'assets/bin/static-mermaid-rs';
+if (fs.existsSync(binSrc)) {
+  fs.mkdirSync('dist/assets/bin', { recursive: true });
+  fs.copyFileSync(binSrc, 'dist/assets/bin/static-mermaid-rs');
+  fs.chmodSync('dist/assets/bin/static-mermaid-rs', 0o755);
+}
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 
 console.log('postbuild: root types =', pkg.types);

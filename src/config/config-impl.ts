@@ -18,7 +18,7 @@ import { deriveAccent, accentFromHex } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
 import { ROBOTO_BASE64 } from '../assets/font-b64';
-import mermaid from 'astro-mermaid';
+import { staticMermaidIntegration } from './rehype-static-mermaid';
 
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 import { inlineBashIntegration } from './rehype-inline-bash';
@@ -409,7 +409,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     { default: starlightAutoSidebar },
     { default: starlightLinksValidator },
     { default: starlightBlog },
-    { default: starlightViewModes },
     { default: starlightTelescope },
     { default: starlightSeo },
     { default: starlightAnnouncement },
@@ -425,7 +424,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     import('starlight-auto-sidebar'),
     import('starlight-links-validator'),
     import('starlight-blog'),
-    import('starlight-view-modes'),
     import('starlight-telescope'),
     import('starlight-seo'),
     import('starlight-announcement'),
@@ -510,9 +508,13 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   // the production build on broken internal links. `astro dev` and
   // `astro preview` are unaffected. There is no opt-out — every fleet site
   // is link-checked, and a broken internal link blocks deploy.
-  starlightPlugins.push(unwrapPlugin(starlightLinksValidator)());
+  if (process.env.CI === 'true' || process.env.DOCS_VALIDATE_LINKS === '1') {
+    starlightPlugins.push(unwrapPlugin(starlightLinksValidator)());
+  }
 
-  starlightPlugins.push(unwrapPlugin(starlightTelescope)());
+  if ((options as any).telescope === true) {
+    starlightPlugins.push(unwrapPlugin(starlightTelescope)());
+  }
   starlightPlugins.push(
     suppressHandledOverrideWarnings(
       unwrapPlugin(starlightBlog)({
@@ -542,15 +544,43 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
       ],
     }),
   );
-  starlightPlugins.push(
-    suppressHandledOverrideWarnings(
-      unwrapPlugin(starlightViewModes)({
-        zenModeSettings: { enabled: true },
-        presentationModeSettings: { enabled: false },
-      }),
-      ['TableOfContents'],
-    ),
-  );
+  starlightPlugins.push({
+    name: 'docs-toolkit:css-zen-mode',
+    hooks: {
+      'config:setup'({ addIntegration }: any) {
+        addIntegration({
+          name: '@elcoosp/docs-toolkit/css-zen-mode',
+          hooks: {
+            'astro:config:setup'({ injectScript }: any) {
+              injectScript(
+                'head-inline',
+                `(() => {
+                  const params = new URLSearchParams(location.search);
+                  const apply = (on) => {
+                    document.documentElement.dataset.zenMode = on ? "true" : "false";
+                    try { localStorage.setItem("sl-zen-mode", on ? "1" : "0"); } catch {}
+                  };
+                  if (params.get("zen") === "1" || localStorage.getItem("sl-zen-mode") === "1") apply(true);
+                  if (!document.getElementById("sl-zen-css")) {
+                    const s = document.createElement("style");
+                    s.id = "sl-zen-css";
+                    s.textContent = "html[data-zen-mode=\"true\"] nav.sidebar,html[data-zen-mode=\"true\"] .right-sidebar-container{display:none!important}html[data-zen-mode=\"true\"] .main-frame{padding-inline-start:0!important}html[data-zen-mode=\"true\"] .main-pane{max-width:76ch;margin-inline:auto}";
+                    document.head.appendChild(s);
+                  }
+                  window.addEventListener("keydown", (e) => {
+                    if (e.altKey && (e.key === "z" || e.key === "Z")) {
+                      e.preventDefault();
+                      apply(document.documentElement.dataset.zenMode !== "true");
+                    }
+                  });
+                })();`,
+              );
+            },
+          },
+        });
+      },
+    },
+  });
   starlightPlugins.push(
     unwrapPlugin(starlightSeo)({
       site: {
@@ -613,17 +643,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   starlightPlugins.push(unwrapPlugin(starlightScrollToTop)());
   starlightPlugins.push(unwrapPlugin(starlightAutoDrafts)());
   starlightPlugins.push(unwrapPlugin(starlightCodeblockFullscreen)());
-  starlightPlugins.push({
-    name: 'docs-toolkit:view-modes-sidebar-strip',
-    hooks: {
-      'config:setup'({ addRouteMiddleware }: any) {
-        addRouteMiddleware({
-          entrypoint: '@elcoosp/docs-toolkit/src/config/view-modes-sidebar-strip.ts',
-          order: 'post',
-        });
-      },
-    },
-  });
   const changelogGroup = {
     label: 'Changelog',
     items: makeChangelogsSidebarLinks([{ type: 'all', base: 'changelog', label: 'All versions' }]),
@@ -667,17 +686,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     starlightPlugins.push(unwrapPlugin(starlightSidebarTopics)(translatedTopics, topicOptions));
   }
   starlightPlugins.push(unwrapPlugin(starlightAutoSidebar)());
-  starlightPlugins.push({
-    name: 'docs-toolkit:view-modes-sidebar-restore',
-    hooks: {
-      'config:setup'({ addRouteMiddleware }: any) {
-        addRouteMiddleware({
-          entrypoint: '@elcoosp/docs-toolkit/src/config/view-modes-sidebar-restore.ts',
-          order: 'post',
-        });
-      },
-    },
-  });
   starlightPlugins.push(unwrapPlugin(starlightChangelogs)());
 
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
@@ -793,7 +801,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
       options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' },
       render,
     } as unknown as Parameters<typeof astroTakumi>[0]),
-    mermaid({ mermaidConfig: { layout: 'dagre', look: 'classic' } }),
+    staticMermaidIntegration(),
     (() => {
       const sl = starlight(starlightOptions);
       const origSetup = sl.hooks?.['astro:config:setup'];
@@ -833,11 +841,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
       },
     },
     vite: {
-      resolve: {
-        alias: {
-          mermaid: fileURLToPath(import.meta.resolve('mermaid')),
-        },
-      },
       plugins: [
         {
           name: 'docs-toolkit:resolve-starlight-plugins',

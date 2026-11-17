@@ -8,3 +8,7 @@ src/assets/font-b64.ts
 # Build-time backups
 *.bak
 *.orig
+-e 
+# Rust build artifacts
+crates/*/target/
+

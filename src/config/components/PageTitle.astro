@@ -1,13 +1,105 @@
 ---
-import DefaultPageTitle from '@astrojs/starlight/components/PageTitle.astro';
-import ViewModesPageTitle from 'starlight-view-modes/components/PageTitle.astro';
-import ReadingContextBar from '../../plugins/reading-context/ReadingContextBar.astro';
-import PageActions from './PageActions.astro';
+import DefaultPageTitle from "@astrojs/starlight/components/PageTitle.astro";
+import ReadingContextBar from "../../plugins/reading-context/ReadingContextBar.astro";
+import PageActions from "./PageActions.astro";
 
-const is404 = Astro.props.id === '404' || Astro.url.pathname.endsWith('/404') || Astro.url.pathname.endsWith('/404/');
+const is404 = Astro.props.id === "404" || Astro.url.pathname.endsWith("/404") || Astro.url.pathname.endsWith("/404/");
 ---
 
-<DefaultPageTitle {...Astro.props} />
-<ViewModesPageTitle {...Astro.props} />
+<div class="sl-title-zen-row">
+  <DefaultPageTitle {...Astro.props} />
+  {!is404 && (
+    <button
+      type="button"
+      class="sl-zen-toggle"
+      data-zen-toggle
+      aria-pressed="false"
+      title="Toggle Zen Mode (Alt+Z)"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+      </svg>
+      <span class="sl-zen-label">Zen</span>
+    </button>
+  )}
+</div>
 {!is404 && <ReadingContextBar />}
 {!is404 && <PageActions {...Astro.props} />}
+
+<style>
+  .sl-title-zen-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .sl-zen-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.45rem;
+    border: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg-nav);
+    color: var(--sl-color-gray-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .sl-zen-toggle:hover,
+  :global(html[data-zen-mode="true"]) .sl-zen-toggle {
+    color: var(--sl-color-text-accent);
+    border-color: var(--sl-color-accent);
+  }
+  :global(html[data-zen-mode="true"] nav.sidebar),
+  :global(html[data-zen-mode="true"] .right-sidebar-container),
+  :global(html[data-zen-mode="true"] starlight-toc),
+  :global(html[data-zen-mode="true"] mobile-starlight-toc) {
+    display: none !important;
+  }
+  :global(html[data-zen-mode="true"] .main-frame) {
+    padding-inline-start: 0 !important;
+  }
+  :global(html[data-zen-mode="true"] .main-pane) {
+    max-width: 56rem;
+    margin-inline: auto;
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var root = document.documentElement;
+    function applyZen(on) {
+      if (on) {
+        root.setAttribute("data-zen-mode", "true");
+      } else {
+        root.removeAttribute("data-zen-mode");
+      }
+      var btns = document.querySelectorAll("[data-zen-toggle]");
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    }
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("zen") === "1" || localStorage.getItem("sl-zen-mode") === "1") {
+      applyZen(true);
+    }
+    document.addEventListener("click", function (e) {
+      var target = e.target;
+      var btn = target && target.closest ? target.closest("[data-zen-toggle]") : null;
+      if (!btn) return;
+      var next = !root.hasAttribute("data-zen-mode");
+      localStorage.setItem("sl-zen-mode", next ? "1" : "0");
+      applyZen(next);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.altKey && (e.key === "z" || e.key === "Z")) {
+        var next = !root.hasAttribute("data-zen-mode");
+        localStorage.setItem("sl-zen-mode", next ? "1" : "0");
+        applyZen(next);
+      }
+    });
+  })();
+</script>
