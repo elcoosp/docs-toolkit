@@ -1,3 +1,6 @@
+import { starlightDiataxisLint } from '../plugins/diataxis-lint/index.js';
+import { starlightRelatedPages } from '../plugins/related-pages/index.js';
+import { starlightI18nParity } from '../plugins/i18n-parity/index.js';
 import { starlightTermGlossary } from '../plugins/term-glossary/index.js';
 import { starlightSmartTocProgress } from '../plugins/smart-toc-progress/index.js';
 import { createRequire } from 'node:module';
@@ -679,7 +682,14 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
 
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
-  starlightPlugins.push(starlightReadingContext(), starlightSmartTocProgress(), starlightTermGlossary());
+  starlightPlugins.push(
+    starlightReadingContext(),
+    starlightSmartTocProgress(),
+    starlightTermGlossary(),
+    starlightI18nParity(),
+    starlightRelatedPages(),
+    starlightDiataxisLint(),
+  );
 
   let headLink: any = undefined;
   let resolvedLlms: any = undefined;
