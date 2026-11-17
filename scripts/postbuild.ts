@@ -83,7 +83,6 @@ pkg.bin = {
   'docs-toolkit-lint': 'dist/qa/lint.mjs',
 };
 
-pkg.bin = { ...(pkg.bin ?? {}), 'docs-toolkit-code-lint': 'scripts/code-lint.mjs', 'docs-toolkit-code-fmt': 'scripts/code-fmt.mjs' };
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 
