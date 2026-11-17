@@ -398,7 +398,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     favicon = '/favicon.png',
     customCss = ['./src/styles/custom.css'],
     social = [],
-    editLink,
+    editLink: _editLink,
     locales,
     defaultLocale = 'root',
     plugins = [],
@@ -487,7 +487,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     import('starlight-codeblock-fullscreen'),
   ]);
 
-  const rawGithubRepo =
+  const _rawGithubRepo =
     options.github ??
     extractGitHubRepo(options) ??
     extractGitHubRepo(extraStarlight as any) ??
