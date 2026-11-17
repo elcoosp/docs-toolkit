@@ -30,7 +30,7 @@ for (const entry of fs.readdirSync(reposRoot, { withFileTypes: true })) {
     const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
     if (!allDeps["@elcoosp/docs-toolkit"]) continue;
     const distDir = path.join(siteDir, "dist");
-    const weight = fs.existsSync(distDir) ? fs.readdirSync(distDir, { recursive: true }).length : 0;
+    const weight = fs.existsSync(distDir) ? fs.readdirSync(distDir, { recursive: true }).length : fs.readdirSync(path.join(siteDir, "src/content"), { recursive: true }).length;
     sites.push({ name: child.name, dir: siteDir, weight });
   }
 }
