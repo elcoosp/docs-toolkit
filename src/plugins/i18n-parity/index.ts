@@ -39,7 +39,12 @@ function analyzeMarkdown(relPath: string, raw: string, locales: Set<string>): Do
   const flushPara = (): void => {
     if (paraBuf.length === 0) return;
     const joined = paraBuf.join(' ').replaceAll(/\s+/g, ' ').trim();
-    if (joined.length >= 60) paragraphs.add(joined);
+    const proseOnly = joined
+      .replaceAll(/`[^`]+`/g, '')
+      .replaceAll(/<[^>]+>/g, '')
+      .replaceAll(/[^a-zA-Z]+/g, ' ')
+      .trim();
+    if (proseOnly.length >= 60) paragraphs.add(joined);
     paraBuf = [];
   };
 
