@@ -487,11 +487,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     import('starlight-codeblock-fullscreen'),
   ]);
 
-  const _rawGithubRepo =
-    options.github ??
-    extractGitHubRepo(options) ??
-    extractGitHubRepo(extraStarlight as any) ??
-    `elcoosp/${projectName.toLowerCase().replaceAll(/\s+/g, '-')}`;
   const rawRepo =
     options.github ??
     extractGitHubRepo(options) ??
