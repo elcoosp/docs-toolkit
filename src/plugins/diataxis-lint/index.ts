@@ -116,6 +116,7 @@ function runDiataxisLint(
       let inFence = false;
       let h2Count = 0;
       let codeBlocks = 0;
+      let hasSteps = false;
       let hasTable = false;
       let hasTodo = false;
       let wordCount = 0;
@@ -128,7 +129,11 @@ function runDiataxisLint(
           continue;
         }
         if (inFence) continue;
-        if (t.includes('<Code ') || t.includes('<Code>')) codeBlocks++;
+        if (t.includes('<Steps')) hasSteps = true;
+        if (t.includes('<Code ') || t.includes('<Code>')) {
+          codeBlocks++;
+          continue;
+        }
         if (t.startsWith('## ')) h2Count++;
         if (t.startsWith('|') && t.endsWith('|')) hasTable = true;
         if (/\b(TODO|FIXME|TBD|LOREM IPSUM)\b/.test(t)) hasTodo = true;
@@ -148,7 +153,7 @@ function runDiataxisLint(
           logger.warn('Tutorial ' + Q + rel + Q + ' has 0 runnable code blocks.');
           warnings++;
         }
-        if (h2Count < 2) {
+        if (h2Count < 2 && !hasSteps) {
           logger.warn('Tutorial ' + Q + rel + Q + ' has fewer than 2 step sections (H2).');
           warnings++;
         }
@@ -158,7 +163,8 @@ function runDiataxisLint(
           warnings++;
         }
       } else if (quadrant === 'reference') {
-        if (codeBlocks === 0 && !hasTable) {
+        const isChangelog = /\/(changelog|release-notes)\.(md|mdx)$/.test(relNoLocale);
+        if (!isChangelog && codeBlocks === 0 && !hasTable) {
           logger.warn('Reference page ' + Q + rel + Q + ' has no signature block or reference table.');
           warnings++;
         }

@@ -52,7 +52,11 @@ function analyzeMarkdown(relPath: string, raw: string, locales: Set<string>): Do
       continue;
     }
     if (inFence) continue;
-    if (t.includes('<Code ') || t.includes('<Code>')) codeBlockCount++;
+    if (t.includes('<Code ') || t.includes('<Code>')) {
+      flushPara();
+      codeBlockCount++;
+      continue;
+    }
 
     if (t.startsWith('## ')) {
       flushPara();
