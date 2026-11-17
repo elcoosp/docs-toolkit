@@ -21,7 +21,8 @@
     "ec.config.mjs",
     "rumdl.toml",
     ".oxlintrc.json",
-    ".oxfmtrc.json"
+    ".oxfmtrc.json",
+    "assets"
   ],
   "type": "module",
   "main": "./dist/index.mjs",

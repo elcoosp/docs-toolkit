@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AstroIntegrationLogger } from 'astro';
 import type { StarlightPlugin } from '@astrojs/starlight/types';
+import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
 
 export interface RelatedPagesOptions {
   maxRelated?: number;
@@ -292,7 +293,11 @@ export function starlightRelatedPages(options: RelatedPagesOptions = {}): Starli
         const rootDir = config.root ? new URL(config.root).pathname : process.cwd();
         const docsDir = path.join(rootDir, 'src/content/docs');
         const locales = new Set(['en', 'fr', ...Object.keys(config.locales ?? {})]);
-        cachedGraph = buildRelatedGraph(docsDir, locales, maxRelated);
+        if (hasNativePipeline()) {
+          registerNativePipelinePlugin(rootDir, 'relatedPages', { maxRelated }, locales, config.defaultLocale);
+        } else {
+          cachedGraph = buildRelatedGraph(docsDir, locales, maxRelated);
+        }
         cachedPayload = JSON.stringify(cachedGraph);
         addIntegration({
           name: 'starlight-related-pages',
@@ -323,6 +328,7 @@ export function starlightRelatedPages(options: RelatedPagesOptions = {}): Starli
               });
             },
             'astro:build:done'({ dir, logger }) {
+              if (runNativePipelineOnce(rootDir, dir, logger)) return;
               fs.writeFileSync(path.join(new URL(dir).pathname, 'related-pages.json'), cachedPayload);
               runRelatedQaAudit(cachedGraph, logger);
             },

@@ -1,4 +1,5 @@
 import type { StarlightPlugin } from '@astrojs/starlight/types';
+import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -175,6 +176,7 @@ function walkHtmlFiles(dir: string, baseDir = dir, out: string[] = []): string[]
 }
 
 export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): StarlightPlugin {
+  let rootDir = process.cwd();
   const hoverDelay = options.hoverDelay ?? 180;
   const virtualId = 'virtual:starlight-link-preview';
   const resolvedVirtualId = '\0' + virtualId;
@@ -182,7 +184,9 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
   return {
     name: 'starlight-link-preview',
     hooks: {
-      'config:setup'({ addIntegration }) {
+      'config:setup'({ addIntegration, config }) {
+        rootDir = config.root ? fileURLToPath(config.root) : process.cwd();
+        if (hasNativePipeline()) registerNativePipelinePlugin(rootDir, 'linkPreview', true);
         addIntegration({
           name: 'starlight-link-preview-integration',
           hooks: {
@@ -214,6 +218,7 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
               );
             },
             'astro:build:done'({ dir, logger }) {
+              if (runNativePipelineOnce(rootDir, dir, logger)) return;
               const outDir = fileURLToPath(dir);
               const index: Record<string, LinkPreviewEntry> = {};
               let count = 0;

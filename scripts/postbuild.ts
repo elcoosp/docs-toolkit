@@ -85,11 +85,16 @@ pkg.bin = {
 };
 
 await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
-const binSrc = 'assets/bin/static-mermaid-rs';
-if (fs.existsSync(binSrc)) {
+if (fs.existsSync('assets/bin')) {
   fs.mkdirSync('dist/assets/bin', { recursive: true });
-  fs.copyFileSync(binSrc, 'dist/assets/bin/static-mermaid-rs');
-  fs.chmodSync('dist/assets/bin/static-mermaid-rs', 0o755);
+  for (const binFile of fs.readdirSync('assets/bin')) {
+    const srcPath = path.join('assets/bin', binFile);
+    if (fs.statSync(srcPath).isFile()) {
+      const dstPath = path.join('dist/assets/bin', binFile);
+      fs.copyFileSync(srcPath, dstPath);
+      fs.chmodSync(dstPath, 0o755);
+    }
+  }
 }
 console.log('postbuild: assets copied, shebangs ensured, exports regenerated');
 

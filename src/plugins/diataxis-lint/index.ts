@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AstroIntegrationLogger } from 'astro';
 import type { StarlightPlugin } from '@astrojs/starlight/types';
+import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
 
 export interface DiataxisLintOptions {
   strict?: boolean;
@@ -212,10 +213,12 @@ export function starlightDiataxisLint(options: DiataxisLintOptions = {}): Starli
         const rootDir = config.root ? new URL(config.root).pathname : process.cwd();
         const docsDir = path.join(rootDir, 'src/content/docs');
         const locales = new Set<string>(['en', 'fr', ...Object.keys(config.locales ?? {})]);
+        if (hasNativePipeline()) registerNativePipelinePlugin(rootDir, 'diataxisLint', resolved, locales, config.defaultLocale);
         addIntegration({
           name: 'starlight-diataxis-lint',
           hooks: {
-            'astro:build:done'({ logger }) {
+            'astro:build:done'({ dir, logger }) {
+              if (runNativePipelineOnce(rootDir, dir, logger)) return;
               runDiataxisLint(docsDir, locales, resolved, logger);
             },
           },

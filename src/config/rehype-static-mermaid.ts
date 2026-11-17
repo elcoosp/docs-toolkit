@@ -3,10 +3,15 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  hasNativePipeline,
+  registerNativePipelinePlugin,
+  runNativePipelineOnce,
+} from '../plugins/shared/pipeline-host.js';
 
 const SEP = '\n===MERMAID_SEP===\n';
 
-function resolveBinary(): string {
+function resolveLegacyBinary(): string {
   const candidates = [
     fileURLToPath(new URL('../assets/bin/static-mermaid-rs', import.meta.url)),
     fileURLToPath(new URL('../../assets/bin/static-mermaid-rs', import.meta.url)),
@@ -58,16 +63,24 @@ function walkHtml(dir: string, out: string[] = []): string[] {
 }
 
 export function staticMermaidIntegration(): AstroIntegration {
+  let rootDir = process.cwd();
   return {
     name: '@elcoosp/docs-toolkit/static-mermaid',
     hooks: {
-      'astro:config:setup'({ injectScript }) {
+      'astro:config:setup'({ config, injectScript }) {
+        if (config?.root) rootDir = fileURLToPath(config.root);
+        if (hasNativePipeline()) {
+          registerNativePipelinePlugin(rootDir, 'mermaid', true);
+        }
         injectScript(
           'head-inline',
-          '(() => { if (document.getElementById("sl-static-diagram-css")) return; const s = document.createElement("style"); s.id = "sl-static-diagram-css"; s.textContent = ".sl-static-diagram{margin:1.5rem 0;padding:1rem;border:1px solid var(--sl-color-hairline);border-radius:0.75rem;background:var(--sl-color-bg-sidebar);overflow-x:auto;display:flex;justify-content:center}.sl-static-diagram svg{max-width:100%;height:auto;display:block}"; document.head.appendChild(s); })();',
+          '(() => { if (document.getElementById("sl-static-diagram-css")) return; const s = document.createElement("style"); s.id = "sl-static-diagram-css"; s.textContent = ".sl-static-diagram{margin:1.5rem 0;padding:1rem;border:1px solid var(--sl-color-hairline);border-radius:0.75rem;background:var(--sl-color-bg-sidebar);overflow-x:auto;display:flex;justify-content:center}.sl-static-diagram svg{max-width:100%;height:auto;display:block}.sl-mermaid-dark{display:none}:root[data-theme=dark] .sl-mermaid-light{display:none}:root[data-theme=dark] .sl-mermaid-dark{display:block}"; document.head.appendChild(s); })();',
         );
       },
       'astro:build:done'({ dir, logger }) {
+        if (runNativePipelineOnce(rootDir, dir, logger)) {
+          return;
+        }
         const outDir = fileURLToPath(dir);
         const htmlFiles = walkHtml(outDir);
         const matches: Array<{ file: string; start: number; end: number; source: string }> = [];
@@ -93,30 +106,28 @@ export function staticMermaidIntegration(): AstroIntegration {
 
         if (matches.length === 0) return;
 
-        const bin = resolveBinary();
+        const bin = resolveLegacyBinary();
         const input = matches.map((m) => m.source).join(SEP);
-        const rendered = execFileSync(bin, [], { input, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-        const svgs = rendered.split(SEP);
-
-        const byFile = new Map<string, Array<{ start: number; end: number; svg: string }>>();
-        for (let i = 0; i < matches.length; i++) {
-          const m = matches[i];
-          const svg = (svgs[i] ?? '').trim();
-          if (!m || !svg) continue;
-          const list = byFile.get(m.file) ?? [];
-          list.push({ start: m.start, end: m.end, svg });
-          byFile.set(m.file, list);
-        }
-
-        for (const [file, edits] of byFile) {
-          let html = fileCache.get(file) ?? '';
-          for (const edit of edits.toSorted((a, b) => b.start - a.start)) {
-            html = html.slice(0, edit.start) + edit.svg + html.slice(edit.end);
-          }
-          fs.writeFileSync(file, html);
-        }
-        logger.info(`Rendered ${matches.length} static SVG diagram(s) via static-mermaid-rs.`);
-      },
-    },
-  };
+const rendered = execFileSync(bin, [], { input, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+const svgs = rendered.split(SEP);
+const byFile = new Map<string, Array<{ start: number; end: number; svg: string }>>();
+for (let i = 0; i < matches.length; i++) {
+const m = matches[i];
+const svg = (svgs[i] ?? '').trim();
+if (!m || !svg) continue;
+const list = byFile.get(m.file) ?? [];
+list.push({ start: m.start, end: m.end, svg });
+byFile.set(m.file, list);
+}
+for (const [file, edits] of byFile) {
+let html = fileCache.get(file) ?? '';
+for (const edit of edits.toSorted((a, b) => b.start - a.start)) {
+html = html.slice(0, edit.start) + edit.svg + html.slice(edit.end);
+}
+fs.writeFileSync(file, html);
+}
+logger.info('Rendered ' + matches.length + ' static SVG diagram(s) via static-mermaid-rs.');
+},
+},
+};
 }

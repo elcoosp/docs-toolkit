@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AstroIntegrationLogger } from 'astro';
 import type { StarlightPlugin } from '@astrojs/starlight/types';
+import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
 
 export interface GlossaryEntry {
   term: string;
@@ -442,7 +443,11 @@ export function starlightTermGlossary(options: TermGlossaryOptions = {}): Starli
       'config:setup'({ addIntegration, config }) {
         const rootDir = config.root ? new URL(config.root).pathname : process.cwd();
         cachedLocales = new Set(['en', 'fr', ...Object.keys(config.locales ?? {})]);
-        cachedEntries = collectEntries(rootDir, cachedLocales);
+        if (hasNativePipeline()) {
+          registerNativePipelinePlugin(rootDir, 'glossary', { strict }, cachedLocales, config.defaultLocale);
+        } else {
+          cachedEntries = collectEntries(rootDir, cachedLocales);
+        }
         cachedPayload = JSON.stringify(cachedEntries);
         addIntegration({
           name: 'starlight-term-glossary',
@@ -471,6 +476,7 @@ export function starlightTermGlossary(options: TermGlossaryOptions = {}): Starli
               });
             },
             'astro:build:done'({ dir, logger }) {
+              if (runNativePipelineOnce(rootDir, dir, logger)) return;
               const distDir = new URL(dir).pathname;
               fs.writeFileSync(path.join(distDir, 'glossary-index.json'), cachedPayload);
               runGlossaryQaAudit(distDir, cachedEntries, cachedLocales, logger, strict);
