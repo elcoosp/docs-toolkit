@@ -1,3 +1,5 @@
+import { starlightTermGlossary } from '../plugins/term-glossary/index.js';
+import { starlightSmartTocProgress } from '../plugins/smart-toc-progress/index.js';
 import { createRequire } from 'node:module';
 const _toolkitRequire = createRequire(import.meta.url);
 import fs from 'node:fs';
@@ -67,6 +69,17 @@ export interface DocsConfigOptions {
   blog?: boolean | Record<string, unknown>;
 }
 
+function normalizeShikiLangs(langs: unknown): unknown {
+  if (!Array.isArray(langs)) return langs;
+  return langs.map((lang) => {
+    if (!lang || typeof lang !== 'object' || typeof (lang as { name?: unknown }).name !== 'string')
+      return lang;
+    const obj = lang as { name: string; aliases?: string[] };
+    const lower = obj.name.toLowerCase();
+    if (lower === obj.name) return lang;
+    return { ...obj, name: lower, aliases: Array.from(new Set([...(obj.aliases ?? []), obj.name])) };
+  });
+}
 function resolveBareEntrypoint(ep: unknown): unknown {
   if (
     typeof ep !== 'string' ||
@@ -349,6 +362,12 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     llmsTxt = {},
   } = options;
 
+  const rawShikiLangs =
+    (extraStarlight as any)?.expressiveCode?.shiki?.langs ??
+    (typeof expressiveCode === 'object' ? (expressiveCode as any)?.shiki?.langs : undefined);
+  if (Array.isArray(rawShikiLangs) && rawShikiLangs.length > 0) {
+    (globalThis as any).__docsToolkitShikiLangs = normalizeShikiLangs(rawShikiLangs);
+  }
   const resolvedRouteMiddleware =
     routeMiddleware ??
     (fs.existsSync(path.resolve(process.cwd(), 'src/routeData.ts'))
@@ -660,7 +679,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
 
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
-  starlightPlugins.push(starlightReadingContext());
+  starlightPlugins.push(starlightReadingContext(), starlightSmartTocProgress(), starlightTermGlossary());
 
   let headLink: any = undefined;
   let resolvedLlms: any = undefined;

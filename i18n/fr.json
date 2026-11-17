@@ -25,5 +25,7 @@
   "aside.caution": "Attention",
   "aside.danger": "Danger",
   "fileTree.directory": "Répertoire",
-  "builtWithStarlight.label": "Construit avec Starlight"
+  "builtWithStarlight.label": "Construit avec Starlight",
+  "glossary.eyebrow": "Concept clé",
+  "glossary.readMore": "Lire l'explication"
 }

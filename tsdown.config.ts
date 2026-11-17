@@ -9,6 +9,8 @@ export default defineConfig({
     'src/config/collections.ts',
     'src/plugins/link-preview/index.ts',
     'src/plugins/reading-context/index.ts',
+    'src/plugins/smart-toc-progress/index.ts',
+    'src/plugins/term-glossary/index.ts',
     'src/qa/components.ts',
     'src/qa/bootstrap-artifacts.ts',
     'src/qa/screenshots.ts',
