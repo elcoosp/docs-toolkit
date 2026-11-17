@@ -187,7 +187,8 @@ function runI18nParityAudit(
       const enDoc = analyzeMarkdown(rel, fs.readFileSync(enFile, 'utf8'), allLocales);
       const locDoc = analyzeMarkdown(loc + '/' + rel, fs.readFileSync(locFile, 'utf8'), allLocales);
 
-      if (enDoc.h2Count !== locDoc.h2Count) {
+      const isChangelog = /(^|\/)(changelog|release-notes)\.(md|mdx)$/.test(enDoc.relPath);
+      if (!isChangelog && enDoc.h2Count !== locDoc.h2Count) {
         logger.warn(
           'Section count drift on ' +
             Q +
