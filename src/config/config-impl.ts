@@ -926,6 +926,23 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
             }
             return null;
           },
+          load(id: string) {
+            if (id.endsWith('/starlight-changelogs/routes/index.astro')) {
+              const src = fs.readFileSync(id, 'utf8');
+              return src.replace(
+                'return getChangelogsStaticPaths()',
+                "return (await getChangelogsStaticPaths()).filter((p) => p?.props?.type !== 'compare')",
+              );
+            }
+            if (id.endsWith('/starlight-changelogs/components/Version.astro')) {
+              const src = fs.readFileSync(id, 'utf8');
+              return src.replace(
+                'compareLink={entry.latest ? undefined : getLink(getComparePath(entry, locale))}',
+                'compareLink={undefined}',
+              );
+            }
+            return null;
+          },
           resolveId(id: string) {
             if (
               /^(?:starlight-[^/]+|astro-d2|astro-mermaid|@elcoosp\/astro-takumi|mermaid|react|react-dom)(?:\/|$)/.test(
