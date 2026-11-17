@@ -1,9 +1,3 @@
-import { starlightDiataxisLint } from '../plugins/diataxis-lint/index.js';
-import { starlightRelatedPages } from '../plugins/related-pages/index.js';
-import { starlightI18nParity } from '../plugins/i18n-parity/index.js';
-import { starlightTermGlossary } from '../plugins/term-glossary/index.js';
-import { starlightSmartTocProgress } from '../plugins/smart-toc-progress/index.js';
-import { createRequire } from 'node:module';
 const _toolkitRequire = createRequire(import.meta.url);
 import fs from 'node:fs';
 import path from 'node:path';
@@ -458,7 +452,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   const [
     { default: starlightChangelogs, makeChangelogsSidebarLinks },
     { default: starlightAutoSidebar },
-    { default: starlightLinksValidator },
     { default: starlightBlog },
     { default: starlightTelescope },
     { default: starlightSeo },
@@ -473,7 +466,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   ] = await Promise.all([
     import('starlight-changelogs'),
     import('starlight-auto-sidebar'),
-    import('starlight-links-validator'),
     import('starlight-blog'),
     import('starlight-telescope'),
     import('starlight-seo'),
@@ -885,6 +877,12 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   if (llmsTxt !== false && resolvedLlms) integrations.push(llmsIntegration(resolvedLlms));
   integrations.push(parallelBuildDoneIntegration());
   return defineConfig({
+    build: {
+      concurrency: Math.max(2, Math.min(8, os.cpus().length)),
+    },
+    build: {
+      concurrency: Math.max(2, Math.min(8, os.cpus().length)),
+    },
     markdown: {
       shikiConfig: {
         langAlias: {

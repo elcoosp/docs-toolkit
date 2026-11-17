@@ -131,8 +131,16 @@ pub fn run_mermaid_mutator(dist_dir: &Path) -> usize {
     let end_marker = "</figure></div>";
 
     files.par_iter().for_each(|file| {
-        let Ok(html) = fs::read_to_string(file) else { return };
-        if !html.contains("expressive-code") {
+        let Ok(mut html) = fs::read_to_string(file) else { return };
+        let path_str = file.to_string_lossy();
+        let is_changelog_diff = path_str.contains("/changelog/version/") || path_str.contains("\\changelog\\version\\");
+        if is_changelog_diff && html.contains("data-pagefind-body") {
+            html = html.replace("data-pagefind-body", "data-pagefind-ignore");
+            if !html.contains("expressive-code") {
+                let _ = fs::write(file, html);
+                return;
+            }
+        } else if !html.contains("expressive-code") {
             return;
         }
         let mut out = String::with_capacity(html.len());
