@@ -185,7 +185,7 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
     name: 'starlight-link-preview',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        rootDir = config.root ? fileURLToPath(config.root) : process.cwd();
+        rootDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
         if (hasNativePipeline()) registerNativePipelinePlugin(rootDir, 'linkPreview', true);
         addIntegration({
           name: 'starlight-link-preview-integration',
@@ -217,8 +217,8 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
                   ' });',
               );
             },
-            'astro:build:done'({ dir, logger }) {
-              if (runNativePipelineOnce(rootDir, dir, logger)) return;
+            async 'astro:build:done'({ dir, logger }) {
+              if (await runNativePipelineOnce(rootDir, dir, logger)) return;
               const outDir = fileURLToPath(dir);
               const index: Record<string, LinkPreviewEntry> = {};
               let count = 0;

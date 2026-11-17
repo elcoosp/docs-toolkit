@@ -441,7 +441,7 @@ export function starlightTermGlossary(options: TermGlossaryOptions = {}): Starli
     name: 'starlight-term-glossary',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        const rootDir = config.root ? new URL(config.root).pathname : process.cwd();
+        const rootDir = (config as { root?: string }).root ? new URL((config as { root?: string }).root!).pathname : process.cwd();
         cachedLocales = new Set(['en', 'fr', ...Object.keys(config.locales ?? {})]);
         if (hasNativePipeline()) {
           registerNativePipelinePlugin(rootDir, 'glossary', { strict }, cachedLocales, config.defaultLocale);
@@ -475,8 +475,8 @@ export function starlightTermGlossary(options: TermGlossaryOptions = {}): Starli
                 },
               });
             },
-            'astro:build:done'({ dir, logger }) {
-              if (runNativePipelineOnce(rootDir, dir, logger)) return;
+            async 'astro:build:done'({ dir, logger }) {
+              if (await runNativePipelineOnce(rootDir, dir, logger)) return;
               const distDir = new URL(dir).pathname;
               fs.writeFileSync(path.join(distDir, 'glossary-index.json'), cachedPayload);
               runGlossaryQaAudit(distDir, cachedEntries, cachedLocales, logger, strict);

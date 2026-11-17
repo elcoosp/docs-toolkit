@@ -97,7 +97,7 @@ function handleArrivalHighlight(): void {
   if (hashId) {
     const heading = document.querySelector('#' + CSS.escape(hashId));
     if (heading) {
-      pulseArrivalTarget(heading);
+      pulseArrivalTarget(heading as HTMLElement);
       return;
     }
   }
@@ -117,7 +117,7 @@ function handleArrivalHighlight(): void {
       frag.append(mark);
       const after = text.slice(match.index + matched.length);
       if (after) frag.append(document.createTextNode(after));
-      current.replaceWith(frag);
+      (current as ChildNode).replaceWith(frag);
       pulseArrivalTarget(mark);
       return;
     }
@@ -245,7 +245,7 @@ export function initTermGlossary(opts: TermGlossaryClientOptions = {}): void {
           if (before) frag.append(document.createTextNode(before));
           frag.append(trigger);
           if (after) frag.append(document.createTextNode(after));
-          textNode.replaceWith(frag);
+          (textNode as ChildNode).replaceWith(frag);
           usedHrefs.add(entry.href);
           break;
         }

@@ -317,7 +317,7 @@ export function starlightI18nParity(options: I18nParityOptions = {}): StarlightP
     name: 'starlight-i18n-parity',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        const rootDir = config.root ? new URL(config.root).pathname : process.cwd();
+        const rootDir = (config as { root?: string }).root ? new URL((config as { root?: string }).root!).pathname : process.cwd();
         const docsDir = path.join(rootDir, 'src/content/docs');
         const localeKeys = Object.keys(config.locales ?? {});
         const defaultLocale = config.defaultLocale || 'en';
@@ -327,8 +327,8 @@ export function starlightI18nParity(options: I18nParityOptions = {}): StarlightP
         addIntegration({
           name: 'starlight-i18n-parity',
           hooks: {
-            'astro:build:done'({ dir, logger }) {
-              if (runNativePipelineOnce(rootDir, dir, logger)) return;
+            async 'astro:build:done'({ dir, logger }) {
+              if (await runNativePipelineOnce(rootDir, dir, logger)) return;
               runI18nParityAudit(docsDir, secondaryLocales, allLocales, ignorePaths, strict, logger);
             },
           },

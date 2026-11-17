@@ -29,7 +29,7 @@ outputs: cfg.outputs,
 }
 },
 'astro:build:done': async ({ dir, logger }) => {
-if (runNativePipelineOnce(rootDir, dir, logger)) {
+if (await runNativePipelineOnce(rootDir, dir, logger)) {
 return;
 }
 const distDir = fileURLToPath(dir);

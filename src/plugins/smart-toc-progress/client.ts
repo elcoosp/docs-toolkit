@@ -276,6 +276,7 @@ function mountSmartToc(opts: SmartTocClientOptions): () => void {
   let pillAnim: { stop?: () => void } | null = null;
 
   function syncRailAndPill(link: HTMLAnchorElement, immediate: boolean, atBottom: boolean): void {
+    if (!list) return;
     const listRect = list.getBoundingClientRect();
     const linkRect = link.getBoundingClientRect();
     const targetY = Math.max(0, linkRect.top - listRect.top + 3);

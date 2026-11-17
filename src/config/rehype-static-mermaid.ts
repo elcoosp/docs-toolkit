@@ -77,8 +77,8 @@ export function staticMermaidIntegration(): AstroIntegration {
           '(() => { if (document.getElementById("sl-static-diagram-css")) return; const s = document.createElement("style"); s.id = "sl-static-diagram-css"; s.textContent = ".sl-static-diagram{margin:1.5rem 0;padding:1rem;border:1px solid var(--sl-color-hairline);border-radius:0.75rem;background:var(--sl-color-bg-sidebar);overflow-x:auto;display:flex;justify-content:center}.sl-static-diagram svg{max-width:100%;height:auto;display:block}.sl-mermaid-dark{display:none}:root[data-theme=dark] .sl-mermaid-light{display:none}:root[data-theme=dark] .sl-mermaid-dark{display:block}"; document.head.appendChild(s); })();',
         );
       },
-      'astro:build:done'({ dir, logger }) {
-        if (runNativePipelineOnce(rootDir, dir, logger)) {
+      async 'astro:build:done'({ dir, logger }) {
+        if (await runNativePipelineOnce(rootDir, dir, logger)) {
           return;
         }
         const outDir = fileURLToPath(dir);

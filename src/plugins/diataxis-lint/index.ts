@@ -210,15 +210,15 @@ export function starlightDiataxisLint(options: DiataxisLintOptions = {}): Starli
     name: 'starlight-diataxis-lint',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        const rootDir = config.root ? new URL(config.root).pathname : process.cwd();
+        const rootDir = (config as { root?: string }).root ? new URL((config as { root?: string }).root!).pathname : process.cwd();
         const docsDir = path.join(rootDir, 'src/content/docs');
         const locales = new Set<string>(['en', 'fr', ...Object.keys(config.locales ?? {})]);
         if (hasNativePipeline()) registerNativePipelinePlugin(rootDir, 'diataxisLint', resolved, locales, config.defaultLocale);
         addIntegration({
           name: 'starlight-diataxis-lint',
           hooks: {
-            'astro:build:done'({ dir, logger }) {
-              if (runNativePipelineOnce(rootDir, dir, logger)) return;
+            async 'astro:build:done'({ dir, logger }) {
+              if (await runNativePipelineOnce(rootDir, dir, logger)) return;
               runDiataxisLint(docsDir, locales, resolved, logger);
             },
           },
