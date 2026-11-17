@@ -180,6 +180,9 @@ function resolvePluginEntrypoints(plugin: any): any {
 }
 
 function resolveToolkitEntrypoint(entrypoint: unknown): unknown {
+  if (entrypoint === 'starlight-changelogs/routes/index.astro') {
+    return fileURLToPath(new URL('./changelogs-route.astro', import.meta.url));
+  }
   if (typeof entrypoint !== 'string' || entrypoint.startsWith('.') || entrypoint.startsWith('/')) {
     return entrypoint;
   }

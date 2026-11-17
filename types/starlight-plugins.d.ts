@@ -59,3 +59,5 @@ declare module 'astro-d2' {
   const integration: (options?: any) => any;
   export default integration;
 }
+
+export const changelogsLoader: any;

@@ -1,0 +1,17 @@
+---
+import Versions from "starlight-changelogs/components/Versions.astro";
+import { getChangelogsStaticPaths } from "starlight-changelogs/libs/routing";
+import Version from "./changelogs-version.astro";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const paths = await getChangelogsStaticPaths();
+  return paths.filter((entry: any) => entry?.props?.type !== "compare");
+}
+
+const props = Astro.props as any;
+---
+
+{props.type === "versions" && <Versions {...props} />}
+{props.type === "version" && <Version {...props} />}
