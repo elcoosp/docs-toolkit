@@ -29,6 +29,6 @@ export interface RouteContext {
 export const onRequest = (context: RouteContext): void => {
   const route = context.locals.starlightRoute;
   if (!route) return;
-  const ogImageUrl = getImagePath({ url: context.url, site: context.site });
+  const ogImageUrl = getImagePath({ url: context.url, site: context.site, format: 'webp' });
   route.head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImageUrl } });
 };

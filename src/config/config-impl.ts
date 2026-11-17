@@ -27,32 +27,49 @@ function parallelBuildDoneIntegration(): AstroIntegration {
     "starlight-term-glossary",
     "starlight-term-glossary-integration",
   ]);
-  let parallelHooks: Array<(ctx: any) => unknown> = [];
+  const AUDIT_INTEGRATIONS = new Set([
+    "starlight-seo",
+    "starlight-link-preview",
+    "starlight-i18n-parity",
+    "starlight-related-pages",
+    "starlight-diataxis-lint",
+  ]);
+  let producerHooks: Array<(ctx: any) => unknown> = [];
+  let auditHooks: Array<(ctx: any) => unknown> = [];
 
   return {
     name: "@elcoosp/docs-toolkit/parallel-build-done",
     hooks: {
       "astro:config:done"({ config }) {
-        const collected: Array<(ctx: any) => unknown> = [];
+        const producers: Array<(ctx: any) => unknown> = [];
+        const auditors: Array<(ctx: any) => unknown> = [];
         for (const integration of config.integrations) {
           if (!integration || integration.name === "@elcoosp/docs-toolkit/parallel-build-done") continue;
           if (HTML_MUTATING_INTEGRATIONS.has(integration.name)) continue;
           const origDone = integration.hooks?.["astro:build:done"];
           if (typeof origDone === "function") {
-            collected.push(origDone);
+            if (AUDIT_INTEGRATIONS.has(integration.name)) {
+              auditors.push(origDone);
+            } else {
+              producers.push(origDone);
+            }
             integration.hooks["astro:build:done"] = () => {};
           }
         }
-        parallelHooks = collected;
+        producerHooks = producers;
+        auditHooks = auditors;
       },
       async "astro:build:done"(ctx) {
-        if (parallelHooks.length === 0) return;
-        await Promise.all(parallelHooks.map((fn) => Promise.resolve().then(() => fn(ctx))));
+        if (producerHooks.length > 0) {
+          await Promise.all(producerHooks.map((fn) => Promise.resolve().then(() => fn(ctx))));
+        }
+        if (auditHooks.length > 0) {
+          await Promise.all(auditHooks.map((fn) => Promise.resolve().then(() => fn(ctx))));
+        }
       },
     },
   };
 }
-
 
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 import { inlineBashIntegration } from './rehype-inline-bash';
@@ -832,7 +849,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
     inlineBashIntegration(),
     astroTakumi({
-      options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'png' },
+      options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'webp', quality: 85 },
       render,
     } as unknown as Parameters<typeof astroTakumi>[0]),
     staticMermaidIntegration(),
