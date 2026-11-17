@@ -90,7 +90,7 @@ pub fn run_diataxis_lint(
             if t.starts_with('|') && t.ends_with('|') {
                 has_table = true;
             }
-            if t.contains("TODO") || t.contains("FIXME") || t.contains("TBD") || t.contains("LOREM IPSUM") {
+            if t.contains("LOREM IPSUM") || t.split(|c: char| !c.is_ascii_alphanumeric() && c != '_').any(|w| matches!(w, "TODO" | "FIXME" | "TBD")) {
                 has_todo = true;
             }
             if !t.is_empty() && !t.starts_with("import ") && !t.starts_with("export ") && !t.starts_with('<') {

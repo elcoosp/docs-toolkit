@@ -183,7 +183,7 @@ pub fn run_i18n_parity(
             let en_s = analyze_markdown(&en_doc.body, all_locales);
             let loc_s = analyze_markdown(&loc_doc.body, all_locales);
 
-            let is_changelog = rel.ends_with("changelog.md")
+            let is_changelog = rel == "changelog.md" || rel == "changelog.mdx" || rel == "release-notes.md" || rel == "release-notes.mdx" || rel.ends_with("/changelog.md")
                 || rel.ends_with("changelog.mdx")
                 || rel.ends_with("release-notes.md")
                 || rel.ends_with("release-notes.mdx");

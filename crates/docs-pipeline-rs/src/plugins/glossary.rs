@@ -306,6 +306,42 @@ locale: doc.locale.clone(),
 });
 }
 }
+                    continue;
+                }
+                if let Some(after_bullet) = t.strip_prefix("- **").or_else(|| t.strip_prefix("* **")) {
+                    if let Some(close_bold) = after_bullet.find("**") {
+                        let raw_term = strip_mdx_inline(&after_bullet[..close_bold]);
+                        let rest = after_bullet[close_bold + 2..].trim_start();
+                        let sep_ok = rest.starts_with('—')
+                            || rest.starts_with('–')
+                            || rest.starts_with(':')
+                            || rest.starts_with('-')
+                            || rest.starts_with(". ");
+                        if sep_ok {
+                            let after_sep = rest.chars().skip(1).collect::<String>();
+                            let raw_def = strip_mdx_inline(after_sep.trim());
+                            let tlen = raw_term.chars().count();
+                            let dlen = raw_def.chars().count();
+                            if (3..=36).contains(&tlen) && is_valid_concept_term(&raw_term) && dlen >= 24 {
+                                let href = if cur_anchor.is_empty() {
+                                    doc.route.clone()
+                                } else {
+                                    format!("{}#{cur_anchor}", doc.route)
+                                };
+                                let def = if dlen > 220 {
+                                    format!("{}…", raw_def.chars().take(217).collect::<String>().trim_end())
+                                } else {
+                                    raw_def
+                                };
+                                entries.push(GlossaryEntry {
+                                    term: raw_term,
+                                    definition: def,
+                                    href,
+                                    locale: doc.locale.clone(),
+                                });
+                            }
+                        }
+                    }
 }
 }
 }
