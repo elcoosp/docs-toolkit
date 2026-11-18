@@ -871,12 +871,6 @@ gap: 0.28rem;
   margin-top: 0.45rem;
 }
 
-#sl-cmdk-dialog .sl-cmdk-ai-drawer[data-open="true"] {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  margin-top: 0.45rem;
-}
-
 #sl-cmdk-dialog .sl-cmdk-ai-drawer__inner {
   overflow: hidden;
   padding: 2px;

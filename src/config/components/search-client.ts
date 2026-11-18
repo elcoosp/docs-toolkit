@@ -736,33 +736,17 @@ function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
   if (actionId === 'toggle-ai-more') {
-    const drawer = listEl!.querySelector<HTMLElement>('.sl-cmdk-ai-drawer');
-    if (aiCommandsExpanded && drawer) {
-      drawer.dataset.open = 'false';
-      window.setTimeout(() => {
-        aiCommandsExpanded = false;
-        const keepScroll = listEl!.scrollTop;
-        void handleQuery().then(() => {
-          const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
-          setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
-listEl!.scrollTop = Math.min(keepScroll, Math.max(0, listEl!.scrollHeight - listEl!.clientHeight));
-syncSelectionIndicator(true);
-input!.focus();
-});
-}, 210);
-return;
-}
-aiCommandsExpanded = true;
-const keepScroll = listEl!.scrollTop;
-void handleQuery().then(() => {
-const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
-setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
-listEl!.scrollTop = keepScroll;
-syncSelectionIndicator(true);
-input!.focus();
-});
-return;
-}
+    const keepScroll = listEl!.scrollTop;
+    aiCommandsExpanded = !aiCommandsExpanded;
+    void handleQuery().then(() => {
+      const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
+      setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
+      listEl!.scrollTop = Math.min(keepScroll, Math.max(0, listEl!.scrollHeight - listEl!.clientHeight));
+      syncSelectionIndicator(true);
+      input!.focus();
+    });
+    return;
+  }
   if (actionId === 'changelog') { input!.value = 'log: '; handleQuery(); input!.focus(); return; }
   closeModal();
   if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
