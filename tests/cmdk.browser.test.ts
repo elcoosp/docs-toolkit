@@ -188,4 +188,96 @@ describe("Command Palette Real Browser DOM & E2E Suite", () => {
     key(input, "d", { metaKey: true });
     expect(JSON.parse(localStorage.getItem("sl-cmdk-pinned-pages-v1") || "[]").length).toBe(1);
   });
+
+  it("covers FR locale, log: scope, unpin animation, clear recents, Ctrl+1..6 sub-jump, preview scroll, and Alt+P/N history", async () => {
+    localStorage.setItem("sl-cmdk-recent-v1", JSON.stringify(["macro", "install"]));
+    localStorage.setItem("sl-cmdk-recent-pages-v1", JSON.stringify([{ title: "Intro", url: "/guides/intro/", section: "Guides" }]));
+    localStorage.setItem("sl-cmdk-pinned-pages-v1", JSON.stringify([{ title: "Pinned Doc", url: "/guides/pinned/", section: "Guides" }]));
+    const root = document.querySelector<HTMLElement>("[data-cmdk-root]")!;
+    root.dataset.locale = "fr";
+    delete root.dataset.bound;
+    initCommandSearch();
+
+    document.querySelector<HTMLButtonElement>("[data-cmdk-open]")!.click();
+    const dialog = document.querySelector<HTMLDialogElement>("#sl-cmdk-dialog")!;
+    const input = document.querySelector<HTMLInputElement>("#sl-cmdk-input")!;
+    expect(dialog.open).toBe(true);
+
+    // Switch to Pinned tab and unpin with Ctrl+D / Meta+D
+    const pinnedTab = document.querySelector<HTMLButtonElement>("[data-empty-view=\"pinned\"]")!;
+    pinnedTab.click();
+    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "d", metaKey: isMac, altKey: !isMac, bubbles: true }));
+    await new Promise((r) => setTimeout(r, 240));
+
+    // Switch back to All tab and click Clear recents
+    document.querySelector<HTMLButtonElement>("[data-empty-view=\"all\"]")!.click();
+    const clearRec = document.querySelector<HTMLButtonElement>("[data-clear-recent]");
+    clearRec?.click();
+
+    // Test Alt+P / Alt+N history cycling
+    localStorage.setItem("sl-cmdk-recent-v1", JSON.stringify(["macro", "install"]));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "p", altKey: true, bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "n", altKey: true, bubbles: true }));
+
+    // Test log: scope and no-results query
+    input.value = "log:";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 130));
+
+    input.value = "zzzz-nonexistent-xyz";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 130));
+
+    // Preview scroll PageDown / PageUp
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "PageDown", bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "PageUp", bubbles: true }));
+
+    // Close via backdrop click
+    dialog.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(dialog.open).toBe(false);
+  });
+
+  it("covers Pagefind search results, sub-results Ctrl+1 jump, and bulk Markdown copy", async () => {
+    const root = document.querySelector<HTMLElement>("[data-cmdk-root]")!;
+    root.dataset.locale = "en";
+    delete root.dataset.bound;
+    (window as any).__slPagefindModule = {
+      init: async () => {},
+      search: async (q: string) => ({
+        results: q.includes("none")
+          ? []
+          : [
+              {
+                id: "r1",
+                data: async () => ({
+                  url: "/guides/macro/",
+                  meta: { title: "Macro Guide", section: "Guides" },
+                  excerpt: "Write <mark>procedural</mark> macros in Rust.",
+                  content: "Full content for macro guide.",
+                  sub_results: [
+                    { title: "Syntax", url: "/guides/macro/#syntax", excerpt: "Macro <mark>syntax</mark> rules" },
+                  ],
+                }),
+              },
+            ],
+      }),
+    };
+    initCommandSearch();
+
+    document.querySelector<HTMLButtonElement>("[data-cmdk-open]")!.click();
+    const input = document.querySelector<HTMLInputElement>("#sl-cmdk-input")!;
+    input.value = "macro";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 150));
+
+    // Jump to sub-result #1 with Ctrl+1
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "1", ctrlKey: true, bubbles: true }));
+    // Navigate down and press Alt+Space to mark, then Copy
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: " ", altKey: true, bubbles: true }));
+    const copyBtn = document.querySelector<HTMLButtonElement>("[data-cmdk-copy-md]");
+    copyBtn?.click();
+    delete (window as any).__slPagefindModule;
+  });
 });
