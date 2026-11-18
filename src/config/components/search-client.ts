@@ -373,6 +373,33 @@ export function initCommandSearch(): void {
   let copyToastTimer: number | undefined;
   let searchListAnimTimer: number | undefined;
   let lastAnimatedSearchSig = '';
+  const indicatorEl = el('div', 'sl-cmdk-indicator');
+  indicatorEl.setAttribute('aria-hidden', 'true');
+
+  function syncSelectionIndicator(instant = false): void {
+    const selected = listEl.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
+    if (!selected) {
+      indicatorEl.style.opacity = '0';
+      return;
+    }
+    if (!indicatorEl.parentElement) {
+      listEl.prepend(indicatorEl);
+    }
+    const listRect = listEl.getBoundingClientRect();
+    const rowRect = selected.getBoundingClientRect();
+    const top = rowRect.top - listRect.top + listEl.scrollTop;
+    const height = rowRect.height;
+    if (instant) {
+      indicatorEl.style.transition = 'none';
+    }
+    indicatorEl.style.opacity = '1';
+    indicatorEl.style.height = height + 'px';
+    indicatorEl.style.transform = `translate3d(0, ${top}px, 0)`;
+    if (instant) {
+      void indicatorEl.offsetHeight;
+      indicatorEl.style.transition = '';
+    }
+  }
 
   async function ensurePagefind(): Promise<any> {
     if (pagefind) return pagefind;
@@ -394,7 +421,11 @@ export function initCommandSearch(): void {
     }
   }
 
-  function animateListCards(): void {}
+  function animateListCards(): void {
+    listEl.classList.remove('sl-cmdk-list--fade');
+    void listEl.offsetWidth;
+    listEl.classList.add('sl-cmdk-list--fade');
+  }
 
   function getSitePagesRaw(): SitePageEntry[] {
     const jsonEl = root?.querySelector<HTMLScriptElement>("script[data-cmdk-pages]");
@@ -678,7 +709,7 @@ async function hydratePagePreview(url: string): Promise<void> {
       void hydratePagePreview(item.url);
     }
 
-    const top = el('div', 'sl-cmdk-preview__top');
+    const top = el('div', isNewPreviewItem ? 'sl-cmdk-preview__top sl-cmdk-preview__top--enter' : 'sl-cmdk-preview__top');
     const eyebrow = el('div', 'sl-cmdk-preview__eyebrow');
     eyebrow.appendChild(item.type === 'action' ? iconZap() : item.type === 'sub' ? iconHash() : sectionIcon(item.sectionKey));
     eyebrow.appendChild(document.createTextNode(item.section || (item.type === 'recent' ? (isFr ? 'Recherche récente' : 'Recent query') : 'Docs')));
@@ -800,6 +831,7 @@ row.scrollIntoView({ block: 'nearest' });
 });
 
 renderPreview(renderedItems[activeIndex]);
+syncSelectionIndicator(false);
 }
 function makeRow(opts: {
 idx: number;
@@ -831,9 +863,6 @@ const head = el('span', 'sl-cmdk-row__head');
 const titleEl = el('span', 'sl-cmdk-row__title');
 appendHighlightedText(titleEl, opts.title, input.value);
 head.appendChild(titleEl);
-if (opts.badge) {
-head.appendChild(el('span', 'sl-cmdk-row__badge', opts.badge));
-}
 body.appendChild(head);
 if (opts.breadcrumb) {
 const crumbEl = el('span', 'sl-cmdk-row__crumb');
@@ -846,23 +875,30 @@ appendHighlightedExcerpt(excerptEl, opts.excerptHtml);
 body.appendChild(excerptEl);
 }
 row.appendChild(body);
+const trail = el('span', 'sl-cmdk-row__trail');
+if (opts.badge) {
+trail.appendChild(el('span', 'sl-cmdk-row__badge', opts.badge));
+}
 if (opts.kbd) {
-row.appendChild(el('kbd', 'sl-cmdk-kbd', opts.kbd));
+trail.appendChild(el('kbd', 'sl-cmdk-kbd', opts.kbd));
 }
 if (opts.showArrow) {
 const pinned = opts.href && opts.href !== "#" ? isPagePinned(opts.href) : false;
-      if (opts.href && opts.href !== "#") {
-        const pinStar = el("button", "sl-cmdk-row__pin");
-        pinStar.type = "button";
-        pinStar.dataset.pinIdx = String(opts.idx);
-        pinStar.dataset.pinned = pinned ? "true" : "false";
-        pinStar.setAttribute("aria-label", pinned ? (isFr ? "Retirer des favoris" : "Unpin page") : (isFr ? "Ajouter aux favoris" : "Pin page"));
-        pinStar.appendChild(iconBookmark(pinned));
-        row.appendChild(pinStar);
-      }
-      const arrowBox = el('span', 'sl-cmdk-row__arrow');
+if (opts.href && opts.href !== "#") {
+  const pinStar = el("button", "sl-cmdk-row__pin");
+  pinStar.type = "button";
+  pinStar.dataset.pinIdx = String(opts.idx);
+  pinStar.dataset.pinned = pinned ? "true" : "false";
+  pinStar.setAttribute("aria-label", pinned ? (isFr ? "Retirer des favoris" : "Unpin page") : (isFr ? "Ajouter aux favoris" : "Pin page"));
+  pinStar.appendChild(iconBookmark(pinned));
+  trail.appendChild(pinStar);
+}
+const arrowBox = el('span', 'sl-cmdk-row__arrow');
 arrowBox.appendChild(iconArrowUpRight());
-row.appendChild(arrowBox);
+trail.appendChild(arrowBox);
+}
+if (trail.childNodes.length > 0) {
+row.appendChild(trail);
 }
 return row;
 }
@@ -945,6 +981,7 @@ function renderEmptyState(skipEntrance = false): void {
       }
       listEl.appendChild(group);
       renderPreview(renderedItems.at(activeIndex));
+      requestAnimationFrame(() => syncSelectionIndicator(true));
       if (!skipEntrance) animateListCards();
       if (statusEl) {
         statusEl.textContent = isFr
@@ -1095,6 +1132,7 @@ showArrow: true,
 listEl.appendChild(navGroup);
 }
 renderPreview(renderedItems[activeIndex]);
+requestAnimationFrame(() => syncSelectionIndicator(true));
 const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
 if (searchSig !== lastAnimatedSearchSig) {
   lastAnimatedSearchSig = searchSig;
@@ -1282,6 +1320,7 @@ if (q.startsWith("/") || q.startsWith(">")) {
   }
   listEl.appendChild(group);
   renderPreview(renderedItems.at(0));
+  requestAnimationFrame(() => syncSelectionIndicator(true));
   animateListCards();
   if (statusEl) {
     statusEl.textContent = isFr
