@@ -5,7 +5,8 @@ import './search.css';
 
 const t = Astro.locals.t;
 const currentLocale = Astro.currentLocale;
-const localePrefix = currentLocale ? `/${currentLocale}` : '';
+const hasLocalePrefix = Boolean(currentLocale && (Astro.url.pathname === `/${currentLocale}` || Astro.url.pathname.startsWith(`/${currentLocale}/`)));
+const localePrefix = hasLocalePrefix ? `/${currentLocale}` : '';
 const isFr = currentLocale === 'fr';
 
 const ui = {
@@ -62,19 +63,19 @@ const sitePages = allDocs
   .filter((entry) => {
     if (entry.data?.draft) return false;
     const id = entry.id.replace(/\.(md|mdx)$/, '');
-    if (currentLocale) {
+    if (hasLocalePrefix) {
       if (id !== currentLocale && !id.startsWith(`${currentLocale}/`)) return false;
     } else {
       const firstSeg = id.split('/')[0];
       if (knownNonRootLocales.has(firstSeg)) return false;
     }
-    const stripped = currentLocale ? id.replace(new RegExp(`^${currentLocale}/?`), '') : id;
+    const stripped = hasLocalePrefix ? id.replace(new RegExp(`^${currentLocale}/?`), '') : id;
     return stripped !== '' && stripped !== 'index';
   })
   .map((entry) => {
     const cleanId = entry.id.replace(/\.(md|mdx)$/, '').replace(/(^|\/)index$/, '');
     const url = '/' + (cleanId ? cleanId + '/' : '');
-    const stripped = currentLocale ? cleanId.replace(new RegExp(`^${currentLocale}/?`), '') : cleanId;
+    const stripped = hasLocalePrefix ? cleanId.replace(new RegExp(`^${currentLocale}/?`), '') : cleanId;
     const topSeg = stripped.split('/').at(0) || 'docs';
     const title = typeof entry.data?.title === 'string' && entry.data.title.trim() ? entry.data.title.trim() : topSeg;
     const body = typeof entry.body === 'string' ? entry.body : '';
