@@ -418,14 +418,11 @@ export function initCommandSearch(): void {
   let lastAnimatedSearchSig = '';
 
   function animateListCards(): void {
-    const rows = listEl.querySelectorAll<HTMLElement>(".sl-cmdk-row, .sl-cmdk-empty");
-    rows.forEach((row, i) => {
-      animate(
-        row,
-        { opacity: [0.2, 1], y: [4, 0] },
-        { type: spring, stiffness: 580, damping: 36, delay: Math.min(i * 0.012, 0.08) },
-      );
-    });
+    animate(
+      listEl,
+      { opacity: [0.45, 1], y: [3, 0] },
+      { duration: 0.13 },
+    );
   }
 
   function getSitePagesRaw(): SitePageEntry[] {
@@ -1418,7 +1415,7 @@ const cacheKey = (isFr ? "fr:" : "en:") + q.toLowerCase();
       renderSearchResults();
       return;
     }
-    const search = typeof pf.debouncedSearch === "function" ? await pf.debouncedSearch(q, {}, 65) : await pf.search(q);
+    const search = await pf.search(q);
 if (!search || seq !== searchSeq) return;
 const loaded: PagefindData[] = await Promise.all(search.results.slice(0, 14).map((r: any) => r.data()));
 if (seq !== searchSeq) return;
@@ -1427,6 +1424,7 @@ const itemIsFr = item.url === '/fr/' || item.url.startsWith('/fr/');
 return isFr ? itemIsFr : !itemIsFr;
 });
 currentResults = localeFiltered.length > 0 ? localeFiltered : loaded;
+queryCache.set(cacheKey, currentResults);
 renderSearchResults();
 }
 function openModal(): void {
@@ -1590,7 +1588,7 @@ if (!rawVal || rawVal === '/' || rawVal === '#') {
 }
 searchListAnimTimer = window.setTimeout(() => {
   handleQuery();
-}, 115);
+}, 95);
 });
 input.addEventListener('keydown', (e) => {
 if (e.key === 'ArrowDown') {
