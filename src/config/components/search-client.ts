@@ -25,12 +25,6 @@ interface SitePageEntry {
   headings?: Array<{ title: string; slug: string }>;
 }
 
-interface SitePageEntry {
-  title: string;
-  url: string;
-  headings?: Array<{ title: string; slug: string }>;
-}
-
 interface FlatItem {
   type: 'page' | 'sub' | 'action' | 'recent' | 'recent-page' | 'pinned' | 'nav';
   title: string;
@@ -394,12 +388,6 @@ export function initCommandSearch(): void {
   root.querySelectorAll<HTMLElement>("[data-cmdk-newtab-kbd]").forEach((node) => {
     node.textContent = isMac ? "⌘↵" : "Ctrl ↵";
   });
-  root.querySelectorAll<HTMLElement>("[data-cmdk-newtab-kbd]").forEach((node) => {
-    node.textContent = isMac ? "⌘↵" : "Ctrl ↵";
-  });
-  root.querySelectorAll<HTMLElement>("[data-cmdk-newtab-kbd]").forEach((node) => {
-    node.textContent = isMac ? "⌘↵" : "Ctrl ↵";
-  });
 
   let pagefind: any = null;
   let pagefindFailed = false;
@@ -416,6 +404,26 @@ export function initCommandSearch(): void {
   let copyToastTimer: number | undefined;
   let searchListAnimTimer: number | undefined;
   let lastAnimatedSearchSig = '';
+
+  async function ensurePagefind(): Promise<any> {
+    if (pagefind) return pagefind;
+    if (pagefindFailed) return null;
+    try {
+      const pfUrl = "/pagefind/pagefind.js";
+      const mod = await import(/* @vite-ignore */ pfUrl);
+      if (typeof mod.options === "function") {
+        await mod.options({ excerptLength: 18 });
+      }
+      if (typeof mod.init === "function") {
+        await mod.init();
+      }
+      pagefind = mod;
+      return pagefind;
+    } catch {
+      pagefindFailed = true;
+      return null;
+    }
+  }
 
   function animateListCards(): void {
     animate(
@@ -814,6 +822,7 @@ counts.set(sec.key, { label: sec.label, count: (prev?.count ?? 0) + 1 });
 }
 if (!counts.has(activeFilter)) activeFilter = 'all';
 tabsEl.hidden = false;
+tabsEl.dataset.collapsed = 'false';
 for (const [key, info] of counts.entries()) {
 const btn = el('button', 'sl-cmdk-tab');
 btn.type = 'button';
