@@ -218,7 +218,7 @@ function decodeEntities(str: string): string {
 }
 
 function appendHighlightedText(target: HTMLElement, text: string, rawQuery: string): void {
-  const cleanQ = rawQuery.replace(/^(?:docs|guides?|ref|reference|blog|changelog):\s*/i, "").replace(/^[\/#>]+/, "").trim();
+  const cleanQ = rawQuery.replace(/^(?:docs|guides?|ref|reference|blog|logs?):\s*/i, "").replace(/^[\/#>]+/, "").trim();
   if (!cleanQ) {
     target.textContent = text;
     return;
@@ -761,7 +761,7 @@ async function hydratePagePreview(url: string): Promise<void> {
         left.appendChild(iconHash());
         left.appendChild(document.createTextNode(sub.title));
         a.appendChild(left);
-        a.appendChild(el('kbd', 'sl-cmdk-kbd', (isMac ? '⌘' : '^') + String(subIdx + 1)));
+        a.appendChild(el('kbd', 'sl-cmdk-kbd', (isMac ? '⌥' : 'Alt+') + String(subIdx + 1)));
         subsBox.appendChild(a);
       });
       top.appendChild(subsBox);
@@ -1265,7 +1265,7 @@ statusEl.textContent = isFr
 }
 }
 function parseScopedQuery(raw: string): { scope?: string; query: string } {
-    const m = /^(docs|guides?|ref|reference|blog|changelog):\s*(.*)$/i.exec(raw);
+    const m = /^(docs|guides?|ref|reference|blog|logs?):\s*(.*)$/i.exec(raw);
     if (!m) return { query: raw };
     const token = m[1].toLowerCase();
     const scope =
@@ -1273,7 +1273,9 @@ function parseScopedQuery(raw: string): { scope?: string; query: string } {
         ? "guides"
         : token === "ref" || token === "reference"
           ? "reference"
-          : token;
+          : token === "log" || token === "logs"
+            ? "changelog"
+            : token;
     return { scope, query: m[2].trim() };
   }
 
@@ -1636,7 +1638,7 @@ if (prevTop) {
 e.preventDefault();
 prevTop.scrollBy({ top: -Math.max(120, Math.round(prevTop.clientHeight * 0.65)), behavior: 'smooth' });
 }
-} else if ((e.metaKey || e.ctrlKey) && /^[1-6]$/.test(e.key)) {
+} else if (e.altKey && !e.metaKey && !e.ctrlKey && /^[1-6]$/.test(e.key)) {
 const jumpLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-sub-jump="${e.key}"]`);
 if (jumpLink?.href) {
 e.preventDefault();
