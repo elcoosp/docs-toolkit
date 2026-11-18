@@ -68,12 +68,9 @@ describe.runIf(hasBuiltSite)("Command Palette Real Built Site E2E Suite (Playwri
     const firstHref = await page.locator("#sl-cmdk-list a.sl-cmdk-row").first().getAttribute("href");
     expect(firstHref).toBeTruthy();
 
-    const firstIdx = Number(await page.locator("#sl-cmdk-list a.sl-cmdk-row").first().getAttribute("data-cmdk-idx"));
-    for (let i = 0; i < firstIdx; i++) await input.press("ArrowDown");
-    await input.press("Alt+Space");
-    await input.press("Alt+Space");
-    const markedCount = await page.locator("#sl-cmdk-list .sl-cmdk-row[data-marked='true']").count();
-    expect(markedCount).toBe(2);
+    await page.locator("#sl-cmdk-list a.sl-cmdk-row--page .sl-cmdk-row__mark").nth(0).click();
+    await page.locator("#sl-cmdk-list a.sl-cmdk-row--page .sl-cmdk-row__mark").nth(1).click();
+    expect(await page.locator("#sl-cmdk-status").textContent()).toContain("2 selected");
 
     await input.press("Meta+Shift+C");
     await page.waitForTimeout(150);
