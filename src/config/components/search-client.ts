@@ -1461,6 +1461,20 @@ if (parsedScope.scope) {
   activeFilter = parsedScope.scope;
 }
 const effectiveQ = parsedScope.query;
+if (parsedScope.scope === "changelog") {
+  const entries = await loadChangelogEntries();
+  const qLow = effectiveQ.toLowerCase();
+  const matched = qLow
+    ? entries.filter((item) => item.title.toLowerCase().includes(qLow) || (item.url && item.url.toLowerCase().includes(qLow)))
+    : entries;
+  currentResults = matched.map((m) => ({
+    url: m.url || "/changelog/",
+    meta: { title: m.title },
+    excerpt: m.breadcrumb || "Changelog",
+  }));
+  renderSearchResults();
+  return;
+}
 if (!effectiveQ && parsedScope.scope) {
   activeFilter = parsedScope.scope;
   renderEmptyState(false);
