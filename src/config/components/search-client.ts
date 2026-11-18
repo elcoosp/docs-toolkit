@@ -250,15 +250,7 @@ function appendHighlightedText(target: HTMLElement, text: string, rawQuery: stri
   }
 }
 
-function sanitizePagefindExcerpt(rawHtml: string): string {
-  return rawHtml
-    .replace(/^(?:[^<]{0,80}?Zen\.?\s*)?(?:(?:Tutorial|How-to|Reference|Explanation|Guide)\s*)?(?:\d+\s*min\s*read\.?\s*)?(?:Edit\s*page\.?\s*)?(?:Copy\s*Copied\s*)?(?:Open\s*in\s*AI\s*)?(?:Ask\s*an\s*AI\s*assistant\s*about\s*this\s*page\.?\s*)?/i, "")
-    .replace(/^(?:Copy\s*Copied\s*|Open\s*in\s*AI\s*|Ask\s*an\s*AI\s*assistant\s*about\s*this\s*page\.?\s*)+/i, "")
-    .trim();
-}
-
 function appendHighlightedExcerpt(target: HTMLElement, rawExcerpt: string): void {
-  rawExcerpt = sanitizePagefindExcerpt(rawExcerpt);
   const parts = rawExcerpt.split(/(<mark>[\s\S]*?<\/mark>)/gi);
   for (const part of parts) {
     if (!part) continue;
