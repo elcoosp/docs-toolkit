@@ -777,7 +777,7 @@ async function hydratePagePreview(url: string): Promise<void> {
         left.appendChild(iconHash());
         left.appendChild(document.createTextNode(sub.title));
         a.appendChild(left);
-        a.appendChild(el('kbd', 'sl-cmdk-kbd', (isMac ? '⌥' : 'Alt+') + String(subIdx + 1)));
+        a.appendChild(el('kbd', 'sl-cmdk-kbd', '^' + String(subIdx + 1)));
         subsBox.appendChild(a);
       });
       top.appendChild(subsBox);
@@ -1530,7 +1530,7 @@ animate(btn, { scale: 0.985 }, { type: spring, stiffness: 600, damping: 30 });
 btn.addEventListener('click', openModal);
 });
 dialog.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d") {
+    if (((isMac && e.metaKey && !e.ctrlKey) || (!isMac && e.altKey)) && e.key.toLowerCase() === "d") {
       const current = renderedItems[activeIndex];
       if (current?.url) {
         e.preventDefault();
@@ -1659,19 +1659,19 @@ if (renderedItems.length > 0) {
 activeIndex = (activeIndex - 1 + renderedItems.length) % renderedItems.length;
 updateActiveRow(true);
 }
-} else if (e.key === 'PageDown' || (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'j')) {
+} else if (e.key === 'PageDown' || (e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'd')) {
 const prevTop = previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__top');
 if (prevTop) {
 e.preventDefault();
 prevTop.scrollBy({ top: Math.max(120, Math.round(prevTop.clientHeight * 0.65)), behavior: 'smooth' });
 }
-} else if (e.key === 'PageUp' || (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'k')) {
+} else if (e.key === 'PageUp' || (e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'u')) {
 const prevTop = previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__top');
 if (prevTop) {
 e.preventDefault();
 prevTop.scrollBy({ top: -Math.max(120, Math.round(prevTop.clientHeight * 0.65)), behavior: 'smooth' });
 }
-} else if (e.altKey && !e.metaKey && !e.ctrlKey && (/^[1-6]$/.test(e.key) || /^Digit[1-6]$/.test(e.code))) {
+} else if (e.ctrlKey && !e.metaKey && !e.altKey && (/^[1-6]$/.test(e.key) || /^Digit[1-6]$/.test(e.code))) {
 const digit = /^[1-6]$/.test(e.key) ? e.key : e.code.slice(5);
 const jumpLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-sub-jump="${digit}"]`);
 if (jumpLink) {
@@ -1707,7 +1707,7 @@ else renderSearchResults();
 }
 });
 document.addEventListener("keydown", (e) => {
-    if (dialog.open && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d") {
+    if (dialog.open && ((isMac && e.metaKey && !e.ctrlKey) || (!isMac && e.altKey)) && e.key.toLowerCase() === "d") {
       const current = renderedItems[activeIndex];
       if (current?.url) {
         e.preventDefault();
