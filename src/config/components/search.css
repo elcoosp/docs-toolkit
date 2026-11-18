@@ -262,13 +262,10 @@
 
 #sl-cmdk-dialog .sl-cmdk-body {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.95fr);
-  flex: 0 1 auto;
-  min-height: 15rem;
-  max-height: calc(min(80vh, 660px) - 6.8rem);
+  grid-template-columns: minmax(0, 1.32fr) minmax(250px, 0.98fr);
+  height: min(490px, calc(80vh - 6.8rem));
+  min-height: 22rem;
   overflow: hidden;
-  transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: height;
 }
 
 @media (max-width: 48rem) {
@@ -358,22 +355,22 @@
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
-  gap: 0.62rem !important;
+  gap: 0.65rem !important;
   width: 100% !important;
-  padding: 0.5rem 0.68rem !important;
+  padding: 0.52rem 0.65rem !important;
   border: 1px solid transparent;
-  border-radius: 0.55rem;
+  border-radius: 0.52rem;
   background: transparent;
   color: var(--sl-color-text);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 130ms ease, border-color 130ms ease, color 120ms ease;
+  transition: background-color 110ms ease, border-color 110ms ease;
 }
 
 #sl-cmdk-dialog .sl-cmdk-row[aria-selected='true'] {
-  background: var(--sl-color-accent-low);
-  border-color: color-mix(in srgb, var(--sl-color-accent) 44%, transparent);
+  background: color-mix(in srgb, var(--sl-color-accent) 10%, var(--sl-color-bg-sidebar));
+  border-color: color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
 }
 
 #sl-cmdk-dialog .sl-cmdk-card .sl-cmdk-row {
@@ -392,13 +389,11 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 1.5rem !important;
-  height: 1.5rem !important;
-  border-radius: 0.4rem;
-  background: color-mix(in srgb, var(--sl-color-hairline) 35%, transparent);
-  color: var(--sl-color-gray-2);
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  color: var(--sl-color-gray-3);
   flex-shrink: 0 !important;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition: color 120ms ease;
 }
 
 #sl-cmdk-dialog .sl-cmdk-row__icon svg,
@@ -411,7 +406,6 @@
 #sl-cmdk-dialog .sl-cmdk-row[aria-selected='true'] .sl-cmdk-row__icon,
 #sl-cmdk-dialog .sl-cmdk-row[aria-selected='true'] .sl-cmdk-sub-branch {
   color: var(--sl-color-accent-high);
-  background: color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
 }
 
 #sl-cmdk-dialog .sl-cmdk-row__body {
@@ -450,14 +444,19 @@ white-space: nowrap;
 color: var(--sl-color-accent-high);
 }
 #sl-cmdk-dialog .sl-cmdk-row__badge {
-padding: 0.08rem 0.45rem;
-border-radius: 999px;
-border: 1px solid var(--sl-color-hairline);
-background: var(--sl-color-bg-nav);
-color: var(--sl-color-gray-3);
-font-size: 0.66rem;
-font-weight: 600;
-flex-shrink: 0;
+  padding: 0.04rem 0.36rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--sl-color-hairline) 42%, transparent);
+  color: var(--sl-color-gray-3);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+
+#sl-cmdk-dialog .sl-cmdk-row[aria-selected='true'] .sl-cmdk-row__badge {
+  background: color-mix(in srgb, var(--sl-color-accent) 16%, transparent);
+  color: var(--sl-color-accent-high);
 }
 #sl-cmdk-dialog .sl-cmdk-row__excerpt {
 font-size: 0.75rem;
@@ -645,15 +644,15 @@ gap: 0.28rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.45rem;
+  height: 1.45rem;
   border: 0;
-  border-radius: 0.38rem;
+  border-radius: 0.36rem;
   background: transparent;
   color: var(--sl-color-gray-3);
   cursor: pointer;
   flex-shrink: 0;
-  opacity: 0.55;
+  opacity: 0;
   transition: opacity 130ms ease, color 130ms ease, background-color 130ms ease;
 }
 

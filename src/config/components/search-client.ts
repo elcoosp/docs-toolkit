@@ -339,38 +339,7 @@ export function initCommandSearch(): void {
   const tabsEl = root.querySelector<HTMLElement>('#sl-cmdk-tabs');
   const listEl = root.querySelector<HTMLElement>('#sl-cmdk-list');
   const previewEl = root.querySelector<HTMLElement>('#sl-cmdk-preview');
-  const cmdkBody = dialog?.querySelector<HTMLElement>(".sl-cmdk-body");
-  let lastCmdkBodyH = 0;
-  const syncCmdkBodyHeight = (): void => {
-    if (!cmdkBody || !listEl || !previewEl) return;
-    if (!dialog?.open) {
-      lastCmdkBodyH = 0;
-      cmdkBody.style.height = "";
-      return;
-    }
-    const maxBodyH = Math.max(260, Math.min(Math.round(window.innerHeight * 0.8), 660) - 108);
-    const pTop = previewEl.querySelector<HTMLElement>(".sl-cmdk-preview__top");
-    const pActions = previewEl.querySelector<HTMLElement>(".sl-cmdk-preview__actions");
-    const previewIntrinsicH = pTop
-      ? pTop.scrollHeight + (pActions?.offsetHeight || 0) + 44
-      : previewEl.scrollHeight;
-    const listChildren = Array.from(listEl.children) as HTMLElement[];
-    const listIntrinsicH = listChildren.length > 0
-      ? listChildren.reduce((sum, ch) => sum + ch.offsetHeight + 7, 13)
-      : 220;
-    const naturalH = Math.max(listIntrinsicH, previewIntrinsicH);
-    const nextH = Math.max(240, Math.min(naturalH, maxBodyH));
-    if (Math.abs(nextH - lastCmdkBodyH) < 2) return;
-    lastCmdkBodyH = nextH;
-    cmdkBody.style.height = nextH + "px";
-  };
-  if (cmdkBody && listEl && previewEl && typeof MutationObserver !== "undefined") {
-    const mo = new MutationObserver(() => {
-      requestAnimationFrame(syncCmdkBodyHeight);
-    });
-    mo.observe(listEl, { childList: true, subtree: true });
-    mo.observe(previewEl, { childList: true, subtree: true });
-  }
+  
   const statusEl = root.querySelector<HTMLElement>('#sl-cmdk-status');
 
   if (!dialog || !panel || !input || !tabsEl || !listEl) return;
@@ -425,13 +394,7 @@ export function initCommandSearch(): void {
     }
   }
 
-  function animateListCards(): void {
-    animate(
-      listEl,
-      { opacity: [0.45, 1], y: [3, 0] },
-      { duration: 0.13 },
-    );
-  }
+  function animateListCards(): void {}
 
   function getSitePagesRaw(): SitePageEntry[] {
     const jsonEl = root?.querySelector<HTMLScriptElement>("script[data-cmdk-pages]");
@@ -795,16 +758,7 @@ async function hydratePagePreview(url: string): Promise<void> {
       actions.appendChild(runBtn);
     }
     previewEl.appendChild(actions);
-    if (isNewPreviewItem) {
-      const children = Array.from(top.children) as HTMLElement[];
-      children.forEach((node, i) => {
-        animate(
-          node,
-          { opacity: [0, 1], y: [5, 0] },
-          { type: spring, stiffness: 540, damping: 34, delay: Math.min(i * 0.018, 0.09) },
-        );
-      });
-    }
+    
   }
 
   function renderTabs(results: PagefindData[]): void {
@@ -841,9 +795,7 @@ const selected = idx === activeIndex;
 row.setAttribute('aria-selected', selected ? 'true' : 'false');
 if (selected) {
 row.scrollIntoView({ block: 'nearest' });
-if (pulse) {
-animate(row, { scale: [0.992, 1] }, { type: spring, stiffness: 600, damping: 34 });
-}
+
 }
 });
 
@@ -875,11 +827,6 @@ const iconBox = el('span', opts.iconClass || 'sl-cmdk-row__icon');
 iconBox.appendChild(opts.icon);
 row.appendChild(iconBox);
 const body = el('span', 'sl-cmdk-row__body');
-if (opts.breadcrumb) {
-const crumbEl = el('span', 'sl-cmdk-row__crumb');
-appendHighlightedText(crumbEl, opts.breadcrumb, input.value);
-body.appendChild(crumbEl);
-}
 const head = el('span', 'sl-cmdk-row__head');
 const titleEl = el('span', 'sl-cmdk-row__title');
 appendHighlightedText(titleEl, opts.title, input.value);
@@ -888,6 +835,11 @@ if (opts.badge) {
 head.appendChild(el('span', 'sl-cmdk-row__badge', opts.badge));
 }
 body.appendChild(head);
+if (opts.breadcrumb) {
+const crumbEl = el('span', 'sl-cmdk-row__crumb');
+appendHighlightedText(crumbEl, opts.breadcrumb, input.value);
+body.appendChild(crumbEl);
+}
 if (opts.excerptHtml) {
 const excerptEl = el('span', 'sl-cmdk-row__excerpt');
 appendHighlightedExcerpt(excerptEl, opts.excerptHtml);
@@ -1443,7 +1395,7 @@ activeIndex = 0;
 if (!input.value.trim()) renderEmptyState();
 
 ensurePagefind();
-animate(panel, { scale: [0.97, 1], y: [-6, 0] }, { type: spring, stiffness: 520, damping: 32 });
+animate(panel, { opacity: new Array(0, 1), scale: [0.985, 1], y: [-4, 0] }, { duration: 0.16 });
 requestAnimationFrame(() => input.focus());
 }
 function closeModal(): void {
