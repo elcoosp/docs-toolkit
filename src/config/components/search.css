@@ -369,8 +369,8 @@
 }
 
 #sl-cmdk-dialog .sl-cmdk-row[aria-selected='true'] {
-  background: color-mix(in srgb, var(--sl-color-accent) 10%, var(--sl-color-bg-sidebar));
-  border-color: color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
+  background: transparent !important;
+  border-color: transparent !important;
 }
 
 #sl-cmdk-dialog .sl-cmdk-card .sl-cmdk-row {
