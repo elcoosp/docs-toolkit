@@ -235,7 +235,7 @@ function appendHighlightedText(target: HTMLElement, text: string, rawQuery: stri
     target.textContent = text;
     return;
   }
-  const escaped = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\function appendHighlightedExcerpt(")).join("|");
+  const escaped = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\\\function appendHighlightedExcerpt(")).join("|");
   const regex = new RegExp(`(${escaped})`, "gi");
   const parts = text.split(regex);
   for (const part of parts) {
@@ -535,38 +535,15 @@ export function initCommandSearch(): void {
     } catch {}
   }
   function getQuickActions(): FlatItem[] {
-return [
-{
-type: 'action',
-actionId: 'zen',
-title: isFr ? 'Basculer le mode Zen' : 'Toggle Zen Mode',
-subtitle: 'Alt+Z',
-section: 'Action',
-excerptHtml: isFr
-? 'Masque les barres latérales et l’en-tête pour une lecture sans distraction.'
-: 'Hide sidebars and header chrome for distraction-free reading.',
-},
-{
-type: 'action',
-actionId: 'theme',
-title: isFr ? 'Changer de thème (Clair / Sombre)' : 'Switch Color Theme (Light / Dark)',
-subtitle: isFr ? 'Apparence' : 'Appearance',
-section: 'Action',
-excerptHtml: isFr
-? 'Bascule instantanément entre le thème clair et le thème sombre.'
-: 'Toggle immediately between light and dark color schemes.',
-},
-{
-type: 'action',
-actionId: 'copy-md',
-title: isFr ? 'Copier la page en Markdown' : 'Copy Current Page as Markdown',
-subtitle: '.md',
-section: 'Action',
-excerptHtml: isFr
-? 'Copie le contenu Markdown brut de la page active dans le presse-papiers.'
-: 'Copy the clean Markdown source of the current documentation page.',
-},
-];
+  return [
+    { type: 'action', actionId: 'zen', title: isFr ? 'Basculer le mode Zen' : 'Toggle Zen Mode', subtitle: 'Alt+Z', section: 'Action', excerptHtml: isFr ? 'Masque les barres latérales et l’en-tête.' : 'Hide sidebars and header chrome for distraction-free reading.' },
+    { type: 'action', actionId: 'theme', title: isFr ? 'Changer de thème (Clair / Sombre)' : 'Switch Color Theme (Light / Dark)', subtitle: isFr ? 'Apparence' : 'Appearance', section: 'Action', excerptHtml: isFr ? 'Bascule entre le thème clair et le thème sombre.' : 'Toggle immediately between light and dark color schemes.' },
+    { type: 'action', actionId: 'locale', title: isFr ? 'Switch to English (EN)' : 'Passer en Français (FR)', subtitle: isFr ? 'EN' : 'FR', section: 'Action', excerptHtml: isFr ? 'Ouvre la version anglaise de la page.' : 'Open the French counterpart of this page.' },
+    { type: 'action', actionId: 'changelog', title: isFr ? 'Explorer les notes de version' : 'Browse Release Changelog', subtitle: 'log:', section: 'Action', excerptHtml: isFr ? 'Filtre toutes les versions du changelog.' : 'Filter all version release notes right inside the palette.' },
+    { type: 'action', actionId: 'copy-md', title: isFr ? 'Copier la page en Markdown' : 'Copy Current Page as Markdown', subtitle: '.md', section: 'Action', excerptHtml: isFr ? 'Copie le contenu Markdown de la page active.' : 'Copy the clean Markdown source of the current page.' },
+    { type: 'action', actionId: 'ai-chatgpt', title: isFr ? 'Demander à ChatGPT' : 'Open Current Page in ChatGPT', subtitle: 'AI', section: 'Action', excerptHtml: isFr ? 'Ouvre ChatGPT avec un prompt sur cette page.' : 'Launch ChatGPT pre-filled with a summary prompt for this page.' },
+    { type: 'action', actionId: 'ai-claude', title: isFr ? 'Demander à Claude' : 'Open Current Page in Claude', subtitle: 'AI', section: 'Action', excerptHtml: isFr ? 'Ouvre Claude avec un prompt sur cette page.' : 'Launch Claude pre-filled with a summary prompt for this page.' },
+  ];
 }
 function copyTextFallback(text: string): Promise<void> {
     if (navigator.clipboard && window.isSecureContext) {
@@ -693,22 +670,22 @@ triggerBtn.textContent = orig;
 }).catch(() => {});
 }
 function runAction(actionId?: string): void {
-closeModal();
-if (actionId === 'zen') {
-document.querySelector('[data-zen-toggle]')?.click();
-} else if (actionId === 'theme') {
-const select = document.querySelector('starlight-theme-select select');
-if (select) {
-select.value = select.value === 'dark' ? 'light' : 'dark';
-select.dispatchEvent(new Event('change', { bubbles: true }));
-} else {
-const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-document.documentElement.dataset.theme = next;
-try { localStorage.setItem('starlight-theme', next); } catch {}
-}
-} else if (actionId === 'locale') { const u = window.location.pathname; window.location.assign(isFr ? (u.replace(/^\/fr(?=\/|$)/, "") || "/") : ("/fr" + (u === "/" ? "/" : u))); } else if (actionId === 'changelog') { input.value = "log: "; handleQuery(); input.focus(); return; } else if (actionId === 'copy-md') {
-document.querySelector('#copy-markdown')?.click();
-}
+  if (actionId === 'changelog') { input.value = 'log: '; handleQuery(); input.focus(); return; }
+  closeModal();
+  if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
+  else if (actionId === 'theme') {
+    const sel = document.querySelector<HTMLSelectElement>('starlight-theme-select select');
+    if (sel) { sel.value = sel.value === 'dark' ? 'light' : 'dark'; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    else { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; try { localStorage.setItem('starlight-theme', next); } catch {} }
+  } else if (actionId === 'locale') {
+    const u = window.location.pathname;
+    window.location.assign(isFr ? (u.replace(/^\/fr(?=\/|$)/, '') || '/') : ('/fr' + (u === '/' ? '/' : u)));
+  } else if (actionId === 'copy-md') { document.querySelector<HTMLElement>('#copy-markdown')?.click(); }
+  else if (actionId === 'ai-chatgpt' || actionId === 'ai-claude') {
+    const params = new URLSearchParams(); params.set('q', 'Read and summarize this documentation: ' + window.location.href);
+    const base = actionId === 'ai-chatgpt' ? ['https:', '', ['chatgpt', 'com'].join('.')].join('/') + '/?' : ['https:', '', ['claude', 'ai'].join('.')].join('/') + '/new?';
+    window.open(base + params.toString(), '_blank', 'noopener,noreferrer');
+  }
 }
 async function hydratePagePreview(url: string): Promise<void> {
     if (pageMetaCache.has(url) || pendingMetaUrls.has(url)) return;
@@ -719,9 +696,10 @@ async function hydratePagePreview(url: string): Promise<void> {
       const html = await res.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
       const blocks: PreviewBlock[] = [];
+      const isChangelogPage = url.includes("/changelog");
       let paraCount = 0;
       let codeCount = 0;
-      for (const node of doc.querySelectorAll(".sl-markdown-content p, .sl-markdown-content pre, main p, main pre")) {
+      for (const node of doc.querySelectorAll(isChangelogPage ? ".sl-markdown-content li, .sl-markdown-content p" : ".sl-markdown-content p, .sl-markdown-content pre, main p, main pre")) {
         if (node.closest("aside, .starlight-aside, [data-pagefind-ignore]")) continue;
         if ((node.tagName === "P" || (isChangelogPage && node.tagName === "LI")) && paraCount < 4) {
           const cleanText = node.textContent?.replace(/\s+/g, " ").trim() || "";
@@ -930,6 +908,7 @@ extraClass?: string;
 icon: SVGSVGElement;
 iconClass?: string;
 title: string;
+titleHtml?: string;
 breadcrumb?: string;
 badge?: string;
 kbd?: string;
@@ -951,7 +930,7 @@ row.appendChild(iconBox);
 const body = el('span', 'sl-cmdk-row__body');
 const head = el('span', 'sl-cmdk-row__head');
 const titleEl = el('span', 'sl-cmdk-row__title');
-appendHighlightedText(titleEl, opts.title, input.value);
+if (opts.titleHtml) { appendHighlightedExcerpt(titleEl, opts.titleHtml); } else { appendHighlightedText(titleEl, opts.title, input.value); }
 head.appendChild(titleEl);
 body.appendChild(head);
 if (opts.breadcrumb) {
@@ -1439,26 +1418,18 @@ if (q.startsWith("#")) {
   tabsEl.dataset.collapsed = "true";
   listEl.replaceChildren();
   renderedItems = [];
-  const allHeadings: FlatItem[] = [];
+  const scoredHeadings: Array<{ item: FlatItem; score: number }> = [];
   for (const page of getSitePagesRaw()) {
     const sec = classifySection(page.url, isFr);
     for (const h of page.headings || []) {
-      if (
-        !headQ ||
-        h.title.toLowerCase().includes(headQ) ||
-        page.title.toLowerCase().includes(headQ)
-      ) {
-        allHeadings.push({
-          type: "sub",
-          title: h.title,
-          url: page.url + "#" + h.slug,
-          section: sec.label,
-          sectionKey: sec.key,
-          breadcrumb: page.title,
-        });
+      const score = !headQ ? 1 : Math.max(fuzzyScore(headQ, h.title), Math.floor(fuzzyScore(headQ, page.title) * 0.85));
+      if (score > 0) {
+        scoredHeadings.push({ score, item: { type: 'sub', title: h.title, url: page.url + '#' + h.slug, section: sec.label, sectionKey: sec.key, breadcrumb: page.title } });
       }
     }
   }
+  scoredHeadings.sort((a, b) => b.score - a.score);
+  const allHeadings = scoredHeadings.map((s) => s.item);
   const shown = allHeadings.slice(0, 24);
   if (shown.length === 0) {
     const empty = el("div", "sl-cmdk-empty");
@@ -1776,7 +1747,7 @@ activateItem(renderedItems[activeIndex], e.metaKey || e.ctrlKey);
 const current = renderedItems[activeIndex];
 if (current?.url) {
 e.preventDefault();
-copyItemUrl(current);
+if (e.shiftKey) { void copyItemMarkdown(current); } else { copyItemUrl(current); }
 }
 } else if (e.key === 'Tab' && !tabsEl.hidden) {
 const tabs = Array.from(tabsEl.querySelectorAll<HTMLElement>('[data-filter], [data-empty-view]'));
