@@ -1,4 +1,3 @@
-use jwalk::WalkDir;
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::fs;
@@ -35,15 +34,20 @@ pub fn normalize_route(route: &str) -> String {
 }
 
 pub fn collect_html_files(dist_dir: &Path) -> Vec<PathBuf> {
-    if !dist_dir.exists() {
-        return Vec::new();
+    let mut out = Vec::new();
+    let mut stack = vec![dist_dir.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.is_file() && entry.file_name().to_string_lossy().ends_with(".html") {
+                out.push(path);
+            }
+        }
     }
-    WalkDir::new(dist_dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file() && e.file_name().to_string_lossy().ends_with(".html"))
-        .map(|e| e.path())
-        .collect()
+    out
 }
 
 pub fn parse_all_html(dist_dir: &Path, locales: &HashSet<String>) -> Vec<PageDom> {

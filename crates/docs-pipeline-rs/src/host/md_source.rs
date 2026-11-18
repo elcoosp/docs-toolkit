@@ -1,4 +1,3 @@
-use jwalk::WalkDir;
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::fs;
@@ -129,18 +128,22 @@ pub fn load_all_markdown(docs_dir: &Path, locales: &HashSet<String>) -> Vec<MdDo
     if !docs_dir.exists() {
         return Vec::new();
     }
-    let files: Vec<PathBuf> = WalkDir::new(docs_dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            if !e.file_type().is_file() {
-                return false;
+    let mut files = Vec::new();
+    let mut stack = vec![docs_dir.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            if name.to_string_lossy().starts_with('.') { continue; }
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.is_file() {
+                let n = name.to_string_lossy();
+                if n.ends_with(".md") || n.ends_with(".mdx") { files.push(path); }
             }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && (name.ends_with(".md") || name.ends_with(".mdx"))
-        })
-        .map(|e| e.path())
-        .collect();
+        }
+    }
 
     files
         .par_iter()
