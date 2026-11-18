@@ -736,40 +736,33 @@ function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
   if (actionId === 'toggle-ai-more') {
-    if (aiCommandsExpanded) {
-      const extraTiles = Array.from(listEl!.querySelectorAll<HTMLElement>('.sl-cmdk-ai-grid .sl-cmdk-row')).slice(2);
-      const anims = extraTiles.map((tile) => {
-        tile.style.overflow = 'hidden';
-        const h = tile.offsetHeight;
-        return animate(
-          tile,
-          { height: [h + 'px', '0px'], opacity: new Array(1, 0), paddingTop: ['0.5rem', '0px'], paddingBottom: ['0.5rem', '0px'] },
-          { duration: 0.17 },
-        ).finished;
-      });
-      if (listEl!.scrollTop > 0) {
-        listEl!.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      void Promise.all(anims).then(() => {
+    const drawer = listEl!.querySelector<HTMLElement>('.sl-cmdk-ai-drawer');
+    if (aiCommandsExpanded && drawer) {
+      drawer.dataset.open = 'false';
+      window.setTimeout(() => {
         aiCommandsExpanded = false;
+        const keepScroll = listEl!.scrollTop;
         void handleQuery().then(() => {
           const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
           setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
-          syncSelectionIndicator(true);
-          input!.focus();
-        });
-      });
-      return;
-    }
-    aiCommandsExpanded = true;
-    void handleQuery().then(() => {
-      const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
-      setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), true);
-      syncSelectionIndicator(true);
-      input!.focus();
-    });
-    return;
-  }
+listEl!.scrollTop = Math.min(keepScroll, Math.max(0, listEl!.scrollHeight - listEl!.clientHeight));
+syncSelectionIndicator(true);
+input!.focus();
+});
+}, 210);
+return;
+}
+aiCommandsExpanded = true;
+const keepScroll = listEl!.scrollTop;
+void handleQuery().then(() => {
+const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
+setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
+listEl!.scrollTop = keepScroll;
+syncSelectionIndicator(true);
+input!.focus();
+});
+return;
+}
   if (actionId === 'changelog') { input!.value = 'log: '; handleQuery(); input!.focus(); return; }
   closeModal();
   if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
@@ -1464,135 +1457,148 @@ return;
 }
 
 if (q.startsWith("/") || q.startsWith(">")) {
-  const cmdQ = q.slice(1).trim().toLowerCase();
-  tabsEl!.dataset.collapsed = "true";
-  listEl!.replaceChildren();
-  renderedItems = [];
-  const allActions = getQuickActions();
-
-  const renderActionRow = (act: FlatItem, extraClass?: string, useShortTitle = false): HTMLElement => {
-    const idx = renderedItems.length;
-    renderedItems.push(act);
-    const displayTitle = useShortTitle && act.shortTitle ? act.shortTitle : act.title;
-    const row = makeRow({
-      idx,
-      icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
-      title: displayTitle,
-      titleHtml: cmdQ ? highlightFuzzyHtml(displayTitle, cmdQ) : undefined,
-      kbd: act.subtitle,
-      showArrow: useShortTitle,
-    });
-    if (useShortTitle) {
-      row.addEventListener('pointermove', (ev) => {
-        const rect = row.getBoundingClientRect();
-        row.style.setProperty('--mx', (ev.clientX - rect.left) + 'px');
-        row.style.setProperty('--my', (ev.clientY - rect.top) + 'px');
-      });
-    }
-    if (extraClass) row.classList.add(extraClass);
-    return row;
-  };
-
-  if (!cmdQ) {
-    const workspaceActs = allActions.filter((a) => a.section === 'Action');
-    const langActs = allActions.filter((a) => a.section === 'Language');
-    const aiActs = allActions.filter((a) => a.section === 'AI');
-
-    if (workspaceActs.length > 0) {
-      const g = el("div", "sl-cmdk-group");
-      const h = el("div", "sl-cmdk-group__title");
-      h.appendChild(el("span", undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
-      g.appendChild(h);
-      for (const act of workspaceActs) g.appendChild(renderActionRow(act));
-      listEl!.appendChild(g);
-    }
-
-    if (langActs.length > 0) {
-      const g = el("div", "sl-cmdk-group");
-      const h = el("div", "sl-cmdk-group__title");
-      h.appendChild(el("span", undefined, tr('cmdk.groupLanguage', 'Language')));
-      g.appendChild(h);
-      for (const act of langActs) g.appendChild(renderActionRow(act));
-      listEl!.appendChild(g);
-    }
-
-    if (aiActs.length > 0) {
-      const g = el("div", "sl-cmdk-group");
-      const h = el("div", "sl-cmdk-group__title");
-      h.appendChild(el("span", undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
-      h.appendChild(el("span", "sl-cmdk-group__count", String(aiActs.length)));
-      g.appendChild(h);
-
-      const visibleAi = aiCommandsExpanded ? aiActs : aiActs.slice(0, 2);
-      const grid = el("div", "sl-cmdk-ai-grid");
-      visibleAi.forEach((act, i) => {
-        const tile = renderActionRow(act, undefined, true);
-        if (aiCommandsExpanded && i >= 2) {
-          tile.style.opacity = '0';
-          animate(
-            tile,
-            { opacity: new Array(0, 1), y: new Array(6, 0), scale: [0.97, 1] },
-            { duration: 0.22, delay: Math.min((i - 2) * 0.022, 0.22) },
-          );
-        }
-        grid.appendChild(tile);
-      });
-      g.appendChild(grid);
-
-      if (aiActs.length > 2) {
-        const hiddenCount = aiActs.length - 2;
-        const toggleItem: FlatItem = {
-          type: 'action',
-          actionId: 'toggle-ai-more',
-          title: aiCommandsExpanded
-            ? tr('cmdk.lessAi', 'Show fewer AI assistants')
-            : tr('cmdk.moreAi', '+ {count} more AI assistants (Gemini, Perplexity, Grok…)', { count: String(hiddenCount) }),
-          subtitle: aiCommandsExpanded ? '−' : '+' + hiddenCount,
-          section: tr('cmdk.groupAi', 'Ask AI Assistant'),
-          excerptHtml: tr('cmdk.actionAskAiDesc', 'Open {provider} ({tag}) with a summary prompt for this page.', {
-            provider: aiActs.slice(2, 6).map((x) => x.title.replace(/^[^ ]+ /, '')).join(', '),
-            tag: aiActs.length + ' providers',
-          }),
-        };
-        g.appendChild(renderActionRow(toggleItem, 'sl-cmdk-row--expand-ai'));
-      }
-      listEl!.appendChild(g);
-    }
-
-    setActive(0, false);
-    if (statusEl) {
-      statusEl.textContent = isFr
-        ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
-        : 'Commands mode (/) · ' + renderedItems.length + ' actions';
-    }
-    return;
-  }
-
-  const matchedActions = allActions
-    .map((a) => ({ a, s: Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0) }))
-    .filter((x) => x.s > 0)
-    .sort((x, y) => y.s - x.s)
-    .map((x) => x.a);
-
-  if (matchedActions.length === 0) {
-    const empty = el("div", "sl-cmdk-empty");
-    empty.appendChild(document.createTextNode(isFr ? "Aucune commande pour « " : "No commands matching “"));
-    empty.appendChild(el("strong", undefined, q.slice(1).trim()));
-    empty.appendChild(document.createTextNode(isFr ? " »" : "”"));
-    listEl!.appendChild(empty);
-    renderPreview(undefined);
-    if (statusEl) statusEl.textContent = isFr ? "Mode commandes (/) · 0 résultat" : "Commands mode (/) · 0 matches";
-    return;
-  }
-
-  const nonAi = matchedActions.filter((a) => a.section !== 'AI');
-  const aiMatched = matchedActions.filter((a) => a.section === 'AI');
-
-  if (nonAi.length > 0) {
-    const g = el("div", "sl-cmdk-group");
-    const h = el("div", "sl-cmdk-group__title");
-    h.appendChild(el("span", undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
-    g.appendChild(h);
+const cmdQ = q.slice(1).trim().toLowerCase();
+tabsEl!.dataset.collapsed = "true";
+listEl!.replaceChildren();
+renderedItems = [];
+const allActions = getQuickActions();
+const renderActionRow = (act: FlatItem, extraClass?: string): HTMLElement => {
+const idx = renderedItems.length;
+renderedItems.push(act);
+const row = makeRow({
+idx,
+icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
+title: act.title,
+titleHtml: cmdQ ? highlightFuzzyHtml(act.title, cmdQ) : undefined,
+kbd: act.subtitle,
+});
+if (extraClass) row.classList.add(extraClass);
+return row;
+};
+const renderBentoTile = (act: FlatItem): HTMLElement => {
+const idx = renderedItems.length;
+renderedItems.push(act);
+const tile = document.createElement('button');
+tile.type = 'button';
+tile.className = 'sl-cmdk-row sl-cmdk-bento-tile';
+tile.dataset.cmdkIdx = String(idx);
+tile.setAttribute('role', 'option');
+tile.setAttribute('aria-selected', 'false');
+const top = el('span', 'sl-cmdk-bento-tile__top');
+const iconWrap = el('span', 'sl-cmdk-bento-tile__icon');
+iconWrap.appendChild(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
+const extWrap = el('span', 'sl-cmdk-bento-tile__ext');
+extWrap.appendChild(iconArrowUpRight());
+top.appendChild(iconWrap);
+top.appendChild(extWrap);
+const meta = el('span', 'sl-cmdk-bento-tile__meta');
+const nameEl = el('span', 'sl-cmdk-bento-tile__name');
+const displayTitle = act.shortTitle || act.title;
+if (cmdQ) {
+appendHighlightedExcerpt(nameEl, highlightFuzzyHtml(displayTitle, cmdQ));
+} else {
+nameEl.textContent = displayTitle;
+}
+const tagEl = el('span', 'sl-cmdk-bento-tile__tag', act.subtitle || '');
+meta.appendChild(nameEl);
+meta.appendChild(tagEl);
+tile.appendChild(top);
+tile.appendChild(meta);
+tile.addEventListener('pointermove', (ev) => {
+const rect = tile.getBoundingClientRect();
+tile.style.setProperty('--mx', (ev.clientX - rect.left) + 'px');
+tile.style.setProperty('--my', (ev.clientY - rect.top) + 'px');
+});
+return tile;
+};
+if (!cmdQ) {
+const workspaceActs = allActions.filter((a) => a.section === 'Action');
+const langActs = allActions.filter((a) => a.section === 'Language');
+const aiActs = allActions.filter((a) => a.section === 'AI');
+if (workspaceActs.length > 0) {
+const g = el("div", "sl-cmdk-group");
+const h = el("div", "sl-cmdk-group__title");
+h.appendChild(el("span", undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
+g.appendChild(h);
+for (const act of workspaceActs) g.appendChild(renderActionRow(act));
+listEl!.appendChild(g);
+}
+if (langActs.length > 0) {
+const g = el("div", "sl-cmdk-group");
+const h = el("div", "sl-cmdk-group__title");
+h.appendChild(el("span", undefined, tr('cmdk.groupLanguage', 'Language')));
+g.appendChild(h);
+for (const act of langActs) g.appendChild(renderActionRow(act));
+listEl!.appendChild(g);
+}
+if (aiActs.length > 0) {
+const g = el("div", "sl-cmdk-group");
+const h = el("div", "sl-cmdk-group__title");
+h.appendChild(el("span", undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
+h.appendChild(el("span", "sl-cmdk-group__count", String(aiActs.length)));
+g.appendChild(h);
+const primaryGrid = el("div", "sl-cmdk-ai-grid");
+for (const act of aiActs.slice(0, 2)) primaryGrid.appendChild(renderBentoTile(act));
+g.appendChild(primaryGrid);
+if (aiCommandsExpanded && aiActs.length > 2) {
+const drawer = el("div", "sl-cmdk-ai-drawer");
+drawer.dataset.open = "false";
+const drawerInner = el("div", "sl-cmdk-ai-drawer__inner");
+const extraGrid = el("div", "sl-cmdk-ai-grid");
+for (const act of aiActs.slice(2)) extraGrid.appendChild(renderBentoTile(act));
+drawerInner.appendChild(extraGrid);
+drawer.appendChild(drawerInner);
+g.appendChild(drawer);
+requestAnimationFrame(() => {
+drawer.dataset.open = "true";
+});
+}
+if (aiActs.length > 2) {
+const hiddenCount = aiActs.length - 2;
+const toggleItem: FlatItem = {
+type: 'action',
+actionId: 'toggle-ai-more',
+title: aiCommandsExpanded
+? tr('cmdk.lessAi', 'Show fewer AI assistants')
+: tr('cmdk.moreAi', 'Show all {total} AI assistants', { total: String(aiActs.length), count: String(hiddenCount) }),
+subtitle: aiCommandsExpanded ? '−' : '+' + hiddenCount,
+section: tr('cmdk.groupAi', 'Ask AI Assistant'),
+excerptHtml: aiActs.map((x) => x.shortTitle || x.title).join(' · '),
+};
+g.appendChild(renderActionRow(toggleItem, 'sl-cmdk-row--expand-ai'));
+}
+listEl!.appendChild(g);
+}
+setActive(0, false);
+if (statusEl) {
+statusEl.textContent = isFr
+? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
+: 'Commands mode (/) · ' + renderedItems.length + ' actions';
+}
+return;
+}
+const matchedActions = allActions
+.map((a) => ({ a, s: Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0) }))
+.filter((x) => x.s > 0)
+.sort((x, y) => y.s - x.s)
+.map((x) => x.a);
+if (matchedActions.length === 0) {
+const empty = el("div", "sl-cmdk-empty");
+empty.appendChild(document.createTextNode(isFr ? "Aucune commande pour « " : "No commands matching “"));
+empty.appendChild(el("strong", undefined, q.slice(1).trim()));
+empty.appendChild(document.createTextNode(isFr ? " »" : "”"));
+listEl!.appendChild(empty);
+renderPreview(undefined);
+if (statusEl) statusEl.textContent = isFr ? "Mode commandes (/) · 0 résultat" : "Commands mode (/) · 0 matches";
+return;
+}
+const nonAi = matchedActions.filter((a) => a.section !== 'AI');
+const aiMatched = matchedActions.filter((a) => a.section === 'AI');
+if (nonAi.length > 0) {
+const g = el("div", "sl-cmdk-group");
+const h = el("div", "sl-cmdk-group__title");
+h.appendChild(el("span", undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
+g.appendChild(h);
 for (const act of nonAi) g.appendChild(renderActionRow(act));
 listEl!.appendChild(g);
 }
@@ -1603,7 +1609,7 @@ h.appendChild(el("span", undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
 h.appendChild(el("span", "sl-cmdk-group__count", String(aiMatched.length)));
 g.appendChild(h);
 const grid = el("div", "sl-cmdk-ai-grid");
-for (const act of aiMatched) grid.appendChild(renderActionRow(act, undefined, true));
+for (const act of aiMatched) grid.appendChild(renderBentoTile(act));
 g.appendChild(grid);
 listEl!.appendChild(g);
 }

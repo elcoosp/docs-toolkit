@@ -66,6 +66,6 @@
   "cmdk.groupWorkspace": "Espace de travail & Navigation",
   "cmdk.groupLanguage": "Langue",
   "cmdk.groupAi": "Demander à un assistant IA",
-  "cmdk.moreAi": "+ {count} autres assistants IA (Gemini, Perplexity, Grok…)",
-  "cmdk.lessAi": "Réduire la liste des assistants IA"
+  "cmdk.moreAi": "Afficher les {total} assistants IA",
+  "cmdk.lessAi": "Réduire les assistants IA"
 }
