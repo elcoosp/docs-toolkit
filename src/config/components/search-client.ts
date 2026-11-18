@@ -403,6 +403,10 @@ export function initCommandSearch(): void {
   let activeIndex = 0;
   let aiCommandsExpanded = false;
 let lastToggleClickAt = 0;
+const markedItems = new Map<string, { title: string; url: string; section: string }>();
+let historyCursor = -1;
+let historyDraft = "";
+let previewThemeOriginal: string | null = null;
   let currentResults: PagefindData[] = [];
   let renderedItems: FlatItem[] = [];
   let searchSeq = 0;
@@ -418,6 +422,39 @@ let lastToggleClickAt = 0;
   const indicatorEl = el('div', 'sl-cmdk-indicator');
   indicatorEl.setAttribute('aria-hidden', 'true');
 
+  function refreshMarkedUI(): void {
+    listEl!.querySelectorAll<HTMLElement>("[data-cmdk-idx]").forEach((row) => {
+      const item = renderedItems[Number(row.dataset.cmdkIdx)];
+      const on = Boolean(item?.url && markedItems.has(normalizePath(item.url)));
+      row.dataset.marked = String(on);
+      const btn = row.querySelector<HTMLButtonElement>(".sl-cmdk-row__mark");
+      if (btn) { btn.dataset.marked = String(on); btn.setAttribute("aria-pressed", String(on)); }
+    });
+    if (statusEl) {
+      statusEl.textContent = markedItems.size > 0
+        ? (isFr ? markedItems.size + " sélectionné(s) · ⌘C liens · ⌘⇧C Markdown · Esc effacer" : markedItems.size + " selected · ⌘C links · ⌘⇧C Markdown · Esc clear")
+        : (isFr ? "Tapez pour rechercher dans toute la documentation" : "Type to search across all documentation");
+      statusEl.style.color = markedItems.size > 0 ? "var(--sl-color-accent-high)" : "";
+      statusEl.style.fontWeight = markedItems.size > 0 ? "600" : "";
+    }
+  }
+  function toggleMarkItem(item: FlatItem | undefined, advance = false): void {
+    if (!item?.url) return;
+    const k = normalizePath(item.url);
+    if (markedItems.has(k)) markedItems.delete(k);
+    else markedItems.set(k, { title: item.title, url: item.url, section: item.section || classifySection(item.url, isFr).label });
+    refreshMarkedUI();
+    if (advance && renderedItems.length > 0) { activeIndex = (activeIndex + 1) % renderedItems.length; updateActiveRow(true); }
+  }
+  function applyThemePreviewForItem(item: FlatItem | undefined): void {
+    if (item?.type === "action" && item?.actionId === "theme") {
+      if (previewThemeOriginal === null) previewThemeOriginal = document.documentElement.dataset.theme || "light";
+      document.documentElement.dataset.theme = previewThemeOriginal === "dark" ? "light" : "dark";
+    } else if (previewThemeOriginal !== null) {
+      document.documentElement.dataset.theme = previewThemeOriginal;
+      previewThemeOriginal = null;
+    }
+  }
   function syncSelectionIndicator(instant = false): void {
     const selected = listEl!.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
     if (!selected || selected.closest('.sl-cmdk-card') || selected.closest('.sl-cmdk-ai-grid') || selected.classList.contains('sl-cmdk-row--expand-ai')) {
@@ -567,11 +604,19 @@ let lastToggleClickAt = 0;
     const u = new URL(item.url, window.location.origin);
     const clean = u.pathname.replace(/\/+$/, "");
     const md = clean === "" ? "/index.md" : clean === "/fr" ? "/fr.md" : clean + ".md";
-    try {
-      const r = await fetch(md, { credentials: "same-origin" });
-      const txt = r.ok ? await r.text() : "";
-      if (txt) { await copyTextFallback(txt); if (statusEl) statusEl.textContent = isFr ? "Markdown copié (⌘⇧C)" : "Markdown copied (⌘⇧C)"; }
-    } catch {}
+    const getMd = async (rawUrl: string) => {
+      const pu = new URL(rawUrl, window.location.origin);
+      const cl = pu.pathname.replace(/\/+$/, "");
+      const m = cl === "" ? "/index.md" : cl === "/fr" ? "/fr.md" : cl + ".md";
+      try { const r = await fetch(m, { credentials: "same-origin" }); return r.ok ? (await r.text()).trim() : ""; } catch { return ""; }
+    };
+    if (markedItems.size > 0) {
+      const parts = (await Promise.all(Array.from(markedItems.values()).map((t) => getMd(t.url)))).filter(Boolean);
+      if (parts.length > 0) { await copyTextFallback(parts.join("\n\n---\n\n")); if (statusEl) statusEl.textContent = isFr ? parts.length + " fichiers Markdown copiés (⌘⇧C)" : parts.length + " Markdown files copied (⌘⇧C)"; }
+      return;
+    }
+    const txt = await getMd(item.url);
+    if (txt) { await copyTextFallback(txt); if (statusEl) statusEl.textContent = isFr ? "Markdown copié (⌘⇧C)" : "Markdown copied (⌘⇧C)"; }
   }
   function getQuickActions(): FlatItem[] {
   const actions: FlatItem[] = [
@@ -721,6 +766,11 @@ function copyTextFallback(text: string): Promise<void> {
   }
 
   function copyItemUrl(item: FlatItem | undefined, triggerBtn?: HTMLButtonElement): void {
+if (markedItems.size > 0) {
+const urls = Array.from(markedItems.values()).map((m) => new URL(m.url, window.location.origin).href);
+copyTextFallback(urls.join("\n")).then(() => { if (statusEl) statusEl.textContent = isFr ? urls.length + " liens copiés" : urls.length + " links copied"; }).catch(() => {});
+return;
+}
 if (!item?.url) return;
 const fullUrl = new URL(item.url, window.location.origin).href;
 copyTextFallback(fullUrl).then(() => {
@@ -756,9 +806,12 @@ function runAction(itemOrId?: FlatItem | string): void {
   closeModal();
   if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
   else if (actionId === 'theme') {
+    const base = previewThemeOriginal ?? (document.documentElement.dataset.theme || 'light');
+    previewThemeOriginal = null;
+    const next = base === 'dark' ? 'light' : 'dark';
     const sel = document.querySelector<HTMLSelectElement>('starlight-theme-select select');
-    if (sel) { sel.value = sel.value === 'dark' ? 'light' : 'dark'; sel.dispatchEvent(new Event('change', { bubbles: true })); }
-    else { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; try { localStorage.setItem('starlight-theme', next); } catch {} }
+    if (sel) { sel.value = next; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    else { document.documentElement.dataset.theme = next; try { localStorage.setItem('starlight-theme', next); } catch {} }
   } else if (actionId === 'lang-switch' && actionHref) {
     window.location.assign(actionHref);
   } else if (actionId === 'copy-md') {
@@ -977,6 +1030,7 @@ row.scrollIntoView({ block: 'nearest' });
 }
 });
 
+applyThemePreviewForItem(renderedItems[activeIndex]);
 renderPreview(renderedItems[activeIndex]);
 syncSelectionIndicator(false);
 }
@@ -1033,6 +1087,16 @@ trail.appendChild(el('kbd', 'sl-cmdk-kbd', opts.kbd));
 if (opts.showArrow) {
 const pinned = opts.href && opts.href !== "#" ? isPagePinned(opts.href) : false;
 if (opts.href && opts.href !== "#") {
+  const on = markedItems.has(normalizePath(opts.href));
+  row.dataset.marked = String(on);
+  const markBtn = el("button", "sl-cmdk-row__mark");
+  markBtn.type = "button";
+  markBtn.dataset.markIdx = String(opts.idx);
+  markBtn.dataset.marked = String(on);
+  markBtn.setAttribute("aria-pressed", String(on));
+  markBtn.setAttribute("aria-label", isFr ? "Sélectionner" : "Select");
+  markBtn.textContent = "✓";
+  trail.appendChild(markBtn);
   const pinStar = el("button", "sl-cmdk-row__pin");
   pinStar.type = "button";
   pinStar.dataset.pinIdx = String(opts.idx);
@@ -1745,10 +1809,19 @@ requestAnimationFrame(() => input!.focus());
 }
 function closeModal(): void {
 if (!dialog!.open) return;
+if (previewThemeOriginal !== null) { document.documentElement.dataset.theme = previewThemeOriginal; previewThemeOriginal = null; }
+markedItems.clear();
+historyCursor = -1;
 aiCommandsExpanded = false;
 dialog!.close();
 }
 function activateItem(item: FlatItem | undefined, newTab = false): void {
+if (newTab && markedItems.size > 0) {
+  const urls = Array.from(markedItems.values()).map((m) => m.url);
+  closeModal();
+  for (const u of urls) window.open(u, "_blank", "noopener,noreferrer");
+  return;
+}
 if (!item) return;
 if (item.type === 'recent' && item.query) {
 input!.value = item.query;
@@ -1810,6 +1883,7 @@ if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c" && !window.getSelect
 if (e.target === dialog) closeModal();
 });
 dialog!.addEventListener('cancel', (e) => {
+if (markedItems.size > 0) { e.preventDefault(); markedItems.clear(); refreshMarkedUI(); return; }
 if (input!.value.trim().length > 0) {
 e.preventDefault();
 input!.value = '';
@@ -1844,6 +1918,8 @@ tabsEl!.addEventListener('click', (e) => {
     }
   });
   listEl!.addEventListener('click', (e) => {
+const markToggle = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-mark-idx]") : null;
+    if (markToggle) { e.preventDefault(); e.stopPropagation(); toggleMarkItem(renderedItems[Number(markToggle.dataset.markIdx)], false); return; }
 const pinToggle = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-pin-idx]") : null;
     if (pinToggle) {
       e.preventDefault();
@@ -1948,6 +2024,17 @@ if (current?.url) {
 e.preventDefault();
 if (e.shiftKey) { void copyItemMarkdown(current); } else { copyItemUrl(current); }
 }
+} else if (e.altKey && !e.metaKey && !e.ctrlKey && (e.key.toLowerCase() === 'p' || e.key.toLowerCase() === 'n')) {
+const rec = getRecent();
+if (rec.length > 0) {
+e.preventDefault();
+if (e.key.toLowerCase() === 'p') { if (historyCursor === -1) historyDraft = input!.value; historyCursor = Math.min(rec.length - 1, historyCursor + 1); input!.value = rec[historyCursor]; }
+else if (historyCursor >= 0) { historyCursor -= 1; input!.value = historyCursor >= 0 ? rec[historyCursor] : historyDraft; }
+void handleQuery();
+}
+} else if ((e.key === 'Tab' && (tabsEl!.hidden || e.shiftKey)) || (e.altKey && e.code === 'Space')) {
+const cur = renderedItems[activeIndex];
+if (cur?.url) { e.preventDefault(); toggleMarkItem(cur, true); }
 } else if (e.key === 'Tab' && !tabsEl!.hidden) {
 const tabs = Array.from(tabsEl!.querySelectorAll<HTMLElement>('[data-filter], [data-empty-view]'));
 if (tabs.length > 1) {

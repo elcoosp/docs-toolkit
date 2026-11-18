@@ -1022,3 +1022,9 @@ gap: 0.28rem;
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai:active {
   transform: scale(0.985);
 }
+
+#sl-cmdk-dialog .sl-cmdk-row[data-marked="true"]{box-shadow:inset 2.5px 0 0 var(--sl-color-accent);background:color-mix(in srgb,var(--sl-color-accent) 6%,transparent)!important}
+#sl-cmdk-dialog .sl-cmdk-row__mark{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;padding:0;border-radius:.36rem;border:1px solid color-mix(in srgb,var(--sl-color-hairline) 85%,transparent);background:transparent;color:transparent;font-size:.68rem;font-weight:700;cursor:pointer;opacity:0;transition:opacity 120ms ease,background-color 140ms ease,border-color 140ms ease,color 140ms ease}
+#sl-cmdk-dialog .sl-cmdk-row:hover .sl-cmdk-row__mark,#sl-cmdk-dialog .sl-cmdk-row[aria-selected="true"] .sl-cmdk-row__mark,#sl-cmdk-dialog .sl-cmdk-row__mark[data-marked="true"]{opacity:1}
+#sl-cmdk-dialog .sl-cmdk-row__mark:hover{border-color:var(--sl-color-accent);color:var(--sl-color-accent)}
+#sl-cmdk-dialog .sl-cmdk-row__mark[data-marked="true"]{border-color:var(--sl-color-accent);background:var(--sl-color-accent);color:var(--sl-color-black)}
