@@ -968,12 +968,11 @@ gap: 0.28rem;
   background: color-mix(in srgb, var(--sl-color-bg) 88%, var(--sl-color-hairline));
   border: 1px solid color-mix(in srgb, var(--sl-color-hairline) 88%, transparent);
   color: var(--sl-color-text);
-  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
 }
 
 #sl-cmdk-dialog .sl-cmdk-bento-tile:hover .sl-cmdk-bento-tile__icon,
 #sl-cmdk-dialog .sl-cmdk-bento-tile[aria-selected="true"] .sl-cmdk-bento-tile__icon {
-  transform: scale(1.06);
   border-color: color-mix(in srgb, var(--sl-color-accent) 46%, var(--sl-color-hairline));
   background: color-mix(in srgb, var(--sl-color-accent) 13%, var(--sl-color-bg));
   color: var(--sl-color-accent);
