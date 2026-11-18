@@ -1013,10 +1013,10 @@ gap: 0.28rem;
 
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai:hover,
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai[aria-selected="true"] {
-  border-style: solid;
-  border-color: color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
-  background: color-mix(in srgb, var(--sl-color-accent) 11%, var(--sl-color-bg-sidebar));
-  color: var(--sl-color-text);
+  border-style: solid !important;
+  border-color: color-mix(in srgb, var(--sl-color-accent) 36%, transparent) !important;
+  background: color-mix(in srgb, var(--sl-color-accent) 11%, var(--sl-color-bg-sidebar)) !important;
+  color: var(--sl-color-text) !important;
 }
 
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai:active {
