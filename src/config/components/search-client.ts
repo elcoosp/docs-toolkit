@@ -366,7 +366,8 @@ export function initCommandSearch(): void {
   let renderedItems: FlatItem[] = [];
   let searchSeq = 0;
   const queryCache = new Map<string, PagefindData[]>();
-  const pageMetaCache = new Map<string, { excerpt: string; subs: SubResult[] }>();
+  interface PreviewBlock { kind: 'p' | 'code'; html?: string; text?: string; }
+  const pageMetaCache = new Map<string, { blocks: PreviewBlock[]; subs: SubResult[] }>();
   const pendingMetaUrls = new Set<string>();
   let previewCopyBtn: HTMLButtonElement | null = null;
   let lastPreviewKey = '';
@@ -675,10 +676,30 @@ async function hydratePagePreview(url: string): Promise<void> {
       if (!res.ok) return;
       const html = await res.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
-      const firstParaEl = Array.from(doc.querySelectorAll(".sl-markdown-content p, main p"))
-        .find((p) => !p.closest("aside, .starlight-aside") && (p.textContent?.replace(/\s+/g, " ").trim().length || 0) > 24);
-      const metaDesc = doc.querySelector("meta[name=\"description\"]")?.getAttribute("content")?.trim() || "";
-      const excerpt = firstParaEl ? firstParaEl.innerHTML.replace(/\s+/g, " ").trim() : metaDesc;
+      const blocks: PreviewBlock[] = [];
+      let paraCount = 0;
+      let codeCount = 0;
+      for (const node of doc.querySelectorAll(".sl-markdown-content p, .sl-markdown-content pre, main p, main pre")) {
+        if (node.closest("aside, .starlight-aside, [data-pagefind-ignore]")) continue;
+        if (node.tagName === "P" && paraCount < 3) {
+          const cleanText = node.textContent?.replace(/\s+/g, " ").trim() || "";
+          if (cleanText.length > 24) {
+            blocks.push({ kind: "p", html: node.innerHTML.replace(/\s+/g, " ").trim() });
+            paraCount += 1;
+          }
+        } else if (node.tagName === "PRE" && codeCount < 1) {
+          const rawCode = node.textContent?.trim() || "";
+          if (rawCode) {
+            blocks.push({ kind: "code", text: rawCode.split("\n").slice(0, 10).join("\n") });
+            codeCount += 1;
+          }
+        }
+        if (paraCount >= 3 && codeCount >= 1) break;
+      }
+      if (blocks.length === 0) {
+        const metaDesc = doc.querySelector("meta[name=\"description\"]")?.getAttribute("content")?.trim() || "";
+        if (metaDesc) blocks.push({ kind: "p", html: metaDesc });
+      }
       const baseUrl = url.split("#")[0];
       const subs: SubResult[] = [];
       doc.querySelectorAll(".sl-markdown-content h2[id], .sl-markdown-content h3[id], main h2[id]").forEach((h) => {
@@ -691,12 +712,12 @@ async function hydratePagePreview(url: string): Promise<void> {
           subs.push({ title, url: baseUrl + "#" + id, excerpt: "" });
         }
       });
-      pageMetaCache.set(url, { excerpt, subs });
+      pageMetaCache.set(url, { blocks, subs });
       if (renderedItems[activeIndex]?.url === url) {
         renderPreview(renderedItems[activeIndex]);
       }
     } catch {
-      pageMetaCache.set(url, { subs: [] });
+      pageMetaCache.set(url, { blocks: [], subs: [] });
     } finally {
       pendingMetaUrls.delete(url);
     }
@@ -732,35 +753,43 @@ async function hydratePagePreview(url: string): Promise<void> {
       top.appendChild(el('div', 'sl-cmdk-preview__path', item.url));
     }
 
-    const hasUiChromeNoise = item.excerptHtml && /Open in AI|ChatGPT|min read\./i.test(item.excerptHtml);
-    if (item.excerptHtml && (!hasUiChromeNoise || !cachedMeta?.excerpt)) {
+    const appendSafe = (node: Node, target: HTMLElement): void => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || '';
+        const parts = text.split(/(`[^`]+`)/g);
+        for (const part of parts) {
+          if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+            target.appendChild(el('code', undefined, part.slice(1, -1)));
+          } else if (part) {
+            target.appendChild(document.createTextNode(part));
+          }
+        }
+      } else if (node instanceof HTMLElement) {
+        if (node.tagName === 'CODE') {
+          target.appendChild(el('code', undefined, node.textContent || ''));
+        } else {
+          node.childNodes.forEach((child) => appendSafe(child, target));
+        }
+      }
+    };
+
+    if (item.excerptHtml) {
       const excerpt = el('p', 'sl-cmdk-preview__excerpt');
       appendHighlightedExcerpt(excerpt, item.excerptHtml);
       top.appendChild(excerpt);
-    } else if (cachedMeta?.excerpt) {
-      const excerpt = el('p', 'sl-cmdk-preview__excerpt');
-      const parsed = new DOMParser().parseFromString(cachedMeta.excerpt, 'text/html');
-      const appendSafe = (node: Node, target: HTMLElement): void => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          const text = node.textContent || '';
-          const parts = text.split(/(`[^`]+`)/g);
-          for (const part of parts) {
-            if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
-              target.appendChild(el('code', undefined, part.slice(1, -1)));
-            } else if (part) {
-              target.appendChild(document.createTextNode(part));
-            }
-          }
-        } else if (node instanceof HTMLElement) {
-          if (node.tagName === 'CODE') {
-            target.appendChild(el('code', undefined, node.textContent || ''));
-          } else {
-            node.childNodes.forEach((child) => appendSafe(child, target));
-          }
+    } else if (cachedMeta && cachedMeta.blocks.length > 0) {
+      for (const blk of cachedMeta.blocks) {
+        if (blk.kind === 'code' && blk.text) {
+          const pre = el('pre', 'sl-cmdk-preview__code');
+          pre.textContent = blk.text;
+          top.appendChild(pre);
+        } else if (blk.kind === 'p' && blk.html) {
+          const excerpt = el('p', 'sl-cmdk-preview__excerpt');
+          const parsed = new DOMParser().parseFromString(blk.html, 'text/html');
+          parsed.body.childNodes.forEach((n) => appendSafe(n, excerpt));
+          top.appendChild(excerpt);
         }
-      };
-      parsed.body.childNodes.forEach((n) => appendSafe(n, excerpt));
-      top.appendChild(excerpt);
+      }
     } else if (item.breadcrumb) {
       top.appendChild(el('p', 'sl-cmdk-preview__excerpt', item.breadcrumb));
     }

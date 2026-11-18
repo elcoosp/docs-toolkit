@@ -819,3 +819,17 @@ gap: 0.28rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+#sl-cmdk-dialog .sl-cmdk-preview__code {
+  margin: 0.4rem 0 0;
+  padding: 0.55rem 0.68rem;
+  border-radius: 0.48rem;
+  border: 1px solid var(--sl-color-hairline);
+  background: var(--sl-color-bg-inline-code, color-mix(in srgb, var(--sl-color-hairline) 24%, transparent));
+  font-family: var(--sl-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 0.71rem;
+  line-height: 1.45;
+  color: var(--sl-color-text);
+  overflow-x: auto;
+  white-space: pre;
+}
