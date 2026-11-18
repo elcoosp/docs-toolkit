@@ -1013,8 +1013,9 @@ gap: 0.28rem;
 
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai:hover,
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai[aria-selected="true"] {
-  border-color: transparent;
-  background: transparent;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--sl-color-accent) 11%, var(--sl-color-bg-sidebar));
   color: var(--sl-color-text);
 }
 
