@@ -2032,7 +2032,7 @@ if (e.key.toLowerCase() === 'p') { if (historyCursor === -1) historyDraft = inpu
 else if (historyCursor >= 0) { historyCursor -= 1; input!.value = historyCursor >= 0 ? rec[historyCursor] : historyDraft; }
 void handleQuery();
 }
-} else if ((e.key === 'Tab' && (tabsEl!.hidden || e.shiftKey)) || (e.altKey && e.code === 'Space')) {
+} else if (((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'm') || (e.altKey && e.code === 'Space')) {
 const cur = renderedItems[activeIndex];
 if (cur?.url) { e.preventDefault(); toggleMarkItem(cur, true); }
 } else if (e.key === 'Tab' && !tabsEl!.hidden) {
