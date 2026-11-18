@@ -843,3 +843,54 @@ gap: 0.28rem;
   border-color: color-mix(in srgb, var(--sl-color-accent) 42%, var(--sl-color-hairline));
   background: color-mix(in srgb, var(--sl-color-accent) 8%, var(--sl-color-bg));
 }
+
+/* Semantic command groups & Bento 2-column AI drawer */
+#sl-cmdk-dialog .sl-cmdk-group + .sl-cmdk-group {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid color-mix(in srgb, var(--sl-color-hairline) 70%, transparent);
+}
+
+#sl-cmdk-dialog .sl-cmdk-ai-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.34rem;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 560px) {
+  #sl-cmdk-dialog .sl-cmdk-ai-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+#sl-cmdk-dialog .sl-cmdk-ai-grid .sl-cmdk-row {
+  padding: 0.44rem 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-hairline) 78%, transparent);
+  background: color-mix(in srgb, var(--sl-color-bg-nav) 65%, transparent);
+  border-radius: 0.52rem;
+}
+
+#sl-cmdk-dialog .sl-cmdk-ai-grid .sl-cmdk-row[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 48%, var(--sl-color-hairline));
+  background: color-mix(in srgb, var(--sl-color-accent) 11%, var(--sl-color-bg));
+}
+
+#sl-cmdk-dialog .sl-cmdk-ai-grid .sl-cmdk-row__title {
+  font-size: 0.8rem;
+}
+
+#sl-cmdk-dialog .sl-cmdk-row--expand-ai {
+  margin-top: 0.34rem;
+  border: 1px dashed color-mix(in srgb, var(--sl-color-hairline) 90%, transparent);
+  background: transparent;
+  color: var(--sl-color-gray-2);
+  font-size: 0.78rem;
+}
+
+#sl-cmdk-dialog .sl-cmdk-row--expand-ai:hover,
+#sl-cmdk-dialog .sl-cmdk-row--expand-ai[aria-selected="true"] {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--sl-color-accent) 45%, var(--sl-color-hairline));
+  color: var(--sl-color-text);
+}

@@ -62,5 +62,10 @@
   "cmdk.actionLangSwitch": "Passer la langue en {lang}",
   "cmdk.actionLangSwitchDesc": "Ouvrir cette page en {lang}.",
   "cmdk.actionAskAi": "Demander à {provider}",
-  "cmdk.actionAskAiDesc": "Ouvrir {provider} ({tag}) avec un prompt sur cette page."
+  "cmdk.actionAskAiDesc": "Ouvrir {provider} ({tag}) avec un prompt sur cette page.",
+  "cmdk.groupWorkspace": "Espace de travail & Navigation",
+  "cmdk.groupLanguage": "Langue",
+  "cmdk.groupAi": "Demander à un assistant IA",
+  "cmdk.moreAi": "+ {count} autres assistants IA (Gemini, Perplexity, Grok…)",
+  "cmdk.lessAi": "Réduire la liste des assistants IA"
 }

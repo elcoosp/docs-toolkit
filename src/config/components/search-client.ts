@@ -400,6 +400,7 @@ export function initCommandSearch(): void {
   let pagefindFailed = false;
   let activeFilter = 'all';
   let activeIndex = 0;
+  let aiCommandsExpanded = false;
   let currentResults: PagefindData[] = [];
   let renderedItems: FlatItem[] = [];
   let searchSeq = 0;
@@ -732,6 +733,16 @@ triggerBtn.textContent = orig;
 function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
+  if (actionId === 'toggle-ai-more') {
+    const keepIdx = activeIndex;
+    aiCommandsExpanded = !aiCommandsExpanded;
+    void handleQuery().then(() => {
+      const maxIdx = Math.max(0, renderedItems.length - 1);
+      setActive(Math.min(keepIdx, maxIdx), false);
+      input!.focus();
+    });
+    return;
+  }
   if (actionId === 'changelog') { input!.value = 'log: '; handleQuery(); input!.focus(); return; }
   closeModal();
   if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
@@ -1223,7 +1234,7 @@ const actionGroup = el('div', 'sl-cmdk-group');
 const actionHeader = el('div', 'sl-cmdk-group__title');
 actionHeader.appendChild(el('span', undefined, isFr ? 'Actions rapides' : 'Quick actions'));
 actionGroup.appendChild(actionHeader);
-for (const act of getQuickActions()) {
+for (const act of getQuickActions().filter((a) => a.actionId !== 'ai-provider')) {
 const idx = renderedItems.length;
 renderedItems.push(act);
 actionGroup.appendChild(
@@ -1430,7 +1441,92 @@ if (q.startsWith("/") || q.startsWith(">")) {
   tabsEl!.dataset.collapsed = "true";
   listEl!.replaceChildren();
   renderedItems = [];
-  const matchedActions = getQuickActions().map((a) => ({ a, s: !cmdQ ? 1 : Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).map((x) => x.a);
+  const allActions = getQuickActions();
+
+  const renderActionRow = (act: FlatItem, extraClass?: string): HTMLElement => {
+    const idx = renderedItems.length;
+    renderedItems.push(act);
+    const row = makeRow({
+      idx,
+      icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
+      title: act.title,
+      titleHtml: cmdQ ? highlightFuzzyHtml(act.title, cmdQ) : undefined,
+      kbd: act.subtitle,
+    });
+    if (extraClass) row.classList.add(extraClass);
+    return row;
+  };
+
+  if (!cmdQ) {
+    const workspaceActs = allActions.filter((a) => a.section === 'Action');
+    const langActs = allActions.filter((a) => a.section === 'Language');
+    const aiActs = allActions.filter((a) => a.section === 'AI');
+
+    if (workspaceActs.length > 0) {
+      const g = el("div", "sl-cmdk-group");
+      const h = el("div", "sl-cmdk-group__title");
+      h.appendChild(el("span", undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
+      g.appendChild(h);
+      for (const act of workspaceActs) g.appendChild(renderActionRow(act));
+      listEl!.appendChild(g);
+    }
+
+    if (langActs.length > 0) {
+      const g = el("div", "sl-cmdk-group");
+      const h = el("div", "sl-cmdk-group__title");
+      h.appendChild(el("span", undefined, tr('cmdk.groupLanguage', 'Language')));
+      g.appendChild(h);
+      for (const act of langActs) g.appendChild(renderActionRow(act));
+      listEl!.appendChild(g);
+    }
+
+    if (aiActs.length > 0) {
+      const g = el("div", "sl-cmdk-group");
+      const h = el("div", "sl-cmdk-group__title");
+      h.appendChild(el("span", undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
+      h.appendChild(el("span", "sl-cmdk-group__count", String(aiActs.length)));
+      g.appendChild(h);
+
+      const visibleAi = aiCommandsExpanded ? aiActs : aiActs.slice(0, 2);
+      const grid = el("div", "sl-cmdk-ai-grid");
+      for (const act of visibleAi) grid.appendChild(renderActionRow(act));
+      g.appendChild(grid);
+
+      if (aiActs.length > 2) {
+        const hiddenCount = aiActs.length - 2;
+        const toggleItem: FlatItem = {
+          type: 'action',
+          actionId: 'toggle-ai-more',
+          title: aiCommandsExpanded
+            ? tr('cmdk.lessAi', 'Show fewer AI assistants')
+            : tr('cmdk.moreAi', '+ {count} more AI assistants (Gemini, Perplexity, Grok…)', { count: String(hiddenCount) }),
+          subtitle: aiCommandsExpanded ? '−' : '+' + hiddenCount,
+          section: tr('cmdk.groupAi', 'Ask AI Assistant'),
+          excerptHtml: tr('cmdk.actionAskAiDesc', 'Open {provider} ({tag}) with a summary prompt for this page.', {
+            provider: aiActs.slice(2, 6).map((x) => x.title.replace(/^[^ ]+ /, '')).join(', '),
+            tag: aiActs.length + ' providers',
+          }),
+        };
+        g.appendChild(renderActionRow(toggleItem, 'sl-cmdk-row--expand-ai'));
+      }
+      listEl!.appendChild(g);
+    }
+
+    setActive(0, false);
+    if (statusEl) {
+      statusEl.textContent = isFr
+        ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
+        : 'Commands mode (/) · ' + renderedItems.length + ' actions';
+    }
+    return;
+  }
+
+  const matchedActions = allActions
+    .map((a) => ({ a, s: Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0) }))
+    .filter((x) => x.s > 0)
+    .sort((x, y) => y.s - x.s)
+    .map((x) => x.a);
+
   if (matchedActions.length === 0) {
     const empty = el("div", "sl-cmdk-empty");
     empty.appendChild(document.createTextNode(isFr ? "Aucune commande pour « " : "No commands matching “"));
@@ -1441,33 +1537,37 @@ if (q.startsWith("/") || q.startsWith(">")) {
     if (statusEl) statusEl.textContent = isFr ? "Mode commandes (/) · 0 résultat" : "Commands mode (/) · 0 matches";
     return;
   }
-  const group = el("div", "sl-cmdk-group");
-  const header = el("div", "sl-cmdk-group__title");
-  header.appendChild(el("span", undefined, isFr ? "Commandes (/)" : "Commands (/)"));
-  group.appendChild(header);
-  for (const act of matchedActions) {
-    const idx = renderedItems.length;
-    renderedItems.push(act);
-    group.appendChild(
-      makeRow({
-        idx,
-        icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
-        title: act.title,
-        kbd: act.subtitle,
-      }),
-    );
-  }
-  listEl!.appendChild(group);
-  renderPreview(renderedItems.at(0));
-  requestAnimationFrame(() => syncSelectionIndicator(true));
-  if (statusEl) {
-    statusEl.textContent = isFr
-      ? `Mode commandes (/) · ${matchedActions.length} action${matchedActions.length > 1 ? "s" : ""}`
-      : `Commands mode (/) · ${matchedActions.length} command${matchedActions.length > 1 ? "s" : ""}`;
-  }
-  return;
-}
 
+  const nonAi = matchedActions.filter((a) => a.section !== 'AI');
+  const aiMatched = matchedActions.filter((a) => a.section === 'AI');
+
+  if (nonAi.length > 0) {
+    const g = el("div", "sl-cmdk-group");
+    const h = el("div", "sl-cmdk-group__title");
+    h.appendChild(el("span", undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
+    g.appendChild(h);
+for (const act of nonAi) g.appendChild(renderActionRow(act));
+listEl!.appendChild(g);
+}
+if (aiMatched.length > 0) {
+const g = el("div", "sl-cmdk-group");
+const h = el("div", "sl-cmdk-group__title");
+h.appendChild(el("span", undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
+h.appendChild(el("span", "sl-cmdk-group__count", String(aiMatched.length)));
+g.appendChild(h);
+const grid = el("div", "sl-cmdk-ai-grid");
+for (const act of aiMatched) grid.appendChild(renderActionRow(act));
+g.appendChild(grid);
+listEl!.appendChild(g);
+}
+setActive(0, false);
+if (statusEl) {
+statusEl.textContent = isFr
+? 'Mode commandes (/) · ' + renderedItems.length + ' résultat' + (renderedItems.length > 1 ? 's' : '')
+: 'Commands mode (/) · ' + renderedItems.length + ' match' + (renderedItems.length > 1 ? 'es' : '');
+}
+return;
+}
 if (q.startsWith("#")) {
   const headQ = q.slice(1).trim().toLowerCase();
   tabsEl!.dataset.collapsed = "true";
