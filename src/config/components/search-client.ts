@@ -1638,8 +1638,9 @@ if (prevTop) {
 e.preventDefault();
 prevTop.scrollBy({ top: -Math.max(120, Math.round(prevTop.clientHeight * 0.65)), behavior: 'smooth' });
 }
-} else if (e.altKey && !e.metaKey && !e.ctrlKey && /^[1-6]$/.test(e.key)) {
-const jumpLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-sub-jump="${e.key}"]`);
+} else if (e.altKey && !e.metaKey && !e.ctrlKey && (/^[1-6]$/.test(e.key) || /^Digit[1-6]$/.test(e.code))) {
+const digit = /^[1-6]$/.test(e.key) ? e.key : e.code.slice(5);
+const jumpLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-sub-jump="${digit}"]`);
 if (jumpLink?.href) {
 e.preventDefault();
 closeModal();
