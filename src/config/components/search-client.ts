@@ -600,7 +600,6 @@ let previewThemeOriginal: string | null = null;
     return qi === q.length ? out : escapeHtml(text);
   }
   async function copyItemMarkdown(item?: FlatItem): Promise<void> {
-    if (!item || !item.url) return;
     const u = new URL(item.url, window.location.origin);
     const clean = u.pathname.replace(/\/+$/, "");
     const md = clean === "" ? "/index.md" : clean === "/fr" ? "/fr.md" : clean + ".md";
@@ -615,6 +614,7 @@ let previewThemeOriginal: string | null = null;
       if (parts.length > 0) { await copyTextFallback(parts.join("\n\n---\n\n")); if (statusEl) statusEl.textContent = isFr ? parts.length + " fichiers Markdown copiés (⌘⇧C)" : parts.length + " Markdown files copied (⌘⇧C)"; }
       return;
     }
+    if (!item || !item.url) return;
     const txt = await getMd(item.url);
     if (txt) { await copyTextFallback(txt); if (statusEl) statusEl.textContent = isFr ? "Markdown copié (⌘⇧C)" : "Markdown copied (⌘⇧C)"; }
   }
@@ -795,7 +795,8 @@ function runAction(itemOrId?: FlatItem | string): void {
     aiCommandsExpanded = !aiCommandsExpanded;
     void handleQuery().then(() => {
       const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
-      setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
+      activeIndex = toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1);
+      updateActiveRow(false);
       listEl!.scrollTop = Math.min(keepScroll, Math.max(0, listEl!.scrollHeight - listEl!.clientHeight));
       syncSelectionIndicator(true);
       input!.focus();
@@ -1622,7 +1623,8 @@ g.appendChild(renderActionRow(toggleItem, 'sl-cmdk-row--expand-ai'));
 }
 listEl!.appendChild(g);
 }
-setActive(0, false);
+activeIndex = 0;
+updateActiveRow(false);
 if (statusEl) {
 statusEl.textContent = isFr
 ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
@@ -1666,7 +1668,8 @@ for (const act of aiMatched) grid.appendChild(renderBentoTile(act));
 g.appendChild(grid);
 listEl!.appendChild(g);
 }
-setActive(0, false);
+activeIndex = 0;
+updateActiveRow(false);
 if (statusEl) {
 statusEl.textContent = isFr
 ? 'Mode commandes (/) · ' + renderedItems.length + ' résultat' + (renderedItems.length > 1 ? 's' : '')
@@ -2052,6 +2055,7 @@ else renderSearchResults();
 }
 });
 document.addEventListener("keydown", (e) => {
+    if (!dialog!.isConnected) return;
     if (dialog!.open && ((isMac && e.metaKey && !e.ctrlKey) || (!isMac && e.altKey)) && e.key.toLowerCase() === "d") {
       const current = renderedItems[activeIndex];
       if (current?.url) {
@@ -2064,6 +2068,7 @@ document.addEventListener("keydown", (e) => {
   }, { capture: true });
 
   document.addEventListener('keydown', (e) => {
+if (!dialog!.isConnected) return;
 if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
 e.preventDefault();
 if (dialog!.open) closeModal();

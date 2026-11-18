@@ -873,8 +873,8 @@ gap: 0.28rem;
 
 #sl-cmdk-dialog .sl-cmdk-ai-drawer__inner {
   overflow: hidden;
-  padding: 2px;
-  margin: -2px;
+  padding: 2px 0;
+  margin: -2px 0;
 }
 
 #sl-cmdk-dialog .sl-cmdk-ai-drawer__inner > .sl-cmdk-ai-grid {
@@ -1028,3 +1028,6 @@ gap: 0.28rem;
 #sl-cmdk-dialog .sl-cmdk-row:hover .sl-cmdk-row__mark,#sl-cmdk-dialog .sl-cmdk-row[aria-selected="true"] .sl-cmdk-row__mark,#sl-cmdk-dialog .sl-cmdk-row__mark[data-marked="true"]{opacity:1}
 #sl-cmdk-dialog .sl-cmdk-row__mark:hover{border-color:var(--sl-color-accent);color:var(--sl-color-accent)}
 #sl-cmdk-dialog .sl-cmdk-row__mark[data-marked="true"]{border-color:var(--sl-color-accent);background:var(--sl-color-accent);color:var(--sl-color-black)}
+
+#sl-cmdk-dialog .sl-cmdk-ai-grid { min-width: 0; max-width: 100%; }
+#sl-cmdk-dialog .sl-cmdk-bento-tile { min-width: 0; max-width: 100%; }

@@ -76,7 +76,11 @@
     "lint": "oxlint -c .oxlintrc.json --deny-warnings",
     "lint:fix": "oxlint -c .oxlintrc.json --fix",
     "fmt": "oxfmt -c .oxfmtrc.json",
-    "fmt:check": "oxfmt -c .oxfmtrc.json --check"
+    "fmt:check": "oxfmt -c .oxfmtrc.json --check",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit-linkedom",
+    "test:browser": "vitest run --project browser-dom",
+    "test:e2e": "vitest run --project e2e-real-site"
   },
   "dependencies": {
     "@elcoosp/astro-takumi": "^2.2.0",
@@ -116,6 +120,8 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@vitest/browser": "^5.1.0",
+    "@vitest/browser-playwright": "^5.1.0",
     "esbuild": "^0.28.2",
     "expressive-code-collapsible": "^1.1.0",
     "starlight-auto-drafts": "^0.3.1",
@@ -123,7 +129,8 @@
     "starlight-package-managers": "^0.13.1",
     "starlight-sidebar-topics": "^0.9.0",
     "tsdown": "^0.23.7",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
   },
   "peerDependencies": {
     "@astrojs/starlight": "^0.43.1",
