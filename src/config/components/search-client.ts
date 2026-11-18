@@ -40,6 +40,7 @@ interface FlatItem {
   actionId?: string;
   actionHref?: string;
   actionIconPath?: string;
+  shortTitle?: string;
 }
 
 const RECENT_KEY = 'sl-cmdk-recent-v1';
@@ -599,6 +600,7 @@ export function initCommandSearch(): void {
       actionHref: buildAiProviderHref(provider, window.location.href),
       actionIconPath: provider.path,
       title: tr('cmdk.actionAskAi', 'Ask {provider}', { provider: provider.name }),
+      shortTitle: provider.name,
       subtitle: provider.tag,
       section: 'AI',
       excerptHtml: tr('cmdk.actionAskAiDesc', 'Open {provider} ({tag}) with a summary prompt for this page.', { provider: provider.name, tag: provider.tag }),
@@ -734,11 +736,15 @@ function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
   if (actionId === 'toggle-ai-more') {
-    const keepIdx = activeIndex;
     aiCommandsExpanded = !aiCommandsExpanded;
     void handleQuery().then(() => {
-      const maxIdx = Math.max(0, renderedItems.length - 1);
-      setActive(Math.min(keepIdx, maxIdx), false);
+      const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
+      const targetIdx = toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1);
+      if (!aiCommandsExpanded) {
+        listEl!.scrollTop = 0;
+      }
+      setActive(targetIdx, aiCommandsExpanded);
+      syncSelectionIndicator(true);
       input!.focus();
     });
     return;
@@ -1443,14 +1449,15 @@ if (q.startsWith("/") || q.startsWith(">")) {
   renderedItems = [];
   const allActions = getQuickActions();
 
-  const renderActionRow = (act: FlatItem, extraClass?: string): HTMLElement => {
+  const renderActionRow = (act: FlatItem, extraClass?: string, useShortTitle = false): HTMLElement => {
     const idx = renderedItems.length;
     renderedItems.push(act);
+    const displayTitle = useShortTitle && act.shortTitle ? act.shortTitle : act.title;
     const row = makeRow({
       idx,
       icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
-      title: act.title,
-      titleHtml: cmdQ ? highlightFuzzyHtml(act.title, cmdQ) : undefined,
+      title: displayTitle,
+      titleHtml: cmdQ ? highlightFuzzyHtml(displayTitle, cmdQ) : undefined,
       kbd: act.subtitle,
     });
     if (extraClass) row.classList.add(extraClass);
@@ -1489,7 +1496,7 @@ if (q.startsWith("/") || q.startsWith(">")) {
 
       const visibleAi = aiCommandsExpanded ? aiActs : aiActs.slice(0, 2);
       const grid = el("div", "sl-cmdk-ai-grid");
-      for (const act of visibleAi) grid.appendChild(renderActionRow(act));
+      for (const act of visibleAi) grid.appendChild(renderActionRow(act, undefined, true));
       g.appendChild(grid);
 
       if (aiActs.length > 2) {
@@ -1556,7 +1563,7 @@ h.appendChild(el("span", undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
 h.appendChild(el("span", "sl-cmdk-group__count", String(aiMatched.length)));
 g.appendChild(h);
 const grid = el("div", "sl-cmdk-ai-grid");
-for (const act of aiMatched) grid.appendChild(renderActionRow(act));
+for (const act of aiMatched) grid.appendChild(renderActionRow(act, undefined, true));
 g.appendChild(grid);
 listEl!.appendChild(g);
 }
@@ -1703,6 +1710,7 @@ requestAnimationFrame(() => input!.focus());
 }
 function closeModal(): void {
 if (!dialog!.open) return;
+aiCommandsExpanded = false;
 dialog!.close();
 }
 function activateItem(item: FlatItem | undefined, newTab = false): void {
