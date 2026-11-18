@@ -1462,13 +1462,13 @@ if (parsedScope.scope) {
 }
 const effectiveQ = parsedScope.query;
 if (parsedScope.scope === "changelog") {
-  const entries = await loadChangelogEntries();
+  const entries = collectSidebarPages().filter((item) => item.sectionKey === "changelog");
   const qLow = effectiveQ.toLowerCase();
   const matched = qLow
     ? entries.filter((item) => item.title.toLowerCase().includes(qLow) || (item.url && item.url.toLowerCase().includes(qLow)))
     : entries;
   currentResults = matched.map((m) => ({
-    url: m.url || "/changelog/",
+    url: m.url || (isFr ? "/fr/changelog/" : "/changelog/"),
     meta: { title: m.title },
     excerpt: m.breadcrumb || "Changelog",
   }));
