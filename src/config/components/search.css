@@ -739,3 +739,66 @@ gap: 0.28rem;
   -webkit-box-decoration-break: clone;
   font-weight: 600;
 }
+
+#sl-cmdk-dialog .sl-cmdk-row {
+  z-index: 1;
+  display: grid !important;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  column-gap: 0.7rem !important;
+  padding: 0.54rem 0.68rem !important;
+}
+
+#sl-cmdk-dialog .sl-cmdk-card .sl-cmdk-row {
+  align-items: center !important;
+}
+
+#sl-cmdk-dialog .sl-cmdk-row__trail {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.42rem !important;
+  flex-shrink: 0 !important;
+}
+
+#sl-cmdk-dialog .sl-cmdk-indicator {
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  top: 0;
+  z-index: 0;
+  border-radius: 0.52rem;
+  background: color-mix(in srgb, var(--sl-color-accent) 11%, var(--sl-color-bg-sidebar));
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 120ms ease;
+  will-change: transform, height;
+}
+
+#sl-cmdk-dialog .sl-cmdk-preview {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#sl-cmdk-dialog .sl-cmdk-preview__top {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 0.95rem 1rem !important;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sl-color-gray-4) 55%, transparent) transparent;
+}
+
+#sl-cmdk-dialog .sl-cmdk-preview__actions {
+  flex-shrink: 0 !important;
+  padding: 0.72rem 1rem !important;
+  background: var(--sl-color-bg-nav) !important;
+}
