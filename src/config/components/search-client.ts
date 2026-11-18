@@ -315,8 +315,14 @@ function classifySection(url: string, isFr: boolean): { key: string; label: stri
 }
 
 function formatBreadcrumb(url: string, isFr: boolean): string {
-  const clean = url.split('#')[0].replace(/^\/fr(?=\/|$)/, '').replace(/^\/|\/$/g, '');
+  const clean = url.split('#').at(0)?.replace(/^\/fr(?=\/|$)/, '').replace(/^\/|\/$/g, '') || '';
   if (!clean) return isFr ? 'Accueil' : 'Home';
+  if (clean === 'changelog') return isFr ? 'Toutes les versions' : 'All releases';
+  const verMatch = /^changelog\/version\/(.+)$/.exec(clean);
+  if (verMatch) {
+    const ver = verMatch.at(1)?.replace(/-/g, '.') || '';
+    return isFr ? `Notes de version · v${ver}` : `Release notes · v${ver}`;
+  }
   const segs = clean.split('/').map((seg) =>
     seg
       .split('-')
@@ -681,7 +687,7 @@ async function hydratePagePreview(url: string): Promise<void> {
       let codeCount = 0;
       for (const node of doc.querySelectorAll(".sl-markdown-content p, .sl-markdown-content pre, main p, main pre")) {
         if (node.closest("aside, .starlight-aside, [data-pagefind-ignore]")) continue;
-        if (node.tagName === "P" && paraCount < 3) {
+        if ((node.tagName === "P" || (isChangelogPage && node.tagName === "LI")) && paraCount < 4) {
           const cleanText = node.textContent?.replace(/\s+/g, " ").trim() || "";
           if (cleanText.length > 24) {
             blocks.push({ kind: "p", html: node.innerHTML.replace(/\s+/g, " ").trim() });
@@ -1470,7 +1476,7 @@ if (parsedScope.scope === "changelog") {
   currentResults = matched.map((m) => ({
     url: m.url || (isFr ? "/fr/changelog/" : "/changelog/"),
     meta: { title: m.title },
-    excerpt: m.breadcrumb || "Changelog",
+    excerpt: "",
   }));
   renderSearchResults();
   return;

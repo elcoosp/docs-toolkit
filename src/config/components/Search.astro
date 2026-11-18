@@ -1,6 +1,4 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
 import { getCollection } from 'astro:content';
 import './search.css';
 
@@ -79,28 +77,30 @@ const sitePages = allDocs
   .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
   .map(({ title, url, headings }) => ({ title, url, headings }));
 
-const changelogCandidates = [
-  path.resolve(process.cwd(), "CHANGELOG.md"),
-  path.resolve(process.cwd(), "../CHANGELOG.md"),
-];
-const changelogPath = changelogCandidates.find((p) => fs.existsSync(p));
-if (changelogPath) {
-  const rawLog = fs.readFileSync(changelogPath, "utf8");
-  const verMatches = Array.from(rawLog.matchAll(/^##\s+\[([^\]]+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?/gm));
-  const prefix = isFr ? "/fr" : "";
+const changelogEntries = await getCollection('changelogs').catch(() => []);
+const validReleases = changelogEntries
+  .filter((e: any) => e?.data?.base === 'changelog' && e?.data?.slug)
+  .sort((a: any, b: any) => {
+    const da = a?.data?.date ? new Date(a.data.date).getTime() : 0;
+    const db = b?.data?.date ? new Date(b.data.date).getTime() : 0;
+    return db - da;
+  });
+if (validReleases.length > 0) {
+  const prefix = isFr ? '/fr' : '';
   sitePages.push({
-    title: isFr ? "Journal des modifications (Changelog)" : "Changelog",
-    url: prefix + "/changelog/",
+    title: isFr ? 'Journal des modifications' : 'Changelog',
+    url: `${prefix}/changelog/`,
     headings: [],
   });
-  for (const m of verMatches) {
-    const ver = (m.at(1) ?? "").trim();
-    const date = (m.at(2) ?? "").trim();
-    if (!ver || ver.toLowerCase() === "unreleased") continue;
-    const slug = ver.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  for (const rel of validReleases) {
+    const d = rel.data;
+    const verLabel = d.version ? `v${String(d.version).replace(/^v/i, '')}` : String(d.title || d.slug);
+    const dateStr = d.date
+      ? new Date(d.date).toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      : '';
     sitePages.push({
-      title: date ? `v${ver} (${date})` : `v${ver}`,
-      url: `${prefix}/changelog/version/${slug}/`,
+      title: dateStr ? `${verLabel} — ${dateStr}` : verLabel,
+      url: `${prefix}/changelog/version/${d.slug}/`,
       headings: [],
     });
   }
