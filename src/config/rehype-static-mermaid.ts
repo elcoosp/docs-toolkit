@@ -74,7 +74,7 @@ export function staticMermaidIntegration(): AstroIntegration {
         }
         injectScript(
           'head-inline',
-          '(() => { if (document.getElementById("sl-static-diagram-css")) return; const s = document.createElement("style"); s.id = "sl-static-diagram-css"; s.textContent = ".sl-static-diagram{margin:1.5rem 0;padding:1rem;border:1px solid var(--sl-color-hairline);border-radius:0.75rem;background:var(--sl-color-bg-sidebar);overflow-x:auto;display:flex;justify-content:center}.sl-static-diagram svg{max-width:100%;height:auto;display:block}.sl-mermaid-dark{display:none}:root[data-theme=dark] .sl-mermaid-light{display:none}:root[data-theme=dark] .sl-mermaid-dark{display:block}"; document.head.appendChild(s); })();',
+          '(() => { if (document.getElementById("sl-static-diagram-css")) return; const s = document.createElement("style"); s.id = "sl-static-diagram-css"; s.textContent = ".sl-static-diagram{margin:1.5rem 0;padding:1.25rem;border:1px solid var(--sl-color-hairline);border-radius:0.75rem;background:var(--sl-color-bg-sidebar);overflow-x:auto;text-align:center}.sl-static-diagram>span{display:inline-block;max-width:none}.sl-static-diagram svg{width:auto;max-width:none;height:auto;display:block;margin:0 auto}.sl-mermaid-dark{display:none}:root[data-theme=dark] .sl-mermaid-light{display:none}:root[data-theme=dark] .sl-mermaid-dark{display:block}"; document.head.appendChild(s); })();',
         );
       },
       async 'astro:build:done'({ dir, logger }) {

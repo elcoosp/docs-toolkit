@@ -27,3 +27,39 @@ This repo hosts the reusable release workflows consumed by every `elcoosp/*` rep
 ## Trusted Publisher
 
 For reusable workflows, npm matches the **caller** workflow (e.g. `release.yml`).
+
+## Local Multi-Platform Build & Publish (`docs-toolkit`)
+
+Cross-compile the Rust pipeline binaries for macOS ARM64, Linux ARM64, and Linux x64, then publish `@elcoosp/docs-toolkit` to npm:
+
+```bash
+cargo build --release --manifest-path crates/docs-pipeline-rs/Cargo.toml
+cp crates/docs-pipeline-rs/target/release/docs-pipeline-rs assets/bin/docs-pipeline-rs-darwin-arm64
+
+cargo zigbuild --release --manifest-path crates/docs-pipeline-rs/Cargo.toml \
+  --target aarch64-unknown-linux-gnu \
+  --target x86_64-unknown-linux-gnu
+cp crates/docs-pipeline-rs/target/aarch64-unknown-linux-gnu/release/docs-pipeline-rs assets/bin/docs-pipeline-rs-linux-arm64
+cp crates/docs-pipeline-rs/target/x86_64-unknown-linux-gnu/release/docs-pipeline-rs assets/bin/docs-pipeline-rs-linux-x64
+
+pnpm build && pnpm check:dist
+pnpm publish --access public --no-git-checks
+```
+
+## Local Multi-Platform Build & Publish (`docs-toolkit`)
+
+Cross-compile the Rust pipeline binaries for macOS ARM64, Linux ARM64, and Linux x64, then publish `@elcoosp/docs-toolkit` to npm:
+
+```bash
+cargo build --release --manifest-path crates/docs-pipeline-rs/Cargo.toml
+cp crates/docs-pipeline-rs/target/release/docs-pipeline-rs assets/bin/docs-pipeline-rs-darwin-arm64
+
+cargo zigbuild --release --manifest-path crates/docs-pipeline-rs/Cargo.toml \
+  --target aarch64-unknown-linux-gnu \
+  --target x86_64-unknown-linux-gnu
+cp crates/docs-pipeline-rs/target/aarch64-unknown-linux-gnu/release/docs-pipeline-rs assets/bin/docs-pipeline-rs-linux-arm64
+cp crates/docs-pipeline-rs/target/x86_64-unknown-linux-gnu/release/docs-pipeline-rs assets/bin/docs-pipeline-rs-linux-x64
+
+pnpm build && pnpm check:dist
+pnpm publish --access public --no-git-checks
+```
