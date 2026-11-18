@@ -422,8 +422,8 @@ export function initCommandSearch(): void {
     rows.forEach((row, i) => {
       animate(
         row,
-        { opacity: [0, 1], y: [7, 0] },
-        { type: spring, stiffness: 520, damping: 32, delay: Math.min(i * 0.018, 0.16) },
+        { opacity: [0.2, 1], y: [4, 0] },
+        { type: spring, stiffness: 580, damping: 36, delay: Math.min(i * 0.012, 0.08) },
       );
     });
   }
@@ -1138,12 +1138,9 @@ listEl.appendChild(navGroup);
 }
 renderPreview(renderedItems[activeIndex]);
 const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
-if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
 if (searchSig !== lastAnimatedSearchSig) {
-  searchListAnimTimer = window.setTimeout(() => {
-    lastAnimatedSearchSig = searchSig;
-    animateListCards();
-  }, 190);
+  lastAnimatedSearchSig = searchSig;
+  animateListCards();
 }
 if (statusEl) {
 statusEl.textContent = pagefindFailed
@@ -1579,7 +1576,21 @@ updateActiveRow(false);
 }
 });
 input.addEventListener('input', () => {
-handleQuery();
+if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
+const rawVal = input.value.trim();
+if (clearBtn) {
+  const hasVal = input.value.length > 0;
+  clearBtn.dataset.visible = hasVal ? 'true' : 'false';
+  clearBtn.tabIndex = hasVal ? 0 : -1;
+  clearBtn.setAttribute('aria-hidden', String(!hasVal));
+}
+if (!rawVal || rawVal === '/' || rawVal === '#') {
+  handleQuery();
+  return;
+}
+searchListAnimTimer = window.setTimeout(() => {
+  handleQuery();
+}, 115);
 });
 input.addEventListener('keydown', (e) => {
 if (e.key === 'ArrowDown') {
