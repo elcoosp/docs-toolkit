@@ -835,3 +835,11 @@ gap: 0.28rem;
   overflow-x: auto;
   white-space: pre;
 }
+
+#sl-cmdk-dialog .sl-cmdk-card {
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+#sl-cmdk-dialog .sl-cmdk-card:has(.sl-cmdk-row[aria-selected="true"]) {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 42%, var(--sl-color-hairline));
+  background: color-mix(in srgb, var(--sl-color-accent) 8%, var(--sl-color-bg));
+}

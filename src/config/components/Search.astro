@@ -94,7 +94,8 @@ if (validReleases.length > 0) {
   });
   for (const rel of validReleases) {
     const d = rel.data;
-    const verLabel = d.version ? `v${String(d.version).replace(/^v/i, '')}` : String(d.title || d.slug);
+    const rawVer = String(d.version || d.title || d.slug).replace(/^[\[v]+|\]+$/g, '').trim();
+    const verLabel = /^\d/.test(rawVer) ? `v${rawVer}` : rawVer;
     const dateStr = d.date
       ? new Date(d.date).toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       : '';

@@ -385,7 +385,7 @@ export function initCommandSearch(): void {
 
   function syncSelectionIndicator(instant = false): void {
     const selected = listEl.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
-    if (!selected) {
+    if (!selected || selected.closest('.sl-cmdk-card')) {
       indicatorEl.style.opacity = '0';
       return;
     }
@@ -395,11 +395,16 @@ export function initCommandSearch(): void {
     const listRect = listEl.getBoundingClientRect();
     const rowRect = selected.getBoundingClientRect();
     const top = rowRect.top - listRect.top + listEl.scrollTop;
+    const left = rowRect.left - listRect.left + listEl.scrollLeft;
+    const width = rowRect.width;
     const height = rowRect.height;
     if (instant) {
       indicatorEl.style.transition = 'none';
     }
     indicatorEl.style.opacity = '1';
+    indicatorEl.style.left = left + 'px';
+    indicatorEl.style.right = 'auto';
+    indicatorEl.style.width = width + 'px';
     indicatorEl.style.height = height + 'px';
     indicatorEl.style.transform = `translate3d(0, ${top}px, 0)`;
     if (instant) {
@@ -1304,6 +1309,7 @@ showArrow: true,
 listEl.appendChild(card);
 }
 renderPreview(renderedItems[activeIndex]);
+requestAnimationFrame(() => syncSelectionIndicator(true));
 const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
 if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
 if (searchSig !== lastAnimatedSearchSig) {
