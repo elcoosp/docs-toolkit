@@ -1,3 +1,4 @@
+import { buildAiProviderHref, type AiProviderSpec } from './ai-providers';
 import { animate, spring } from 'motion';
 
 interface SubResult {
@@ -37,6 +38,8 @@ interface FlatItem {
   url?: string;
   query?: string;
   actionId?: string;
+  actionHref?: string;
+  actionIconPath?: string;
 }
 
 const RECENT_KEY = 'sl-cmdk-recent-v1';
@@ -45,7 +48,7 @@ const PINNED_PAGES_KEY = 'sl-cmdk-pinned-pages-v1';
 const SVG_NS = ['http:', '', 'www.w3.org', '2000', 'svg'].join('/');
 
 function lucideIcon(paths: Array<[string, Record<string, string>]>, size = 15): SVGSVGElement {
-  const svg = document.createElementNS(SVG_NS, 'svg');
+  const svg = document.createElementNS(SVG_NS, 'svg') as SVGSVGElement;
   svg.setAttribute('width', String(size));
   svg.setAttribute('height', String(size));
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -338,6 +341,35 @@ export function initCommandSearch(): void {
   root.dataset.bound = 'true';
 
   const isFr = root.dataset.locale === 'fr';
+  let cmdkCfg: { locale?: string; localePrefix?: string; ui?: Record<string, string>; aiProviders?: AiProviderSpec[] } = {};
+  try {
+    const cfgRaw = root.querySelector<HTMLScriptElement>('script[data-cmdk-config]')?.textContent;
+    if (cfgRaw) cmdkCfg = JSON.parse(cfgRaw);
+  } catch {}
+  const ui = cmdkCfg.ui || {};
+  const tr = (key: string, fallback: string, vars?: Record<string, string>): string => {
+    let out = ui[key] || fallback;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) out = out.replaceAll('{' + k + '}', v);
+    }
+    return out;
+  };
+  function iconBrandPath(d: string): SVGSVGElement {
+    const svg = document.createElementNS(SVG_NS, 'svg') as SVGSVGElement;
+    svg.setAttribute('width', '15');
+    svg.setAttribute('height', '15');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'currentColor');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.width = '15px';
+    svg.style.height = '15px';
+    svg.style.display = 'block';
+    svg.style.flexShrink = '0';
+    const pathEl = document.createElementNS(SVG_NS, 'path');
+    pathEl.setAttribute('d', d);
+    svg.appendChild(pathEl);
+    return svg;
+  }
   const dialog = root.querySelector<HTMLDialogElement>('#sl-cmdk-dialog');
   const panel = root.querySelector<HTMLElement>('.sl-cmdk-panel');
   const input = root.querySelector<HTMLInputElement>('#sl-cmdk-input');
@@ -384,18 +416,18 @@ export function initCommandSearch(): void {
   indicatorEl.setAttribute('aria-hidden', 'true');
 
   function syncSelectionIndicator(instant = false): void {
-    const selected = listEl.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
+    const selected = listEl!.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
     if (!selected || selected.closest('.sl-cmdk-card')) {
       indicatorEl.style.opacity = '0';
       return;
     }
     if (!indicatorEl.parentElement) {
-      listEl.prepend(indicatorEl);
+      listEl!.prepend(indicatorEl);
     }
-    const listRect = listEl.getBoundingClientRect();
+    const listRect = listEl!.getBoundingClientRect();
     const rowRect = selected.getBoundingClientRect();
-    const top = rowRect.top - listRect.top + listEl.scrollTop;
-    const left = rowRect.left - listRect.left + listEl.scrollLeft;
+    const top = rowRect.top - listRect.top + listEl!.scrollTop;
+    const left = rowRect.left - listRect.left + listEl!.scrollLeft;
     const width = rowRect.width;
     const height = rowRect.height;
     if (instant) {
@@ -503,7 +535,7 @@ export function initCommandSearch(): void {
     return out;
   }
 
-  function fuzzyScore(q, t) {
+  function fuzzyScore(q: string, t: string): number {
     q = q.trim().toLowerCase(); if (!q) return 1; t = t.toLowerCase();
     if (t === q) return 120; if (t.startsWith(q)) return 100 - Math.min(20, t.length - q.length);
     const i = t.indexOf(q); if (i !== -1) return 80 - Math.min(25, i);
@@ -514,7 +546,7 @@ export function initCommandSearch(): void {
     return qi === q.length ? Math.max(10, s - Math.floor((t.length - q.length) * 0.25)) : 0;
   }
   function escapeHtml(s: string): string { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
-  function highlightFuzzyHtml(text, q) {
+  function highlightFuzzyHtml(text: string, q: string): string {
     q = q.trim().toLowerCase(); if (!q) return escapeHtml(text); const lo = text.toLowerCase();
     const di = lo.indexOf(q);
     if (di !== -1) return escapeHtml(text.slice(0, di)) + "<mark>" + escapeHtml(text.slice(di, di + q.length)) + "</mark>" + escapeHtml(text.slice(di + q.length));
@@ -524,7 +556,7 @@ export function initCommandSearch(): void {
     }
     return qi === q.length ? out : escapeHtml(text);
   }
-  async function copyItemMarkdown(item) {
+  async function copyItemMarkdown(item?: FlatItem): Promise<void> {
     if (!item || !item.url) return;
     const u = new URL(item.url, window.location.origin);
     const clean = u.pathname.replace(/\/+$/, "");
@@ -547,7 +579,7 @@ export function initCommandSearch(): void {
     for (const opt of Array.from(langSelect.options)) {
       if (opt.selected || !opt.value) continue;
       const langName = (opt.textContent || opt.label || opt.value).trim();
-      const shortCode = opt.value.replace(/^\/|\/$/g, '').split('/')?.toUpperCase() || 'EN';
+      const shortCode = (opt.getAttribute('lang') || opt.value.replace(/^\/|\/$/g, '').split('/')[0] || 'EN').toUpperCase();
       actions.push({
         type: 'action',
         actionId: 'lang-switch',
@@ -597,7 +629,7 @@ function copyTextFallback(text: string): Promise<void> {
 
   function updateBookmarkIconsForUrl(url: string, pinned: boolean): void {
     const targetPath = normalizePath(url);
-    listEl.querySelectorAll<HTMLAnchorElement>("a.sl-cmdk-row").forEach((row) => {
+    listEl!.querySelectorAll<HTMLAnchorElement>("a.sl-cmdk-row").forEach((row) => {
       if (normalizePath(row.href) !== targetPath) return;
       const pinBtn = row.querySelector<HTMLButtonElement>(".sl-cmdk-row__pin");
       if (!pinBtn) return;
@@ -649,8 +681,8 @@ function copyTextFallback(text: string): Promise<void> {
       }, 1400);
     }
 
-    if (!pinned && item.type === "pinned" && !input.value.trim()) {
-      const activeRow = listEl.querySelector<HTMLElement>("[data-cmdk-idx][aria-selected=\"true\"]");
+    if (!pinned && item.type === "pinned" && !input!.value.trim()) {
+      const activeRow = listEl!.querySelector<HTMLElement>("[data-cmdk-idx][aria-selected=\"true\"]");
       if (activeRow) {
         activeRow.style.overflow = "hidden";
         const startH = activeRow.offsetHeight;
@@ -659,13 +691,13 @@ function copyTextFallback(text: string): Promise<void> {
           { height: [startH + "px", "0px"], opacity: 0, paddingTop: "0px", paddingBottom: "0px" },
           { duration: 0.18, easing: "ease-out" },
         ).finished.then(() => {
-          const prevScroll = listEl.scrollTop;
+          const prevScroll = listEl!.scrollTop;
           renderEmptyState(true);
           activeIndex = Math.min(activeIndex, Math.max(0, renderedItems.length - 1));
-          listEl.querySelectorAll<HTMLElement>("[data-cmdk-idx]").forEach((r) => {
+          listEl!.querySelectorAll<HTMLElement>("[data-cmdk-idx]").forEach((r) => {
             r.setAttribute("aria-selected", Number(r.dataset.cmdkIdx) === activeIndex ? "true" : "false");
           });
-          listEl.scrollTop = prevScroll;
+          listEl!.scrollTop = prevScroll;
           renderPreview(renderedItems[activeIndex]);
         });
         return;
@@ -673,9 +705,9 @@ function copyTextFallback(text: string): Promise<void> {
     }
 
     updateBookmarkIconsForUrl(targetUrl, pinned);
-    if (!input.value.trim()) {
+    if (!input!.value.trim()) {
       const countNow = getPinnedPages().length;
-      const badge = tabsEl.querySelector<HTMLElement>("[data-empty-view=\"pinned\"] span");
+      const badge = tabsEl!.querySelector<HTMLElement>("[data-empty-view=\"pinned\"] span");
       if (badge) badge.textContent = String(countNow);
     }
     renderPreview(renderedItems[activeIndex]);
@@ -700,7 +732,7 @@ triggerBtn.textContent = orig;
 function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
-  if (actionId === 'changelog') { input.value = 'log: '; handleQuery(); input.focus(); return; }
+  if (actionId === 'changelog') { input!.value = 'log: '; handleQuery(); input!.focus(); return; }
   closeModal();
   if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
   else if (actionId === 'theme') {
@@ -889,9 +921,9 @@ async function hydratePagePreview(url: string): Promise<void> {
   }
 
   function renderTabs(results: PagefindData[]): void {
-tabsEl.replaceChildren();
-if (!input.value.trim() || results.length === 0) {
-tabsEl.hidden = true;
+tabsEl!.replaceChildren();
+if (!input!.value.trim() || results.length === 0) {
+tabsEl!.hidden = true;
 return;
 }
 const counts = new Map<string, { label: string; count: number }>();
@@ -902,8 +934,8 @@ const prev = counts.get(sec.key);
 counts.set(sec.key, { label: sec.label, count: (prev?.count ?? 0) + 1 });
 }
 if (!counts.has(activeFilter)) activeFilter = 'all';
-tabsEl.hidden = false;
-tabsEl.dataset.collapsed = 'false';
+tabsEl!.hidden = false;
+tabsEl!.dataset.collapsed = 'false';
 for (const [key, info] of counts.entries()) {
 const btn = el('button', 'sl-cmdk-tab');
 btn.type = 'button';
@@ -911,11 +943,11 @@ btn.dataset.filter = key;
 btn.setAttribute('aria-selected', String(key === activeFilter));
 btn.appendChild(document.createTextNode(info.label + ' '));
 btn.appendChild(el('span', undefined, String(info.count)));
-tabsEl.appendChild(btn);
+tabsEl!.appendChild(btn);
 }
 }
 function updateActiveRow(pulse = false): void {
-const rows = listEl.querySelectorAll('[data-cmdk-idx]');
+const rows = listEl!.querySelectorAll<HTMLElement>('[data-cmdk-idx]');
 rows.forEach((row) => {
 const idx = Number(row.dataset.cmdkIdx);
 const selected = idx === activeIndex;
@@ -958,12 +990,12 @@ row.appendChild(iconBox);
 const body = el('span', 'sl-cmdk-row__body');
 const head = el('span', 'sl-cmdk-row__head');
 const titleEl = el('span', 'sl-cmdk-row__title');
-if (opts.titleHtml) { appendHighlightedExcerpt(titleEl, opts.titleHtml); } else { appendHighlightedText(titleEl, opts.title, input.value); }
+if (opts.titleHtml) { appendHighlightedExcerpt(titleEl, opts.titleHtml); } else { appendHighlightedText(titleEl, opts.title, input!.value); }
 head.appendChild(titleEl);
 body.appendChild(head);
 if (opts.breadcrumb) {
 const crumbEl = el('span', 'sl-cmdk-row__crumb');
-appendHighlightedText(crumbEl, opts.breadcrumb, input.value);
+appendHighlightedText(crumbEl, opts.breadcrumb, input!.value);
 body.appendChild(crumbEl);
 }
 if (opts.excerptHtml) {
@@ -1014,9 +1046,9 @@ function renderEmptyState(skipEntrance = false): void {
     const validFilters = new Set(["all", "pinned", ...catMap.keys()]);
     if (!validFilters.has(activeFilter)) activeFilter = "all";
 
-    tabsEl.hidden = false;
-    tabsEl.dataset.collapsed = "false";
-    tabsEl.replaceChildren();
+    tabsEl!.hidden = false;
+    tabsEl!.dataset.collapsed = "false";
+    tabsEl!.replaceChildren();
 
     const makeEmptyTab = (filterKey: string, label: string, count?: number): HTMLButtonElement => {
       const btn = el("button", "sl-cmdk-tab");
@@ -1031,19 +1063,19 @@ function renderEmptyState(skipEntrance = false): void {
       return btn;
     };
 
-    tabsEl.appendChild(makeEmptyTab("all", isFr ? "Tout" : "All"));
-    tabsEl.appendChild(makeEmptyTab("pinned", isFr ? "Favoris" : "Pinned", pinnedCount));
+    tabsEl!.appendChild(makeEmptyTab("all", isFr ? "Tout" : "All"));
+    tabsEl!.appendChild(makeEmptyTab("pinned", isFr ? "Favoris" : "Pinned", pinnedCount));
     for (const cat of catMap.values()) {
-      tabsEl.appendChild(makeEmptyTab(cat.key, cat.label, cat.count));
+      tabsEl!.appendChild(makeEmptyTab(cat.key, cat.label, cat.count));
     }
 
-    listEl.replaceChildren();
+    listEl!.replaceChildren();
     renderedItems = [];
 
     if (activeFilter === "pinned") {
       if (pinnedPages.length === 0) {
         const empty = el("div", "sl-cmdk-empty", isFr ? "Aucune page favorite. Appuyez sur ⌘D pour en épingler une." : "No pinned pages yet. Press ⌘D or click the bookmark icon to pin a page.");
-        listEl.appendChild(empty);
+        listEl!.appendChild(empty);
         renderPreview(undefined);
         if (!skipEntrance) animateListCards();
         if (statusEl) statusEl.textContent = isFr ? "0 page favorite" : "0 pinned pages";
@@ -1076,7 +1108,7 @@ function renderEmptyState(skipEntrance = false): void {
           }),
         );
       }
-      listEl.appendChild(group);
+      listEl!.appendChild(group);
       renderPreview(renderedItems.at(activeIndex));
       requestAnimationFrame(() => syncSelectionIndicator(true));
       if (statusEl) {
@@ -1115,7 +1147,7 @@ function renderEmptyState(skipEntrance = false): void {
           }),
         );
       }
-      listEl.appendChild(group);
+      listEl!.appendChild(group);
       renderPreview(renderedItems.at(activeIndex));
       if (!skipEntrance) animateListCards();
       if (statusEl) {
@@ -1159,7 +1191,7 @@ showArrow: true,
 }),
 );
 }
-listEl.appendChild(group);
+listEl!.appendChild(group);
 }
 const recents = getRecent();
 if (recents.length > 0) {
@@ -1185,7 +1217,7 @@ badge: isFr ? 'Récent' : 'Recent',
 }),
 );
 }
-listEl.appendChild(group);
+listEl!.appendChild(group);
 }
 const actionGroup = el('div', 'sl-cmdk-group');
 const actionHeader = el('div', 'sl-cmdk-group__title');
@@ -1203,7 +1235,7 @@ kbd: act.subtitle,
 }),
 );
 }
-listEl.appendChild(actionGroup);
+listEl!.appendChild(actionGroup);
 const pages = collectSidebarPages();
 if (pages.length > 0) {
 const navGroup = el('div', 'sl-cmdk-group');
@@ -1225,11 +1257,11 @@ showArrow: true,
 }),
 );
 }
-listEl.appendChild(navGroup);
+listEl!.appendChild(navGroup);
 }
 renderPreview(renderedItems[activeIndex]);
 requestAnimationFrame(() => syncSelectionIndicator(true));
-const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
+const searchSig = input!.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
 if (searchSig !== lastAnimatedSearchSig) {
   lastAnimatedSearchSig = searchSig;
   animateListCards();
@@ -1246,8 +1278,8 @@ statusEl.textContent = pagefindFailed
 }
 function renderSearchResults(skipEntrance = false): void {
 renderTabs(currentResults);
-listEl.replaceChildren();
-const qLow = input.value.trim().toLowerCase();
+listEl!.replaceChildren();
+const qLow = input!.value.trim().toLowerCase();
 const matchedActions =
 activeFilter === 'all'
 ? getQuickActions().filter(
@@ -1278,14 +1310,14 @@ kbd: act.subtitle,
 }),
 );
 }
-listEl.appendChild(actionGroup);
+listEl!.appendChild(actionGroup);
 }
 if (filtered.length === 0 && matchedActions.length === 0) {
 const empty = el('div', 'sl-cmdk-empty');
 empty.appendChild(document.createTextNode(isFr ? 'Aucun résultat pour « ' : 'No results found for “'));
-empty.appendChild(el('strong', undefined, input.value.trim()));
+empty.appendChild(el('strong', undefined, input!.value.trim()));
 empty.appendChild(document.createTextNode(isFr ? ' »' : '”'));
-listEl.appendChild(empty);
+listEl!.appendChild(empty);
 renderPreview(undefined);
 if (statusEl) statusEl.textContent = isFr ? '0 résultat' : '0 results';
 return;
@@ -1344,11 +1376,11 @@ showArrow: true,
 }),
 );
 }
-listEl.appendChild(card);
+listEl!.appendChild(card);
 }
 renderPreview(renderedItems[activeIndex]);
 requestAnimationFrame(() => syncSelectionIndicator(true));
-const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
+const searchSig = input!.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
 if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
 if (searchSig !== lastAnimatedSearchSig) {
   searchListAnimTimer = window.setTimeout(() => {
@@ -1377,8 +1409,8 @@ function parseScopedQuery(raw: string): { scope?: string; query: string } {
     return { scope, query: m[2].trim() };
   }
 
-  async function handleQuery(): Promise {
-const q = input.value.trim();
+  async function handleQuery(): Promise<void> {
+const q = input!.value.trim();
 if (clearBtn) {
 const vis = q.length > 0;
 clearBtn.dataset.visible = vis ? 'true' : 'false';
@@ -1395,8 +1427,8 @@ return;
 
 if (q.startsWith("/") || q.startsWith(">")) {
   const cmdQ = q.slice(1).trim().toLowerCase();
-  tabsEl.dataset.collapsed = "true";
-  listEl.replaceChildren();
+  tabsEl!.dataset.collapsed = "true";
+  listEl!.replaceChildren();
   renderedItems = [];
   const matchedActions = getQuickActions().map((a) => ({ a, s: !cmdQ ? 1 : Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).map((x) => x.a);
   if (matchedActions.length === 0) {
@@ -1404,7 +1436,7 @@ if (q.startsWith("/") || q.startsWith(">")) {
     empty.appendChild(document.createTextNode(isFr ? "Aucune commande pour « " : "No commands matching “"));
     empty.appendChild(el("strong", undefined, q.slice(1).trim()));
     empty.appendChild(document.createTextNode(isFr ? " »" : "”"));
-    listEl.appendChild(empty);
+    listEl!.appendChild(empty);
     renderPreview(undefined);
     if (statusEl) statusEl.textContent = isFr ? "Mode commandes (/) · 0 résultat" : "Commands mode (/) · 0 matches";
     return;
@@ -1425,7 +1457,7 @@ if (q.startsWith("/") || q.startsWith(">")) {
       }),
     );
   }
-  listEl.appendChild(group);
+  listEl!.appendChild(group);
   renderPreview(renderedItems.at(0));
   requestAnimationFrame(() => syncSelectionIndicator(true));
   if (statusEl) {
@@ -1438,8 +1470,8 @@ if (q.startsWith("/") || q.startsWith(">")) {
 
 if (q.startsWith("#")) {
   const headQ = q.slice(1).trim().toLowerCase();
-  tabsEl.dataset.collapsed = "true";
-  listEl.replaceChildren();
+  tabsEl!.dataset.collapsed = "true";
+  listEl!.replaceChildren();
   renderedItems = [];
   const scoredHeadings: Array<{ item: FlatItem; score: number }> = [];
   for (const page of getSitePagesRaw()) {
@@ -1459,7 +1491,7 @@ if (q.startsWith("#")) {
     empty.appendChild(document.createTextNode(isFr ? "Aucune section pour « " : "No headings matching “"));
     empty.appendChild(el("strong", undefined, q));
     empty.appendChild(document.createTextNode(isFr ? " »" : "”"));
-    listEl.appendChild(empty);
+    listEl!.appendChild(empty);
     renderPreview(undefined);
     if (statusEl) statusEl.textContent = isFr ? "Mode sections (#) · 0 résultat" : "Headings mode (#) · 0 matches";
     return;
@@ -1484,7 +1516,7 @@ if (q.startsWith("#")) {
       }),
     );
   }
-  listEl.appendChild(group);
+  listEl!.appendChild(group);
   renderPreview(renderedItems.at(0));
   animateListCards();
   if (statusEl) {
@@ -1560,23 +1592,23 @@ queryCache.set(cacheKey, currentResults);
 renderSearchResults();
 }
 function openModal(): void {
-if (dialog.open) return;
-dialog.showModal();
+if (dialog!.open) return;
+dialog!.showModal();
 activeIndex = 0;
-if (!input.value.trim()) renderEmptyState();
+if (!input!.value.trim()) renderEmptyState();
 
 ensurePagefind();
 animate(panel, { opacity: new Array(0, 1), scale: [0.985, 1], y: [-4, 0] }, { duration: 0.16 });
-requestAnimationFrame(() => input.focus());
+requestAnimationFrame(() => input!.focus());
 }
 function closeModal(): void {
-if (!dialog.open) return;
-dialog.close();
+if (!dialog!.open) return;
+dialog!.close();
 }
 function activateItem(item: FlatItem | undefined, newTab = false): void {
 if (!item) return;
 if (item.type === 'recent' && item.query) {
-input.value = item.query;
+input!.value = item.query;
 handleQuery();
 return;
 }
@@ -1585,7 +1617,7 @@ runAction(item);
 return;
 }
 if (item.url) {
-if (input.value.trim()) pushRecent(input.value.trim());
+if (input!.value.trim()) pushRecent(input!.value.trim());
 pushRecentPage({
 title: item.title,
 url: item.url,
@@ -1611,7 +1643,7 @@ animate(btn, { scale: 0.985 }, { type: spring, stiffness: 600, damping: 30 });
 });
 btn.addEventListener('click', openModal);
 });
-dialog.addEventListener("keydown", (e) => {
+dialog!.addEventListener("keydown", (e) => {
     if (((isMac && e.metaKey && !e.ctrlKey) || (!isMac && e.altKey)) && e.key.toLowerCase() === "d") {
       const current = renderedItems[activeIndex];
       if (current?.url) {
@@ -1631,23 +1663,23 @@ if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c" && !window.getSelect
     }
   });
 
-  dialog.addEventListener('click', (e) => {
+  dialog!.addEventListener('click', (e) => {
 if (e.target === dialog) closeModal();
 });
-dialog.addEventListener('cancel', (e) => {
-if (input.value.trim().length > 0) {
+dialog!.addEventListener('cancel', (e) => {
+if (input!.value.trim().length > 0) {
 e.preventDefault();
-input.value = '';
+input!.value = '';
 handleQuery();
-input.focus();
+input!.focus();
 }
 });
 clearBtn?.addEventListener('click', () => {
-input.value = '';
+input!.value = '';
 handleQuery();
-input.focus();
+input!.focus();
 });
-tabsEl.addEventListener('click', (e) => {
+tabsEl!.addEventListener('click', (e) => {
     const emptyTab = e.target instanceof Element ? e.target.closest<HTMLButtonElement>("[data-empty-view]") : null;
     if (emptyTab && emptyTab.dataset.emptyView) {
       activeFilter = emptyTab.dataset.emptyView;
@@ -1668,7 +1700,7 @@ tabsEl.addEventListener('click', (e) => {
       closeModal();
     }
   });
-  listEl.addEventListener('click', (e) => {
+  listEl!.addEventListener('click', (e) => {
 const pinToggle = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-pin-idx]") : null;
     if (pinToggle) {
       e.preventDefault();
@@ -1687,14 +1719,14 @@ localStorage.removeItem(RECENT_PAGES_KEY);
 renderEmptyState();
 return;
 }
-const row = e.target instanceof Element ? e.target.closest('[data-cmdk-idx]') : null;
+const row = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-cmdk-idx]') : null;
 if (!row) return;
 const item = renderedItems[Number(row.dataset.cmdkIdx)];
 if (item?.type === 'recent' || item?.type === 'action') {
 e.preventDefault();
 activateItem(item);
 } else if (item?.url) {
-if (input.value.trim()) pushRecent(input.value.trim());
+if (input!.value.trim()) pushRecent(input!.value.trim());
 pushRecentPage({
 title: item.title,
 url: item.url,
@@ -1702,8 +1734,8 @@ section: item.section || classifySection(item.url, isFr).label,
 });
 }
 });
-listEl.addEventListener('mousemove', (e) => {
-const row = e.target instanceof Element ? e.target.closest('[data-cmdk-idx]') : null;
+listEl!.addEventListener('mousemove', (e) => {
+const row = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-cmdk-idx]') : null;
 if (!row) return;
 const idx = Number(row.dataset.cmdkIdx);
 if (!Number.isNaN(idx) && idx !== activeIndex) {
@@ -1711,11 +1743,11 @@ activeIndex = idx;
 updateActiveRow(false);
 }
 });
-input.addEventListener('input', () => {
+input!.addEventListener('input', () => {
 if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
-const rawVal = input.value.trim();
+const rawVal = input!.value.trim();
 if (clearBtn) {
-  const hasVal = input.value.length > 0;
+  const hasVal = input!.value.length > 0;
   clearBtn.dataset.visible = hasVal ? 'true' : 'false';
   clearBtn.tabIndex = hasVal ? 0 : -1;
   clearBtn.setAttribute('aria-hidden', String(!hasVal));
@@ -1728,7 +1760,7 @@ searchListAnimTimer = window.setTimeout(() => {
   handleQuery();
 }, 95);
 });
-input.addEventListener('keydown', (e) => {
+input!.addEventListener('keydown', (e) => {
 if (e.key === 'ArrowDown' || (e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'n')) {
 e.preventDefault();
 if (renderedItems.length > 0) {
@@ -1772,8 +1804,8 @@ if (current?.url) {
 e.preventDefault();
 if (e.shiftKey) { void copyItemMarkdown(current); } else { copyItemUrl(current); }
 }
-} else if (e.key === 'Tab' && !tabsEl.hidden) {
-const tabs = Array.from(tabsEl.querySelectorAll<HTMLElement>('[data-filter], [data-empty-view]'));
+} else if (e.key === 'Tab' && !tabsEl!.hidden) {
+const tabs = Array.from(tabsEl!.querySelectorAll<HTMLElement>('[data-filter], [data-empty-view]'));
 if (tabs.length > 1) {
 e.preventDefault();
 const cur = tabs.findIndex((t) => (t.dataset.filter || t.dataset.emptyView) === activeFilter);
@@ -1789,7 +1821,7 @@ else renderSearchResults();
 }
 });
 document.addEventListener("keydown", (e) => {
-    if (dialog.open && ((isMac && e.metaKey && !e.ctrlKey) || (!isMac && e.altKey)) && e.key.toLowerCase() === "d") {
+    if (dialog!.open && ((isMac && e.metaKey && !e.ctrlKey) || (!isMac && e.altKey)) && e.key.toLowerCase() === "d") {
       const current = renderedItems[activeIndex];
       if (current?.url) {
         e.preventDefault();
@@ -1803,13 +1835,13 @@ document.addEventListener("keydown", (e) => {
   document.addEventListener('keydown', (e) => {
 if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
 e.preventDefault();
-if (dialog.open) closeModal();
+if (dialog!.open) closeModal();
 else openModal();
 return;
 }
 if (
 e.key === '/' &&
-!dialog.open &&
+!dialog!.open &&
 !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLElement && e.target.isContentEditable))
 ) {
 e.preventDefault();
