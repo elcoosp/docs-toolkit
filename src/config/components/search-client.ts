@@ -536,15 +536,42 @@ export function initCommandSearch(): void {
     } catch {}
   }
   function getQuickActions(): FlatItem[] {
-  return [
-    { type: 'action', actionId: 'zen', title: isFr ? 'Basculer le mode Zen' : 'Toggle Zen Mode', subtitle: 'Alt+Z', section: 'Action', excerptHtml: isFr ? 'Masque les barres latérales et l’en-tête.' : 'Hide sidebars and header chrome for distraction-free reading.' },
-    { type: 'action', actionId: 'theme', title: isFr ? 'Changer de thème (Clair / Sombre)' : 'Switch Color Theme (Light / Dark)', subtitle: isFr ? 'Apparence' : 'Appearance', section: 'Action', excerptHtml: isFr ? 'Bascule entre le thème clair et le thème sombre.' : 'Toggle immediately between light and dark color schemes.' },
-    { type: 'action', actionId: 'locale', title: isFr ? 'Switch to English (EN)' : 'Passer en Français (FR)', subtitle: isFr ? 'EN' : 'FR', section: 'Action', excerptHtml: isFr ? 'Ouvre la version anglaise de la page.' : 'Open the French counterpart of this page.' },
-    { type: 'action', actionId: 'changelog', title: isFr ? 'Explorer les notes de version' : 'Browse Release Changelog', subtitle: 'log:', section: 'Action', excerptHtml: isFr ? 'Filtre toutes les versions du changelog.' : 'Filter all version release notes right inside the palette.' },
-    { type: 'action', actionId: 'copy-md', title: isFr ? 'Copier la page en Markdown' : 'Copy Current Page as Markdown', subtitle: '.md', section: 'Action', excerptHtml: isFr ? 'Copie le contenu Markdown de la page active.' : 'Copy the clean Markdown source of the current page.' },
-    { type: 'action', actionId: 'ai-chatgpt', title: isFr ? 'Demander à ChatGPT' : 'Open Current Page in ChatGPT', subtitle: 'AI', section: 'Action', excerptHtml: isFr ? 'Ouvre ChatGPT avec un prompt sur cette page.' : 'Launch ChatGPT pre-filled with a summary prompt for this page.' },
-    { type: 'action', actionId: 'ai-claude', title: isFr ? 'Demander à Claude' : 'Open Current Page in Claude', subtitle: 'AI', section: 'Action', excerptHtml: isFr ? 'Ouvre Claude avec un prompt sur cette page.' : 'Launch Claude pre-filled with a summary prompt for this page.' },
+  const actions: FlatItem[] = [
+    { type: 'action', actionId: 'zen', title: tr('cmdk.actionZen', 'Toggle Zen Mode'), subtitle: 'Alt+Z', section: 'Action', excerptHtml: tr('cmdk.actionZenDesc', 'Hide sidebars and header chrome for distraction-free reading.') },
+    { type: 'action', actionId: 'theme', title: tr('cmdk.actionTheme', 'Switch Color Theme (Light / Dark)'), subtitle: 'Theme', section: 'Action', excerptHtml: tr('cmdk.actionThemeDesc', 'Toggle immediately between light and dark color schemes.') },
+    { type: 'action', actionId: 'changelog', title: tr('cmdk.actionChangelog', 'Browse Release Changelog'), subtitle: 'log:', section: 'Action', excerptHtml: tr('cmdk.actionChangelogDesc', 'Filter all version release notes right inside the palette.') },
+    { type: 'action', actionId: 'copy-md', title: tr('cmdk.actionCopyMd', 'Copy Current Page as Markdown'), subtitle: '.md', section: 'Action', excerptHtml: tr('cmdk.actionCopyMdDesc', 'Copy the clean Markdown source of the current page.') },
   ];
+  const langSelect = document.querySelector<HTMLSelectElement>('starlight-lang-select select');
+  if (langSelect) {
+    for (const opt of Array.from(langSelect.options)) {
+      if (opt.selected || !opt.value) continue;
+      const langName = (opt.textContent || opt.label || opt.value).trim();
+      const shortCode = opt.value.replace(/^\/|\/$/g, '').split('/')?.toUpperCase() || 'EN';
+      actions.push({
+        type: 'action',
+        actionId: 'lang-switch',
+        actionHref: opt.value,
+        title: tr('cmdk.actionLangSwitch', 'Switch language to {lang}', { lang: langName }),
+        subtitle: shortCode.length <= 5 ? shortCode : langName,
+        section: 'Language',
+        excerptHtml: tr('cmdk.actionLangSwitchDesc', 'Open this page in {lang}.', { lang: langName }),
+      });
+    }
+  }
+  for (const provider of cmdkCfg.aiProviders || []) {
+    actions.push({
+      type: 'action',
+      actionId: 'ai-provider',
+      actionHref: buildAiProviderHref(provider, window.location.href),
+      actionIconPath: provider.path,
+      title: tr('cmdk.actionAskAi', 'Ask {provider}', { provider: provider.name }),
+      subtitle: provider.tag,
+      section: 'AI',
+      excerptHtml: tr('cmdk.actionAskAiDesc', 'Open {provider} ({tag}) with a summary prompt for this page.', { provider: provider.name, tag: provider.tag }),
+    });
+  }
+  return actions;
 }
 function copyTextFallback(text: string): Promise<void> {
     if (navigator.clipboard && window.isSecureContext) {
@@ -670,7 +697,9 @@ triggerBtn.textContent = orig;
 }
 }).catch(() => {});
 }
-function runAction(actionId?: string): void {
+function runAction(itemOrId?: FlatItem | string): void {
+  const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
+  const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
   if (actionId === 'changelog') { input.value = 'log: '; handleQuery(); input.focus(); return; }
   closeModal();
   if (actionId === 'zen') { document.querySelector<HTMLElement>('[data-zen-toggle]')?.click(); }
@@ -678,14 +707,12 @@ function runAction(actionId?: string): void {
     const sel = document.querySelector<HTMLSelectElement>('starlight-theme-select select');
     if (sel) { sel.value = sel.value === 'dark' ? 'light' : 'dark'; sel.dispatchEvent(new Event('change', { bubbles: true })); }
     else { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; try { localStorage.setItem('starlight-theme', next); } catch {} }
-  } else if (actionId === 'locale') {
-    const u = window.location.pathname;
-    window.location.assign(isFr ? (u.replace(/^\/fr(?=\/|$)/, '') || '/') : ('/fr' + (u === '/' ? '/' : u)));
-  } else if (actionId === 'copy-md') { document.querySelector<HTMLElement>('#copy-markdown')?.click(); }
-  else if (actionId === 'ai-chatgpt' || actionId === 'ai-claude') {
-    const params = new URLSearchParams(); params.set('q', 'Read and summarize this documentation: ' + window.location.href);
-    const base = actionId === 'ai-chatgpt' ? ['https:', '', ['chatgpt', 'com'].join('.')].join('/') + '/?' : ['https:', '', ['claude', 'ai'].join('.')].join('/') + '/new?';
-    window.open(base + params.toString(), '_blank', 'noopener,noreferrer');
+  } else if (actionId === 'lang-switch' && actionHref) {
+    window.location.assign(actionHref);
+  } else if (actionId === 'copy-md') {
+    document.querySelector<HTMLElement>('#copy-markdown')?.click();
+  } else if (actionId === 'ai-provider' && actionHref) {
+    window.open(actionHref, '_blank', 'noopener,noreferrer');
   }
 }
 async function hydratePagePreview(url: string): Promise<void> {
@@ -768,7 +795,7 @@ async function hydratePagePreview(url: string): Promise<void> {
 
     const top = el('div', 'sl-cmdk-preview__top');
     const eyebrow = el('div', 'sl-cmdk-preview__eyebrow');
-    eyebrow.appendChild(item.type === 'action' ? iconZap() : item.type === 'sub' ? iconHash() : sectionIcon(item.sectionKey));
+    eyebrow.appendChild(item.actionIconPath ? iconBrandPath(item.actionIconPath) : item.type === 'action' ? iconZap() : item.type === 'sub' ? iconHash() : sectionIcon(item.sectionKey));
     eyebrow.appendChild(document.createTextNode(item.section || (item.type === 'recent' ? (isFr ? 'Recherche récente' : 'Recent query') : 'Docs')));
     top.appendChild(eyebrow);
 
@@ -1170,7 +1197,7 @@ renderedItems.push(act);
 actionGroup.appendChild(
 makeRow({
 idx,
-icon: iconZap(),
+icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
 title: act.title,
 kbd: act.subtitle,
 }),
@@ -1245,7 +1272,7 @@ renderedItems.push(act);
 actionGroup.appendChild(
 makeRow({
 idx,
-icon: iconZap(),
+icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
 title: act.title,
 kbd: act.subtitle,
 }),
@@ -1392,7 +1419,7 @@ if (q.startsWith("/") || q.startsWith(">")) {
     group.appendChild(
       makeRow({
         idx,
-        icon: iconZap(),
+        icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
         title: act.title,
         kbd: act.subtitle,
       }),
@@ -1554,7 +1581,7 @@ handleQuery();
 return;
 }
 if (item.type === 'action') {
-runAction(item.actionId);
+runAction(item);
 return;
 }
 if (item.url) {
