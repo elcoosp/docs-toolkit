@@ -3,8 +3,71 @@ import { animate, spring } from 'motion';
 function resolveMarkdownUrl(pathname: string): string {
   const clean = pathname.replace(/\/+$/, '');
   if (clean === '') return '/index.md';
-  if (clean === '/fr') return '/fr/index.md';
+  if (clean === '/fr') return '/fr.md';
   return clean + '.md';
+}
+
+function serializeInlineMarkdown(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent || '';
+  }
+  if (!(node instanceof HTMLElement)) return '';
+  if (node.closest('[data-pagefind-ignore], .sl-anchor-link, .page-actions-container')) return '';
+  const tag = node.tagName;
+  if (tag === 'CODE' && !node.closest('pre')) {
+    return '`' + (node.textContent || '') + '`';
+  }
+  if (tag === 'STRONG' || tag === 'B') {
+    const inner = Array.from(node.childNodes).map(serializeInlineMarkdown).join('');
+    return inner ? '**' + inner + '**' : '';
+  }
+  if (tag === 'EM' || tag === 'I') {
+    const inner = Array.from(node.childNodes).map(serializeInlineMarkdown).join('');
+    return inner ? '*' + inner + '*' : '';
+  }
+  if (tag === 'A') {
+    const label = Array.from(node.childNodes).map(serializeInlineMarkdown).join('').trim();
+    const href = node.getAttribute('href') || '';
+    if (!label) return '';
+    return href ? '[' + label + '](' + href + ')' : label;
+  }
+  return Array.from(node.childNodes).map(serializeInlineMarkdown).join('');
+}
+
+function extractFallbackPageMarkdown(): string {
+  const blocks: string[] = [];
+  const h1 = document.querySelector('main h1')?.textContent?.trim();
+  if (h1) blocks.push('# ' + h1);
+  const contentRoot = document.querySelector('.sl-markdown-content') || document.querySelector('main');
+  if (!contentRoot) return blocks.join('\n\n');
+
+  contentRoot.querySelectorAll('h2, h3, h4, p, li, pre').forEach((el) => {
+    if (el.closest('[data-pagefind-ignore], .page-actions-container, nav, header, footer')) return;
+    if (el.tagName === 'P' && el.closest('li')) return;
+    const tag = el.tagName;
+    if (tag === 'H2' || tag === 'H3' || tag === 'H4') {
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('.sl-anchor-link, [aria-hidden="true"]').forEach((n) => n.remove());
+      const heading = clone.textContent?.replace(/\s+/g, ' ').trim() || '';
+      if (heading) {
+        const prefix = tag === 'H2' ? '## ' : tag === 'H3' ? '### ' : '#### ';
+        blocks.push(prefix + heading);
+      }
+    } else if (tag === 'LI') {
+      const line = serializeInlineMarkdown(el).replace(/\s+/g, ' ').trim();
+      if (line) blocks.push('- ' + line);
+    } else if (tag === 'P') {
+      const para = serializeInlineMarkdown(el).replace(/\s+/g, ' ').trim();
+      if (para) blocks.push(para);
+    } else if (tag === 'PRE') {
+      const ecLines = Array.from(el.querySelectorAll('.ec-line .code'));
+      const code = ecLines.length > 0
+        ? ecLines.map((l) => l.textContent || '').join('\n').trim()
+        : (el.textContent?.trim() || '');
+      if (code) blocks.push('```\n' + code + '\n```');
+    }
+  });
+  return blocks.join('\n\n').trim();
 }
 
 function morphButtonToSuccess(
@@ -69,9 +132,14 @@ export function initPageActions(): void {
   copyBtn?.addEventListener('click', async () => {
     const mdUrl = resolveMarkdownUrl(window.location.pathname);
     try {
+      let text = '';
       const res = await fetch(mdUrl);
-      if (!res.ok) throw new Error('Not found');
-      const text = await res.text();
+      if (res.ok) {
+        text = await res.text();
+      } else {
+        text = extractFallbackPageMarkdown();
+      }
+      if (!text) throw new Error('Empty markdown');
       await navigator.clipboard.writeText(text);
       morphButtonToSuccess(copyBtn, copyLabel, copiedLabel, timers);
     } catch {
