@@ -289,8 +289,6 @@
   gap: 0.45rem;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--sl-color-gray-4) 55%, transparent) transparent;
-  mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 calc(100% - 10px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 calc(100% - 10px), transparent 100%);
 }
 
 #sl-cmdk-dialog .sl-cmdk-list::-webkit-scrollbar {

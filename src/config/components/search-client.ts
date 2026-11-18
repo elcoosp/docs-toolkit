@@ -402,6 +402,7 @@ export function initCommandSearch(): void {
   let activeFilter = 'all';
   let activeIndex = 0;
   let aiCommandsExpanded = false;
+let lastToggleClickAt = 0;
   let currentResults: PagefindData[] = [];
   let renderedItems: FlatItem[] = [];
   let searchSeq = 0;
@@ -432,7 +433,8 @@ export function initCommandSearch(): void {
     const left = rowRect.left - listRect.left + listEl!.scrollLeft;
     const width = rowRect.width;
     const height = rowRect.height;
-    if (instant) {
+    const wasHidden = indicatorEl.style.opacity === '0' || !indicatorEl.style.opacity;
+    if (instant || wasHidden) {
       indicatorEl.style.transition = 'none';
     }
     indicatorEl.style.opacity = '1';
@@ -441,7 +443,7 @@ export function initCommandSearch(): void {
     indicatorEl.style.width = width + 'px';
     indicatorEl.style.height = height + 'px';
     indicatorEl.style.transform = `translate3d(0, ${top}px, 0)`;
-    if (instant) {
+    if (instant || wasHidden) {
       void indicatorEl.offsetHeight;
       indicatorEl.style.transition = '';
     }
@@ -736,6 +738,7 @@ function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
   if (actionId === 'toggle-ai-more') {
+    lastToggleClickAt = performance.now();
     const keepScroll = listEl!.scrollTop;
     aiCommandsExpanded = !aiCommandsExpanded;
     void handleQuery().then(() => {
@@ -1873,6 +1876,7 @@ section: item.section || classifySection(item.url, isFr).label,
 }
 });
 listEl!.addEventListener('mousemove', (e) => {
+if (performance.now() - lastToggleClickAt < 120) return;
 const row = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-cmdk-idx]') : null;
 if (!row) return;
 const idx = Number(row.dataset.cmdkIdx);
