@@ -1,3 +1,4 @@
+import { z } from 'astro/zod';
 import { defineCollection } from 'astro:content';
 import { i18nLoader } from '@astrojs/starlight/loaders';
 import { i18nSchema } from '@astrojs/starlight/schema';
@@ -30,7 +31,45 @@ export function makeDocsCollections(opts: MakeCollectionsOpts = {}): any {
     }),
     i18n: defineCollection({
       loader: i18nLoader(),
-      schema: i18nSchema(),
+      schema: i18nSchema({
+        extend: z.object({
+          'pageActions.copy': z.string(),
+          'pageActions.copyTitle': z.string(),
+          'pageActions.copied': z.string(),
+          'pageActions.copyError': z.string(),
+          'pageActions.openAi': z.string(),
+          'pageActions.aiHeader': z.string(),
+          'pageActions.share': z.string(),
+          'pageActions.shareTitle': z.string(),
+          'pageActions.linkCopied': z.string(),
+          'pageActions.source': z.string(),
+          'pageActions.sourceTitle': z.string(),
+          'cmdk.button': z.string(),
+          'cmdk.ariaLabel': z.string(),
+          'cmdk.placeholder': z.string(),
+          'cmdk.clear': z.string(),
+          'cmdk.nav': z.string(),
+          'cmdk.open': z.string(),
+          'cmdk.newTab': z.string(),
+          'cmdk.copy': z.string(),
+          'cmdk.pin': z.string(),
+          'cmdk.filter': z.string(),
+          'cmdk.close': z.string(),
+          'cmdk.changelog': z.string(),
+          'cmdk.actionZen': z.string(),
+          'cmdk.actionZenDesc': z.string(),
+          'cmdk.actionTheme': z.string(),
+          'cmdk.actionThemeDesc': z.string(),
+          'cmdk.actionChangelog': z.string(),
+          'cmdk.actionChangelogDesc': z.string(),
+          'cmdk.actionCopyMd': z.string(),
+          'cmdk.actionCopyMdDesc': z.string(),
+          'cmdk.actionLangSwitch': z.string(),
+          'cmdk.actionLangSwitchDesc': z.string(),
+          'cmdk.actionAskAi': z.string(),
+          'cmdk.actionAskAiDesc': z.string(),
+        }).partial(),
+      }),
     }),
   };
 }

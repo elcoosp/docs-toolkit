@@ -1,41 +1,49 @@
 ---
 import { getCollection } from 'astro:content';
+import { AI_PROVIDERS } from './ai-providers';
 import './search.css';
 
-const isFr = Astro.currentLocale === 'fr' || Astro.url.pathname === '/fr' || Astro.url.pathname.startsWith('/fr/');
-const t = isFr
-  ? {
-      button: 'Rechercher…',
-      ariaLabel: 'Ouvrir la recherche',
-      placeholder: 'Rechercher dans la documentation, les guides, les commandes…',
-      clear: 'Effacer',
-      nav: 'Naviguer',
-      open: 'Ouvrir',
-      newTab: 'Nouvel onglet',
-      newTab: 'Nouvel onglet',
-      newTab: 'Nouvel onglet',
-      copy: 'Copier le lien',
-      pin: 'Favori',
-      filter: 'Filtrer',
-      close: 'Fermer',
-    }
-  : {
-      button: 'Search…',
-      ariaLabel: 'Open search',
-      placeholder: 'Search docs, guides, commands, sections…',
-      clear: 'Clear',
-      nav: 'Navigate',
-      open: 'Open',
-      newTab: 'New tab',
-      newTab: 'New tab',
-      newTab: 'New tab',
-      copy: 'Copy link',
-      pin: 'Pin',
-      filter: 'Filter',
-      close: 'Close',
-    };
+const t = Astro.locals.t;
+const currentLocale = Astro.currentLocale;
+const localePrefix = currentLocale ? `/${currentLocale}` : '';
+const isFr = currentLocale === 'fr';
+
+const ui = {
+  button: t('cmdk.button'),
+  ariaLabel: t('cmdk.ariaLabel'),
+  placeholder: t('cmdk.placeholder'),
+  clear: t('cmdk.clear'),
+  nav: t('cmdk.nav'),
+  open: t('cmdk.open'),
+  newTab: t('cmdk.newTab'),
+  copy: t('cmdk.copy'),
+  pin: t('cmdk.pin'),
+  filter: t('cmdk.filter'),
+  close: t('cmdk.close'),
+  onThisPage: t('tableOfContents.onThisPage'),
+  overview: t('tableOfContents.overview'),
+  changelog: t('cmdk.changelog'),
+  actionZen: t('cmdk.actionZen'),
+  actionZenDesc: t('cmdk.actionZenDesc'),
+  actionTheme: t('cmdk.actionTheme'),
+  actionThemeDesc: t('cmdk.actionThemeDesc'),
+  actionChangelog: t('cmdk.actionChangelog'),
+  actionChangelogDesc: t('cmdk.actionChangelogDesc'),
+  actionCopyMd: t('cmdk.actionCopyMd'),
+  actionCopyMdDesc: t('cmdk.actionCopyMdDesc'),
+  actionLangSwitch: t('cmdk.actionLangSwitch'),
+  actionLangSwitchDesc: t('cmdk.actionLangSwitchDesc'),
+  actionAskAi: t('cmdk.actionAskAi'),
+  actionAskAiDesc: t('cmdk.actionAskAiDesc'),
+};
 
 const allDocs = await getCollection('docs').catch(() => []);
+const knownNonRootLocales = new Set(
+  allDocs
+    .map((e) => e.id.split('/')[0])
+    .filter((seg) => /^[a-z]{2}(?:-[a-z]{2})?$/i.test(seg) && seg !== currentLocale),
+);
+
 const sectionOrder: Record<string, number> = {
   tutorials: 1,
   guides: 2,
@@ -44,31 +52,36 @@ const sectionOrder: Record<string, number> = {
   blog: 5,
   changelog: 6,
 };
+
 const sitePages = allDocs
   .filter((entry) => {
     if (entry.data?.draft) return false;
-    const id = entry.id.replace(/\.(md|mdx)$/, "");
-    const entryIsFr = id === "fr" || id.startsWith("fr/");
-    if (entryIsFr !== isFr) return false;
-    const stripped = isFr ? id.replace(/^fr\/?/, "") : id;
-    return stripped !== "" && stripped !== "index";
+    const id = entry.id.replace(/\.(md|mdx)$/, '');
+    if (currentLocale) {
+      if (id !== currentLocale && !id.startsWith(`${currentLocale}/`)) return false;
+    } else {
+      const firstSeg = id.split('/')[0];
+      if (knownNonRootLocales.has(firstSeg)) return false;
+    }
+    const stripped = currentLocale ? id.replace(new RegExp(`^${currentLocale}/?`), '') : id;
+    return stripped !== '' && stripped !== 'index';
   })
   .map((entry) => {
-    const cleanId = entry.id.replace(/\.(md|mdx)$/, "").replace(/(^|\/)index$/, "");
-    const url = "/" + (cleanId ? cleanId + "/" : "");
-    const stripped = isFr ? cleanId.replace(/^fr\/?/, "") : cleanId;
-    const topSeg = stripped.split("/").at(0) || "docs";
-    const title = typeof entry.data?.title === "string" && entry.data.title.trim() ? entry.data.title.trim() : topSeg;
-    const body = typeof entry.body === "string" ? entry.body : "";
+    const cleanId = entry.id.replace(/\.(md|mdx)$/, '').replace(/(^|\/)index$/, '');
+    const url = '/' + (cleanId ? cleanId + '/' : '');
+    const stripped = currentLocale ? cleanId.replace(new RegExp(`^${currentLocale}/?`), '') : cleanId;
+    const topSeg = stripped.split('/').at(0) || 'docs';
+    const title = typeof entry.data?.title === 'string' && entry.data.title.trim() ? entry.data.title.trim() : topSeg;
+    const body = typeof entry.body === 'string' ? entry.body : '';
     const headings = Array.from(body.matchAll(/^#{2,3}\s+(.+)$/gm))
       .map((m) => {
-        const raw = (m.at(1) ?? "").replace(/[`*_]/g, "").replace(/\s*\{#[^}]+\}\s*$/, "").trim();
+        const raw = (m.at(1) ?? '').replace(/[`*_]/g, '').replace(/\s*\{#[^}]+\}\s*$/, '').trim();
         const slug = raw
           .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
         return { title: raw, slug };
       })
       .filter((h) => h.title && h.slug);
@@ -86,10 +99,9 @@ const validReleases = changelogEntries
     return db - da;
   });
 if (validReleases.length > 0) {
-  const prefix = isFr ? '/fr' : '';
   sitePages.push({
-    title: isFr ? 'Journal des modifications' : 'Changelog',
-    url: `${prefix}/changelog/`,
+    title: ui.changelog,
+    url: `${localePrefix}/changelog/`,
     headings: [],
   });
   for (const rel of validReleases) {
@@ -97,31 +109,48 @@ if (validReleases.length > 0) {
     const rawVer = String(d.version || d.title || d.slug).replace(/^[\[v]+|\]+$/g, '').trim();
     const verLabel = /^\d/.test(rawVer) ? `v${rawVer}` : rawVer;
     const dateStr = d.date
-      ? new Date(d.date).toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      ? new Date(d.date).toLocaleDateString(currentLocale || 'en', { year: 'numeric', month: 'short', day: 'numeric' })
       : '';
     sitePages.push({
       title: dateStr ? `${verLabel} — ${dateStr}` : verLabel,
-      url: `${prefix}/changelog/version/${d.slug}/`,
+      url: `${localePrefix}/changelog/version/${d.slug}/`,
       headings: [],
     });
   }
 }
+
+const cmdkConfig = {
+  locale: currentLocale || 'en',
+  localePrefix,
+  ui,
+  aiProviders: AI_PROVIDERS.map(({ id, name, tag, labels, pathname, param, extra, path }) => ({
+    id,
+    name,
+    tag,
+    labels,
+    pathname,
+    param,
+    extra,
+    path,
+  })),
+};
 ---
 
 <div class="sl-cmdk-root" data-cmdk-root data-locale={isFr ? 'fr' : 'en'}>
   <script type="application/json" data-cmdk-pages set:html={JSON.stringify(sitePages)} />
-  <button type="button" class="sl-cmdk-trigger" data-cmdk-open aria-label={t.ariaLabel}>
+  <script type="application/json" data-cmdk-config set:html={JSON.stringify(cmdkConfig)} />
+  <button type="button" class="sl-cmdk-trigger" data-cmdk-open aria-label={ui.ariaLabel}>
     <span class="sl-cmdk-trigger__left">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="8" />
         <path d="m21 21-4.3-4.3" />
       </svg>
-      <span class="sl-cmdk-trigger__label">{t.button}</span>
+      <span class="sl-cmdk-trigger__label">{ui.button}</span>
     </span>
     <kbd class="sl-cmdk-trigger__kbd" data-cmdk-shortcut>⌘K</kbd>
   </button>
 
-  <dialog id="sl-cmdk-dialog" class="sl-cmdk-dialog" aria-label={t.ariaLabel}>
+  <dialog id="sl-cmdk-dialog" class="sl-cmdk-dialog" aria-label={ui.ariaLabel}>
     <div class="sl-cmdk-shell">
       <div class="sl-cmdk-panel">
         <div class="sl-cmdk-header">
@@ -135,9 +164,9 @@ if (validReleases.length > 0) {
             type="search"
             autocomplete="off"
             spellcheck="false"
-            placeholder={t.placeholder}
+            placeholder={ui.placeholder}
           />
-          <button id="sl-cmdk-clear" type="button" class="sl-cmdk-clear" data-visible="false" tabindex="-1" aria-hidden="true">{t.clear}</button>
+          <button id="sl-cmdk-clear" type="button" class="sl-cmdk-clear" data-visible="false" tabindex="-1" aria-hidden="true">{ui.clear}</button>
         </div>
 
         <div id="sl-cmdk-tabs" class="sl-cmdk-tabs" role="group" hidden></div>
@@ -149,13 +178,13 @@ if (validReleases.length > 0) {
 
         <div class="sl-cmdk-footer">
           <div class="sl-cmdk-hints">
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↑↓</kbd> {t.nav}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↵</kbd> {t.open}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-newtab-kbd>⌘↵</kbd> {t.newTab}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-copy-kbd>⌘C</kbd> {t.copy}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-pin-kbd>⌘D</kbd> {t.pin}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">Tab</kbd> {t.filter}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">ESC</kbd> {t.close}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↑↓</kbd> {ui.nav}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↵</kbd> {ui.open}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-newtab-kbd>⌘↵</kbd> {ui.newTab}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-copy-kbd>⌘C</kbd> {ui.copy}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-pin-kbd>⌘D</kbd> {ui.pin}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">Tab</kbd> {ui.filter}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">ESC</kbd> {ui.close}</span>
           </div>
           <span id="sl-cmdk-status"></span>
         </div>
