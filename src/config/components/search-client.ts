@@ -422,6 +422,8 @@ let lastToggleClickAt = 0;
     const selected = listEl!.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
     if (!selected || selected.closest('.sl-cmdk-card') || selected.closest('.sl-cmdk-ai-grid')) {
       indicatorEl.style.opacity = '0';
+      indicatorEl.style.height = '0px';
+      indicatorEl.style.transform = 'translate3d(0, 0, 0)';
       return;
     }
     if (!indicatorEl.parentElement) {

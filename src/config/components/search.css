@@ -283,6 +283,7 @@
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
+  overflow-anchor: none;
   overscroll-behavior: contain;
   padding: 0.6rem;
   display: flex;
