@@ -675,7 +675,7 @@ async function hydratePagePreview(url: string): Promise<void> {
       if (!res.ok) return;
       const html = await res.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
-      const firstParaEl = Array.from(doc.querySelectorAll(".sl-markdown-content > p, main > p"))
+      const firstParaEl = Array.from(doc.querySelectorAll(".sl-markdown-content p, main p"))
         .find((p) => !p.closest("aside, .starlight-aside") && (p.textContent?.replace(/\s+/g, " ").trim().length || 0) > 24);
       const metaDesc = doc.querySelector("meta[name=\"description\"]")?.getAttribute("content")?.trim() || "";
       const excerpt = firstParaEl ? firstParaEl.innerHTML.replace(/\s+/g, " ").trim() : metaDesc;
