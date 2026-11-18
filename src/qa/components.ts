@@ -26,6 +26,19 @@ for (const f of await walk('dist')) {
   const html = await readFile(f, 'utf8');
   const rel = path.relative('dist', f).replace('/index.html', '/');
   const found = Object.keys(CLS).filter((c) => html.includes(CLS[c]));
+  for (const reqId of ["sl-cmdk-dialog", "sl-cmdk-input", "sl-cmdk-list", "sl-cmdk-preview"]) {
+    if (!html.includes(`id="${reqId}"`)) {
+      console.log(`  ${rel}: missing #${reqId}`);
+      fails++;
+    }
+  }
+  for (const uiCls of ["sl-zen-toggle", "sl-reading-context", "page-actions-container"]) {
+    const tagMatch = html.match(new RegExp(`<[^>]*class="[^"]*\\b${uiCls}\\b[^"]*"[^>]*>`));
+    if (tagMatch && !tagMatch[0].includes('data-pagefind-ignore="all"')) {
+      console.log(`  ${rel}: .${uiCls} missing data-pagefind-ignore="all"`);
+      fails++;
+    }
+  }
   if (found.length === 0 && !rel.endsWith('/404/')) {
     console.log(`  ${rel}: 0 comps`);
     fails++;
@@ -35,4 +48,4 @@ if (fails) {
   console.error(`✗ ${fails} page(s)`);
   process.exit(1);
 }
-console.log('✓ all pages ≥1 component');
+console.log('✓ all pages ≥1 component + command palette & pagefind-ignore QA passed');

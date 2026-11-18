@@ -218,7 +218,7 @@ function decodeEntities(str: string): string {
 }
 
 function appendHighlightedText(target: HTMLElement, text: string, rawQuery: string): void {
-  const cleanQ = rawQuery.replace(/^[\/#>]+/, "").trim();
+  const cleanQ = rawQuery.replace(/^(?:docs|guides?|ref|reference|blog|changelog):\s*/i, "").replace(/^[\/#>]+/, "").trim();
   if (!cleanQ) {
     target.textContent = text;
     return;
@@ -753,13 +753,17 @@ async function hydratePagePreview(url: string): Promise<void> {
     if (effectiveSubs && effectiveSubs.length > 0) {
       const subsBox = el('div', 'sl-cmdk-preview__subs');
       subsBox.appendChild(el('div', 'sl-cmdk-preview__subs-label', isFr ? 'Sections de la page' : 'On this page'));
-      for (const sub of effectiveSubs) {
+      effectiveSubs.forEach((sub, subIdx) => {
         const a = el('a', 'sl-cmdk-preview__sub-link');
         a.href = sub.url;
-        a.appendChild(iconHash());
-        a.appendChild(document.createTextNode(sub.title));
+        a.dataset.subJump = String(subIdx + 1);
+        const left = el('span', 'sl-cmdk-preview__sub-left');
+        left.appendChild(iconHash());
+        left.appendChild(document.createTextNode(sub.title));
+        a.appendChild(left);
+        a.appendChild(el('kbd', 'sl-cmdk-kbd', (isMac ? '⌘' : '^') + String(subIdx + 1)));
         subsBox.appendChild(a);
-      }
+      });
       top.appendChild(subsBox);
     }
 
@@ -1260,7 +1264,20 @@ statusEl.textContent = isFr
 : filtered.length + ' matching page' + (filtered.length > 1 ? 's' : '');
 }
 }
-async function handleQuery(): Promise {
+function parseScopedQuery(raw: string): { scope?: string; query: string } {
+    const m = /^(docs|guides?|ref|reference|blog|changelog):\s*(.*)$/i.exec(raw);
+    if (!m) return { query: raw };
+    const token = m[1].toLowerCase();
+    const scope =
+      token === "guide" || token === "guides"
+        ? "guides"
+        : token === "ref" || token === "reference"
+          ? "reference"
+          : token;
+    return { scope, query: m[2].trim() };
+  }
+
+  async function handleQuery(): Promise {
 const q = input.value.trim();
 if (clearBtn) {
 const vis = q.length > 0;
@@ -1389,10 +1406,20 @@ if (q.startsWith("#")) {
   }
   return;
 }
+const parsedScope = parseScopedQuery(q);
+if (parsedScope.scope) {
+  activeFilter = parsedScope.scope;
+}
+const effectiveQ = parsedScope.query;
+if (!effectiveQ && parsedScope.scope) {
+  activeFilter = parsedScope.scope;
+  renderEmptyState(false);
+  return;
+}
 const seq = ++searchSeq;
 const pf = await ensurePagefind();
 if (!pf) {
-const qLow = q.toLowerCase();
+const qLow = effectiveQ.toLowerCase();
 const navMatches = collectSidebarPages().filter((p) => p.title.toLowerCase().includes(qLow));
 currentResults = navMatches.map((m) => ({
 url: m.url || '/',
@@ -1402,14 +1429,14 @@ excerpt: isFr ? 'Correspondance dans le menu latéral' : 'Matched in sidebar nav
 renderSearchResults();
 return;
 }
-const cacheKey = (isFr ? "fr:" : "en:") + q.toLowerCase();
+const cacheKey = (isFr ? "fr:" : "en:") + effectiveQ.toLowerCase();
     const cachedQuery = queryCache.get(cacheKey);
     if (cachedQuery) {
       currentResults = cachedQuery;
       renderSearchResults();
       return;
     }
-    const search = await pf.search(q);
+    const search = await pf.search(effectiveQ);
 if (!search || seq !== searchSeq) return;
 const loaded: PagefindData[] = await Promise.all(search.results.slice(0, 14).map((r: any) => r.data()));
 if (seq !== searchSeq) return;
@@ -1585,17 +1612,36 @@ searchListAnimTimer = window.setTimeout(() => {
 }, 95);
 });
 input.addEventListener('keydown', (e) => {
-if (e.key === 'ArrowDown') {
+if (e.key === 'ArrowDown' || (e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'n')) {
 e.preventDefault();
 if (renderedItems.length > 0) {
 activeIndex = (activeIndex + 1) % renderedItems.length;
 updateActiveRow(true);
 }
-} else if (e.key === 'ArrowUp') {
+} else if (e.key === 'ArrowUp' || (e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'p')) {
 e.preventDefault();
 if (renderedItems.length > 0) {
 activeIndex = (activeIndex - 1 + renderedItems.length) % renderedItems.length;
 updateActiveRow(true);
+}
+} else if (e.key === 'PageDown' || (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'j')) {
+const prevTop = previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__top');
+if (prevTop) {
+e.preventDefault();
+prevTop.scrollBy({ top: Math.max(120, Math.round(prevTop.clientHeight * 0.65)), behavior: 'smooth' });
+}
+} else if (e.key === 'PageUp' || (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'k')) {
+const prevTop = previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__top');
+if (prevTop) {
+e.preventDefault();
+prevTop.scrollBy({ top: -Math.max(120, Math.round(prevTop.clientHeight * 0.65)), behavior: 'smooth' });
+}
+} else if ((e.metaKey || e.ctrlKey) && /^[1-6]$/.test(e.key)) {
+const jumpLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-sub-jump="${e.key}"]`);
+if (jumpLink?.href) {
+e.preventDefault();
+closeModal();
+window.location.assign(jumpLink.href);
 }
 } else if (e.key === 'Enter') {
 e.preventDefault();

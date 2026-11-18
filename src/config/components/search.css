@@ -802,3 +802,20 @@ gap: 0.28rem;
   padding: 0.72rem 1rem !important;
   background: var(--sl-color-bg-nav) !important;
 }
+
+#sl-cmdk-dialog .sl-cmdk-preview__sub-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+}
+
+#sl-cmdk-dialog .sl-cmdk-preview__sub-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
