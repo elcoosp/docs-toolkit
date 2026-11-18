@@ -12,3 +12,5 @@ src/assets/font-b64.ts
 # Rust build artifacts
 crates/*/target/
 
+coverage/
+.vitest/
