@@ -145,4 +145,15 @@ describe("Browser UI Clients & HoverCards (100% coverage)", () => {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     window.dispatchEvent(new Event("scroll"));
   });
+
+  it("covers TermGlossary ?highlight= arrival pulse, focus/blur keyboard access, and skipping <code> tags", async () => {
+    window.history.replaceState({}, "", "/?highlight=TokenStream");
+    document.body.innerHTML = "<main><div class=\"sl-markdown-content\"><p>TokenStream outside code and <code>TokenStream</code> inside code.</p></div></main>";
+    initTermGlossary({ hoverDelay: 10 });
+    await vi.waitFor(() => expect(document.querySelectorAll(".sl-glossary-term").length).toBe(1));
+    const trigger = document.querySelector<HTMLButtonElement>(".sl-glossary-term")!;
+    trigger.dispatchEvent(new FocusEvent("focus"));
+    trigger.dispatchEvent(new FocusEvent("blur"));
+    window.history.replaceState({}, "", "/");
+  });
 });
