@@ -954,38 +954,53 @@ row.appendChild(arrowBox);
 return row;
 }
 function renderEmptyState(skipEntrance = false): void {
-    const pinnedCount = getPinnedPages().length;
-    tabsEl.hidden = false;
-    tabsEl.replaceChildren();
-    if (pinnedCount > 0) {
-      tabsEl.dataset.collapsed = "false";
-      const allBtn = el("button", "sl-cmdk-tab");
-      allBtn.type = "button";
-      allBtn.dataset.emptyView = "all";
-      allBtn.setAttribute("aria-selected", String(activeFilter !== "pinned"));
-      allBtn.textContent = isFr ? "Tout" : "All";
-      tabsEl.appendChild(allBtn);
-
-      const pinTab = el("button", "sl-cmdk-tab");
-      pinTab.type = "button";
-      pinTab.dataset.emptyView = "pinned";
-      pinTab.setAttribute("aria-selected", String(activeFilter === "pinned"));
-      pinTab.appendChild(document.createTextNode((isFr ? "Favoris" : "Pinned") + " "));
-      pinTab.appendChild(el("span", undefined, String(pinnedCount)));
-      tabsEl.appendChild(pinTab);
-    } else {
-      tabsEl.dataset.collapsed = "true";
-      if (activeFilter === "pinned") activeFilter = "all";
+    const pinnedPages = getPinnedPages();
+    const pinnedCount = pinnedPages.length;
+    const allPages = collectSidebarPages();
+    const catMap = new Map<string, { key: string; label: string; count: number }>();
+    for (const p of allPages) {
+      const sec = classifySection(p.url || "/", isFr);
+      const prev = catMap.get(sec.key);
+      if (prev) prev.count += 1;
+      else catMap.set(sec.key, { key: sec.key, label: sec.label, count: 1 });
     }
+
+    const validFilters = new Set(["all", ...(pinnedCount > 0 ? ["pinned"] : []), ...catMap.keys()]);
+    if (!validFilters.has(activeFilter)) activeFilter = "all";
+
+    tabsEl.hidden = false;
+    tabsEl.dataset.collapsed = "false";
+    tabsEl.replaceChildren();
+
+    const makeEmptyTab = (filterKey: string, label: string, count?: number): HTMLButtonElement => {
+      const btn = el("button", "sl-cmdk-tab");
+      btn.type = "button";
+      btn.dataset.emptyView = filterKey;
+      btn.setAttribute("aria-selected", String(activeFilter === filterKey));
+      btn.appendChild(document.createTextNode(label));
+      if (typeof count === "number") {
+        btn.appendChild(document.createTextNode(" "));
+        btn.appendChild(el("span", undefined, String(count)));
+      }
+      return btn;
+    };
+
+    tabsEl.appendChild(makeEmptyTab("all", isFr ? "Tout" : "All"));
+    if (pinnedCount > 0) {
+      tabsEl.appendChild(makeEmptyTab("pinned", isFr ? "Favoris" : "Pinned", pinnedCount));
+    }
+    for (const cat of catMap.values()) {
+      tabsEl.appendChild(makeEmptyTab(cat.key, cat.label, cat.count));
+    }
+
     listEl.replaceChildren();
     renderedItems = [];
-    const pinnedPages = getPinnedPages();
+
     if (activeFilter === "pinned" && pinnedPages.length > 0) {
       const group = el("div", "sl-cmdk-group");
       const header = el("div", "sl-cmdk-group__title");
       header.appendChild(el("span", undefined, isFr ? "Pages favorites" : "Pinned pages"));
       group.appendChild(header);
-
       for (const pp of pinnedPages) {
         const idx = renderedItems.length;
         const sec = classifySection(pp.url, isFr);
@@ -1010,15 +1025,51 @@ function renderEmptyState(skipEntrance = false): void {
         );
       }
       listEl.appendChild(group);
-    }
-
-    if (activeFilter === "pinned") {
-      renderPreview(renderedItems[activeIndex]);
+      renderPreview(renderedItems.at(activeIndex));
       if (!skipEntrance) animateListCards();
       if (statusEl) {
         statusEl.textContent = isFr
           ? pinnedPages.length + " page" + (pinnedPages.length > 1 ? "s" : "") + " favorite" + (pinnedPages.length > 1 ? "s" : "")
           : pinnedPages.length + " pinned page" + (pinnedPages.length > 1 ? "s" : "");
+      }
+      return;
+    }
+
+    if (activeFilter !== "all" && catMap.has(activeFilter)) {
+      const cat = catMap.get(activeFilter)!;
+      const filteredPages = allPages.filter((p) => classifySection(p.url || "/", isFr).key === activeFilter);
+      const group = el("div", "sl-cmdk-group");
+      const header = el("div", "sl-cmdk-group__title");
+      header.appendChild(el("span", undefined, cat.label));
+      group.appendChild(header);
+      for (const page of filteredPages) {
+        const idx = renderedItems.length;
+        const item: FlatItem = {
+          ...page,
+          section: cat.label,
+          sectionKey: cat.key,
+          breadcrumb: formatBreadcrumb(page.url || "/", isFr),
+        };
+        renderedItems.push(item);
+        group.appendChild(
+          makeRow({
+            idx,
+            href: item.url || "/",
+            icon: sectionIcon(cat.key),
+            title: item.title,
+            breadcrumb: item.breadcrumb,
+            badge: cat.label,
+            showArrow: true,
+          }),
+        );
+      }
+      listEl.appendChild(group);
+      renderPreview(renderedItems.at(activeIndex));
+      if (!skipEntrance) animateListCards();
+      if (statusEl) {
+        statusEl.textContent = isFr
+          ? cat.label + " · " + filteredPages.length + " page" + (filteredPages.length > 1 ? "s" : "")
+          : cat.label + " · " + filteredPages.length + " page" + (filteredPages.length > 1 ? "s" : "");
       }
       return;
     }
@@ -1578,15 +1629,17 @@ e.preventDefault();
 copyItemUrl(current);
 }
 } else if (e.key === 'Tab' && !tabsEl.hidden) {
-const tabs = Array.from(tabsEl.querySelectorAll('[data-filter]'));
+const tabs = Array.from(tabsEl.querySelectorAll<HTMLElement>('[data-filter], [data-empty-view]'));
 if (tabs.length > 1) {
 e.preventDefault();
-const cur = tabs.findIndex((t) => t.dataset.filter === activeFilter);
+const cur = tabs.findIndex((t) => (t.dataset.filter || t.dataset.emptyView) === activeFilter);
 const next = tabs[(cur + (e.shiftKey ? -1 : 1) + tabs.length) % tabs.length];
-if (next?.dataset.filter) {
-activeFilter = next.dataset.filter;
+const nextKey = next?.dataset.filter || next?.dataset.emptyView;
+if (nextKey) {
+activeFilter = nextKey;
 activeIndex = 0;
-renderSearchResults();
+if (next?.dataset.emptyView) renderEmptyState(false);
+else renderSearchResults();
 }
 }
 }
