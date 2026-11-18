@@ -285,7 +285,7 @@
   overflow-x: hidden;
   overflow-anchor: none;
   overscroll-behavior: contain;
-  padding: 0.6rem;
+  padding: 0.6rem 0.6rem 0.8rem;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -1013,9 +1013,8 @@ gap: 0.28rem;
 
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai:hover,
 #sl-cmdk-dialog .sl-cmdk-row--expand-ai[aria-selected="true"] {
-  border-style: solid;
-  border-color: color-mix(in srgb, var(--sl-color-accent) 46%, var(--sl-color-hairline));
-  background: color-mix(in srgb, var(--sl-color-accent) 8%, var(--sl-color-bg));
+  border-color: transparent;
+  background: transparent;
   color: var(--sl-color-text);
 }
 

@@ -420,7 +420,7 @@ let lastToggleClickAt = 0;
 
   function syncSelectionIndicator(instant = false): void {
     const selected = listEl!.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
-    if (!selected || selected.closest('.sl-cmdk-card') || selected.closest('.sl-cmdk-ai-grid') || selected.classList.contains('sl-cmdk-row--expand-ai')) {
+    if (!selected || selected.closest('.sl-cmdk-card') || selected.closest('.sl-cmdk-ai-grid')) {
       indicatorEl.style.opacity = '0';
       indicatorEl.style.height = '0px';
       indicatorEl.style.transform = 'translate3d(0, 0, 0)';
