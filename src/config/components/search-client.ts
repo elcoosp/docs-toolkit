@@ -1580,6 +1580,12 @@ tabsEl.addEventListener('click', (e) => {
     renderSearchResults();
   });
 
+  previewEl?.addEventListener('click', (e) => {
+    const subLink = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('.sl-cmdk-preview__sub-link') : null;
+    if (subLink) {
+      closeModal();
+    }
+  });
   listEl.addEventListener('click', (e) => {
 const pinToggle = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-pin-idx]") : null;
     if (pinToggle) {
@@ -1668,10 +1674,12 @@ prevTop.scrollBy({ top: -Math.max(120, Math.round(prevTop.clientHeight * 0.65)),
 } else if (e.altKey && !e.metaKey && !e.ctrlKey && (/^[1-6]$/.test(e.key) || /^Digit[1-6]$/.test(e.code))) {
 const digit = /^[1-6]$/.test(e.key) ? e.key : e.code.slice(5);
 const jumpLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-sub-jump="${digit}"]`);
-if (jumpLink?.href) {
+if (jumpLink) {
 e.preventDefault();
+e.stopPropagation();
+const targetHref = jumpLink.getAttribute("href") || jumpLink.href;
 closeModal();
-window.location.assign(jumpLink.href);
+if (targetHref) window.location.assign(targetHref);
 }
 } else if (e.key === 'Enter') {
 e.preventDefault();
