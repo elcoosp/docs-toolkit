@@ -86,3 +86,6 @@
     display: none !important;
   }
 }
+
+.sl-markdown-content pre code a.dt-code-symbol { color: inherit !important; text-decoration: underline dotted color-mix(in srgb, currentColor 48%, transparent) !important; text-underline-offset: 3px !important; text-decoration-thickness: 1.5px !important; border-radius: 3px !important; transition: background-color 0.14s ease, text-decoration-color 0.14s ease !important; }
+.sl-markdown-content pre code a.dt-code-symbol:hover, .sl-markdown-content pre code a.dt-code-symbol:focus-visible { text-decoration-style: solid !important; text-decoration-color: var(--sl-color-accent-high) !important; background: color-mix(in srgb, var(--sl-color-accent) 16%, transparent) !important; }

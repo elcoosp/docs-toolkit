@@ -1,3 +1,4 @@
+pub mod code_symbols;
 pub mod diataxis_lint;
 pub mod glossary;
 pub mod i18n_parity;

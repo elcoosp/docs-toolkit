@@ -82,7 +82,7 @@ fn parse_single_html(rel_path: String, route: String, locale: String, html: &str
     let mut first_para = String::new();
     let mut main_words = 0usize;
 
-    if let Ok(dom) = tl::parse(html, ParserOptions::default()) {
+    if let Ok(dom) = tl::parse(html, ParserOptions::new().track_classes()) {
         let parser = dom.parser();
         for node in dom.nodes() {
             if let Node::Tag(tag) = node {
@@ -119,7 +119,7 @@ fn parse_single_html(rel_path: String, route: String, locale: String, html: &str
                 }
             }
         }
-        for sel in ["main h2[id]", "main h3[id]", "main h4[id]"] {
+        for sel in ["h2", "h3", "h4"] {
             if let Some(it) = dom.query_selector(sel) {
                 for h in it {
                     if let Some(n) = h.get(parser) {

@@ -3,6 +3,7 @@ mod plugins;
 
 use host::html_dom::parse_all_html;
 use host::md_source::load_all_markdown;
+use plugins::code_symbols::{run_code_symbols, CodeSymbolsCfg};
 use plugins::diataxis_lint::run_diataxis_lint;
 use plugins::glossary::run_glossary;
 use plugins::i18n_parity::run_i18n_parity;
@@ -30,6 +31,8 @@ struct PipelineRequest {
     mermaid: bool,
     #[serde(default)]
     link_preview: bool,
+    #[serde(default)]
+    code_symbols: Option<CodeSymbolsCfg>,
     #[serde(default)]
     glossary: Option<GlossaryCfg>,
     #[serde(default)]
@@ -97,6 +100,9 @@ struct PipelineResponse {
     md_docs: usize,
     mermaid_rendered: usize,
     link_previews_indexed: usize,
+    code_symbols_indexed: usize,
+    code_symbol_links: usize,
+    code_symbol_pages: usize,
     glossary_indexed: usize,
     glossary_coverage_pct: usize,
     glossary_avg_per_page: String,
@@ -150,11 +156,8 @@ fn main() {
     let mut errors = Vec::new();
 
     // Phase 3: Modular plugins attached to shared PageDom & MdDoc slices
-    let link_previews_indexed = if req.link_preview {
-        run_link_preview(&dist_dir, &pages)
-    } else {
-        0
-    };
+    let link_previews_indexed = if req.link_preview { run_link_preview(&dist_dir, &pages) } else { 0 };
+    let (code_symbols_indexed, code_symbol_links, code_symbol_pages) = if let Some(cs_cfg) = &req.code_symbols { let rep = run_code_symbols(&dist_dir, &pages, &docs, cs_cfg); (rep.symbols_indexed, rep.links_injected, rep.pages_enriched) } else { (0, 0, 0) };
 
     let (glossary_indexed, glossary_coverage_pct, glossary_avg_per_page) =
         if let Some(g_cfg) = &req.glossary {
@@ -248,6 +251,9 @@ fn main() {
         md_docs: docs.len(),
         mermaid_rendered,
         link_previews_indexed,
+        code_symbols_indexed,
+        code_symbol_links,
+        code_symbol_pages,
         glossary_indexed,
         glossary_coverage_pct,
         glossary_avg_per_page,

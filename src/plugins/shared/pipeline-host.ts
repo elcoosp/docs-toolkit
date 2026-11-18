@@ -129,7 +129,7 @@ export async function runNativePipelineOnce(
       htmlPages: number;
       mdDocs: number;
       mermaidRendered: number;
-      linkPreviewsIndexed: number;
+      linkPreviewsIndexed: number; codeSymbolsIndexed?: number; codeSymbolLinks?: number; codeSymbolPages?: number;
       glossaryIndexed: number;
       glossaryCoveragePct: number;
       glossaryAvgPerPage: string;
@@ -152,7 +152,7 @@ export async function runNativePipelineOnce(
 
     const metrics = [`${report.htmlPages} HTML`, `${report.mdDocs} MD`];
     if (report.mermaidRendered > 0) metrics.push(`${report.mermaidRendered} diagrams`);
-    if (report.linkPreviewsIndexed > 0) metrics.push(`${report.linkPreviewsIndexed} previews`);
+    if (report.linkPreviewsIndexed > 0) metrics.push(`${report.linkPreviewsIndexed} previews`); if ((report.codeSymbolLinks ?? 0) > 0) metrics.push(`${report.codeSymbolLinks} code-links (${report.codeSymbolsIndexed} syms, ${report.codeSymbolPages} pages)`);
     if (report.glossaryIndexed > 0) {
       metrics.push(
         `${report.glossaryIndexed} glossary (${report.glossaryCoveragePct}% cov, ${report.glossaryAvgPerPage}/page)`,

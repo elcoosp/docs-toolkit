@@ -15,6 +15,7 @@ export interface LinkPreviewEntry {
 
 export interface LinkPreviewPluginOptions {
   hoverDelay?: number;
+  codeSymbols?: boolean | { maxLinksPerBlock?: number };
 }
 
 function normalizeRoute(route: string): string {
@@ -186,7 +187,12 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
     hooks: {
       'config:setup'({ addIntegration, config }) {
         rootDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
-        if (hasNativePipeline()) registerNativePipelinePlugin(rootDir, 'linkPreview', true);
+        if (hasNativePipeline()) {
+          registerNativePipelinePlugin(rootDir, 'linkPreview', true);
+          if (options.codeSymbols !== false) {
+            registerNativePipelinePlugin(rootDir, 'codeSymbols', typeof options.codeSymbols === 'object' ? options.codeSymbols : { maxLinksPerBlock: 8 });
+          }
+        }
         addIntegration({
           name: 'starlight-link-preview-integration',
           hooks: {
