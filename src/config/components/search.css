@@ -282,11 +282,23 @@
 #sl-cmdk-dialog .sl-cmdk-list {
   position: relative;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   padding: 0.6rem;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sl-color-gray-4) 55%, transparent) transparent;
+}
+
+#sl-cmdk-dialog .sl-cmdk-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#sl-cmdk-dialog .sl-cmdk-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sl-color-gray-4) 55%, transparent);
+  border-radius: 999px;
 }
 
 #sl-cmdk-dialog .sl-cmdk-group {
@@ -866,13 +878,6 @@ gap: 0.28rem;
 
 #sl-cmdk-dialog .sl-cmdk-ai-drawer__inner > .sl-cmdk-ai-grid {
   margin-top: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-@media (max-width: 640px) {
-  #sl-cmdk-dialog .sl-cmdk-ai-drawer__inner > .sl-cmdk-ai-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* True 2-line Bento tile layout */
@@ -907,11 +912,8 @@ gap: 0.28rem;
 }
 
 #sl-cmdk-dialog .sl-cmdk-ai-grid .sl-cmdk-bento-tile:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--sl-color-accent) 38%, var(--sl-color-hairline));
-  box-shadow:
-    0 5px 12px -6px color-mix(in srgb, var(--sl-color-accent) 22%, transparent),
-    0 1px 2px color-mix(in srgb, #000 5%, transparent);
+  border-color: color-mix(in srgb, var(--sl-color-accent) 42%, var(--sl-color-hairline));
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 5%, transparent);
 }
 
 #sl-cmdk-dialog .sl-cmdk-ai-grid .sl-cmdk-bento-tile:active {
