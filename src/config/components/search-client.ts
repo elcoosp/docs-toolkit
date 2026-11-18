@@ -416,36 +416,14 @@ export function initCommandSearch(): void {
   let copyToastTimer: number | undefined;
 
   function animateListCards(): void {
-    const blocks = listEl.querySelectorAll<HTMLElement>('.sl-cmdk-group, .sl-cmdk-card');
-    blocks.forEach((block, i) => {
-animate(
-block,
-{ y: [5, 0] },
-{ type: spring, stiffness: 520, damping: 32, delay: Math.min(i * 0.022, 0.12) },
-);
-});
-
-}
-async function ensurePagefind(): Promise {
-if (pagefind || pagefindFailed) return pagefind;
-try {
-const pfUrl = '/pagefind/pagefind.js';
-pagefind = await import(/* @vite-ignore */ pfUrl);
-if (typeof pagefind.init === 'function') await pagefind.init();
-} catch {
-pagefindFailed = true;
-}
-return pagefind;
-}
-function getSitePagesRaw(): SitePageEntry[] {
-    const jsonEl = root?.querySelector<HTMLScriptElement>("script[data-cmdk-pages]");
-    if (jsonEl?.textContent) {
-      try {
-        const parsed = JSON.parse(jsonEl.textContent) as SitePageEntry[];
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return [];
+    const rows = listEl.querySelectorAll<HTMLElement>(".sl-cmdk-row, .sl-cmdk-empty");
+    rows.forEach((row, i) => {
+      animate(
+        row,
+        { opacity: [0, 1], y: [7, 0] },
+        { type: spring, stiffness: 520, damping: 32, delay: Math.min(i * 0.018, 0.16) },
+      );
+    });
   }
 
   function getSitePagesRaw(): SitePageEntry[] {
@@ -965,7 +943,7 @@ function renderEmptyState(skipEntrance = false): void {
       else catMap.set(sec.key, { key: sec.key, label: sec.label, count: 1 });
     }
 
-    const validFilters = new Set(["all", ...(pinnedCount > 0 ? ["pinned"] : []), ...catMap.keys()]);
+    const validFilters = new Set(["all", "pinned", ...catMap.keys()]);
     if (!validFilters.has(activeFilter)) activeFilter = "all";
 
     tabsEl.hidden = false;
@@ -986,9 +964,7 @@ function renderEmptyState(skipEntrance = false): void {
     };
 
     tabsEl.appendChild(makeEmptyTab("all", isFr ? "Tout" : "All"));
-    if (pinnedCount > 0) {
-      tabsEl.appendChild(makeEmptyTab("pinned", isFr ? "Favoris" : "Pinned", pinnedCount));
-    }
+    tabsEl.appendChild(makeEmptyTab("pinned", isFr ? "Favoris" : "Pinned", pinnedCount));
     for (const cat of catMap.values()) {
       tabsEl.appendChild(makeEmptyTab(cat.key, cat.label, cat.count));
     }
@@ -996,7 +972,15 @@ function renderEmptyState(skipEntrance = false): void {
     listEl.replaceChildren();
     renderedItems = [];
 
-    if (activeFilter === "pinned" && pinnedPages.length > 0) {
+    if (activeFilter === "pinned") {
+      if (pinnedPages.length === 0) {
+        const empty = el("div", "sl-cmdk-empty", isFr ? "Aucune page favorite. Appuyez sur ⌘D pour en épingler une." : "No pinned pages yet. Press ⌘D or click the bookmark icon to pin a page.");
+        listEl.appendChild(empty);
+        renderPreview(undefined);
+        if (!skipEntrance) animateListCards();
+        if (statusEl) statusEl.textContent = isFr ? "0 page favorite" : "0 pinned pages";
+        return;
+      }
       const group = el("div", "sl-cmdk-group");
       const header = el("div", "sl-cmdk-group__title");
       header.appendChild(el("span", undefined, isFr ? "Pages favorites" : "Pinned pages"));
