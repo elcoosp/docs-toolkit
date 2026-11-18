@@ -503,6 +503,37 @@ export function initCommandSearch(): void {
     return out;
   }
 
+  function fuzzyScore(q, t) {
+    q = q.trim().toLowerCase(); if (!q) return 1; t = t.toLowerCase();
+    if (t === q) return 120; if (t.startsWith(q)) return 100 - Math.min(20, t.length - q.length);
+    const i = t.indexOf(q); if (i !== -1) return 80 - Math.min(25, i);
+    let qi = 0, s = 0, c = 0;
+    for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+      if (t[ti] === q[qi]) { qi++; c++; s += 4 + c * 3; } else c = 0;
+    }
+    return qi === q.length ? Math.max(10, s - Math.floor((t.length - q.length) * 0.25)) : 0;
+  }
+  function highlightFuzzyHtml(text, q) {
+    q = q.trim().toLowerCase(); if (!q) return escapeHtml(text); const lo = text.toLowerCase();
+    const di = lo.indexOf(q);
+    if (di !== -1) return escapeHtml(text.slice(0, di)) + "<mark>" + escapeHtml(text.slice(di, di + q.length)) + "</mark>" + escapeHtml(text.slice(di + q.length));
+    let qi = 0, out = "";
+    for (let i = 0; i < text.length; i++) {
+      if (qi < q.length && lo[i] === q[qi]) { out += "<mark>" + escapeHtml(text[i]) + "</mark>"; qi++; } else out += escapeHtml(text[i]);
+    }
+    return qi === q.length ? out : escapeHtml(text);
+  }
+  async function copyItemMarkdown(item) {
+    if (!item || !item.url) return;
+    const u = new URL(item.url, window.location.origin);
+    const clean = u.pathname.replace(/\/+$/, "");
+    const md = clean === "" ? "/index.md" : clean === "/fr" ? "/fr.md" : clean + ".md";
+    try {
+      const r = await fetch(md, { credentials: "same-origin" });
+      const txt = r.ok ? await r.text() : "";
+      if (txt) { await copyTextFallback(txt); if (statusEl) statusEl.textContent = isFr ? "Markdown copié (⌘⇧C)" : "Markdown copied (⌘⇧C)"; }
+    } catch {}
+  }
   function getQuickActions(): FlatItem[] {
 return [
 {
@@ -675,7 +706,7 @@ const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark
 document.documentElement.dataset.theme = next;
 try { localStorage.setItem('starlight-theme', next); } catch {}
 }
-} else if (actionId === 'copy-md') {
+} else if (actionId === 'locale') { const u = window.location.pathname; window.location.assign(isFr ? (u.replace(/^\/fr(?=\/|$)/, "") || "/") : ("/fr" + (u === "/" ? "/" : u))); } else if (actionId === 'changelog') { input.value = "log: "; handleQuery(); input.focus(); return; } else if (actionId === 'copy-md') {
 document.querySelector('#copy-markdown')?.click();
 }
 }
@@ -1452,6 +1483,7 @@ if (q.startsWith("#")) {
         href: item.url || "#",
         icon: iconHash(),
         title: item.title,
+        titleHtml: headQ ? highlightFuzzyHtml(item.title, headQ) : undefined,
         breadcrumb: item.breadcrumb,
         badge: item.section,
         showArrow: true,
@@ -1476,9 +1508,7 @@ const effectiveQ = parsedScope.query;
 if (parsedScope.scope === "changelog") {
   const entries = collectSidebarPages().filter((item) => item.sectionKey === "changelog");
   const qLow = effectiveQ.toLowerCase();
-  const matched = qLow
-    ? entries.filter((item) => item.title.toLowerCase().includes(qLow) || (item.url && item.url.toLowerCase().includes(qLow)))
-    : entries;
+  const matched = effectiveQ ? entries.map((item) => ({ item, s: Math.max(fuzzyScore(effectiveQ, item.title), item.url ? fuzzyScore(effectiveQ, item.url) : 0) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).map((x) => x.item) : entries;
   currentResults = matched.map((m) => ({
     url: m.url || (isFr ? "/fr/changelog/" : "/changelog/"),
     meta: { title: m.title },
@@ -1602,7 +1632,7 @@ if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c" && !window.getSelect
       if (current?.url) {
         e.preventDefault();
         e.stopPropagation();
-        copyItemUrl(current);
+        if (e.shiftKey) { void copyItemMarkdown(current); } else { copyItemUrl(current); }
       }
     }
   });
