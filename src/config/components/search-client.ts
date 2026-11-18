@@ -414,6 +414,8 @@ export function initCommandSearch(): void {
   let previewCopyBtn: HTMLButtonElement | null = null;
   let lastPreviewKey = '';
   let copyToastTimer: number | undefined;
+  let searchListAnimTimer: number | undefined;
+  let lastAnimatedSearchSig = '';
 
   function animateListCards(): void {
     const rows = listEl.querySelectorAll<HTMLElement>(".sl-cmdk-row, .sl-cmdk-empty");
@@ -614,33 +616,8 @@ function copyTextFallback(text: string): Promise<void> {
     updateBookmarkIconsForUrl(targetUrl, pinned);
     if (!input.value.trim()) {
       const countNow = getPinnedPages().length;
-      tabsEl.hidden = false;
-      if (countNow > 0) {
-        if (tabsEl.children.length === 0) {
-          const allBtn = el("button", "sl-cmdk-tab");
-          allBtn.type = "button";
-          allBtn.dataset.emptyView = "all";
-          allBtn.setAttribute("aria-selected", "true");
-          allBtn.textContent = isFr ? "Tout" : "All";
-          tabsEl.appendChild(allBtn);
-
-          const pinTab = el("button", "sl-cmdk-tab");
-          pinTab.type = "button";
-          pinTab.dataset.emptyView = "pinned";
-          pinTab.setAttribute("aria-selected", "false");
-          pinTab.appendChild(document.createTextNode((isFr ? "Favoris" : "Pinned") + " "));
-          pinTab.appendChild(el("span", undefined, String(countNow)));
-          tabsEl.appendChild(pinTab);
-        } else {
-          const badge = tabsEl.querySelector<HTMLElement>("[data-empty-view=\"pinned\"] span");
-          if (badge) badge.textContent = String(countNow);
-        }
-        requestAnimationFrame(() => {
-          tabsEl.dataset.collapsed = "false";
-        });
-      } else {
-        tabsEl.dataset.collapsed = "true";
-      }
+      const badge = tabsEl.querySelector<HTMLElement>("[data-empty-view=\"pinned\"] span");
+      if (badge) badge.textContent = String(countNow);
     }
     renderPreview(renderedItems[activeIndex]);
   }
@@ -1160,7 +1137,14 @@ showArrow: true,
 listEl.appendChild(navGroup);
 }
 renderPreview(renderedItems[activeIndex]);
-animateListCards();
+const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
+if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
+if (searchSig !== lastAnimatedSearchSig) {
+  searchListAnimTimer = window.setTimeout(() => {
+    lastAnimatedSearchSig = searchSig;
+    animateListCards();
+  }, 190);
+}
 if (statusEl) {
 statusEl.textContent = pagefindFailed
 ? isFr
