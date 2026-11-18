@@ -1476,42 +1476,43 @@ if (extraClass) row.classList.add(extraClass);
 return row;
 };
 const renderBentoTile = (act: FlatItem): HTMLElement => {
-const idx = renderedItems.length;
-renderedItems.push(act);
-const tile = document.createElement('button');
-tile.type = 'button';
-tile.className = 'sl-cmdk-row sl-cmdk-bento-tile';
-tile.dataset.cmdkIdx = String(idx);
-tile.setAttribute('role', 'option');
-tile.setAttribute('aria-selected', 'false');
-const top = el('span', 'sl-cmdk-bento-tile__top');
-const iconWrap = el('span', 'sl-cmdk-bento-tile__icon');
-iconWrap.appendChild(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
-const extWrap = el('span', 'sl-cmdk-bento-tile__ext');
-extWrap.appendChild(iconArrowUpRight());
-top.appendChild(iconWrap);
-top.appendChild(extWrap);
-const meta = el('span', 'sl-cmdk-bento-tile__meta');
-const nameEl = el('span', 'sl-cmdk-bento-tile__name');
-const displayTitle = act.shortTitle || act.title;
-if (cmdQ) {
-appendHighlightedExcerpt(nameEl, highlightFuzzyHtml(displayTitle, cmdQ));
-} else {
-nameEl.textContent = displayTitle;
-}
-const tagEl = el('span', 'sl-cmdk-bento-tile__tag', act.subtitle || '');
-meta.appendChild(nameEl);
-meta.appendChild(tagEl);
-tile.appendChild(top);
-tile.appendChild(meta);
-tile.addEventListener('pointermove', (ev) => {
-const rect = tile.getBoundingClientRect();
-tile.style.setProperty('--mx', (ev.clientX - rect.left) + 'px');
-tile.style.setProperty('--my', (ev.clientY - rect.top) + 'px');
-});
-return tile;
-};
-if (!cmdQ) {
+    const idx = renderedItems.length;
+    renderedItems.push(act);
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'sl-cmdk-row sl-cmdk-bento-tile';
+    tile.dataset.cmdkIdx = String(idx);
+    tile.setAttribute('role', 'option');
+    tile.setAttribute('aria-selected', 'false');
+
+    const left = el('span', 'sl-cmdk-bento-tile__left');
+    const iconWrap = el('span', 'sl-cmdk-bento-tile__icon');
+    iconWrap.appendChild(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
+    const nameEl = el('span', 'sl-cmdk-bento-tile__name');
+    const displayTitle = act.shortTitle || act.title;
+    if (cmdQ) {
+      appendHighlightedExcerpt(nameEl, highlightFuzzyHtml(displayTitle, cmdQ));
+    } else {
+      nameEl.textContent = displayTitle;
+    }
+    left.appendChild(iconWrap);
+    left.appendChild(nameEl);
+
+    const extWrap = el('span', 'sl-cmdk-bento-tile__ext');
+    extWrap.appendChild(iconArrowUpRight());
+
+    tile.appendChild(left);
+    tile.appendChild(extWrap);
+
+    tile.addEventListener('pointermove', (ev) => {
+      const rect = tile.getBoundingClientRect();
+      tile.style.setProperty('--mx', (ev.clientX - rect.left) + 'px');
+      tile.style.setProperty('--my', (ev.clientY - rect.top) + 'px');
+    });
+    return tile;
+  };
+
+  if (!cmdQ) {
 const workspaceActs = allActions.filter((a) => a.section === 'Action');
 const langActs = allActions.filter((a) => a.section === 'Language');
 const aiActs = allActions.filter((a) => a.section === 'AI');
