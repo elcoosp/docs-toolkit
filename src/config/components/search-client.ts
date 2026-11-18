@@ -472,6 +472,22 @@ export function initCommandSearch(): void {
         breadcrumb: formatBreadcrumb(href, isFr),
       });
     });
+    for (const entry of getSitePagesRaw()) {
+      if (!entry.url || seen.has(entry.url)) continue;
+      if (!entry.url.includes("/changelog")) continue;
+      const entryIsFr = entry.url === "/fr/" || entry.url.startsWith("/fr/");
+      if (isFr ? !entryIsFr : entryIsFr) continue;
+      seen.add(entry.url);
+      const sec = classifySection(entry.url, isFr);
+      out.push({
+        type: "nav",
+        title: entry.title,
+        url: entry.url,
+        section: sec.label,
+        sectionKey: sec.key,
+        breadcrumb: formatBreadcrumb(entry.url, isFr),
+      });
+    }
     return out;
   }
 
@@ -1446,7 +1462,18 @@ const localeFiltered = loaded.filter((item) => {
 const itemIsFr = item.url === '/fr/' || item.url.startsWith('/fr/');
 return isFr ? itemIsFr : !itemIsFr;
 });
-currentResults = localeFiltered.length > 0 ? localeFiltered : loaded;
+let finalResults = localeFiltered.length > 0 ? localeFiltered : loaded;
+if (finalResults.length === 0 && parsedScope.scope === "changelog") {
+  const qLow = effectiveQ.toLowerCase();
+  finalResults = collectSidebarPages()
+    .filter((item) => item.sectionKey === "changelog" && (!qLow || item.title.toLowerCase().includes(qLow) || (item.url && item.url.toLowerCase().includes(qLow))))
+    .map((m) => ({
+      url: m.url || "/changelog/",
+      meta: { title: m.title },
+      excerpt: m.breadcrumb || "Changelog",
+    }));
+}
+currentResults = finalResults;
 queryCache.set(cacheKey, currentResults);
 renderSearchResults();
 }
