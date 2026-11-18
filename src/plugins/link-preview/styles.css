@@ -87,5 +87,27 @@
   }
 }
 
-.sl-markdown-content pre code a.dt-code-symbol { color: inherit !important; text-decoration: underline dotted color-mix(in srgb, currentColor 48%, transparent) !important; text-underline-offset: 3px !important; text-decoration-thickness: 1.5px !important; border-radius: 3px !important; transition: background-color 0.14s ease, text-decoration-color 0.14s ease !important; }
-.sl-markdown-content pre code a.dt-code-symbol:hover, .sl-markdown-content pre code a.dt-code-symbol:focus-visible { text-decoration-style: solid !important; text-decoration-color: var(--sl-color-accent-high) !important; background: color-mix(in srgb, var(--sl-color-accent) 16%, transparent) !important; }
+html body .expressive-code pre code a.dt-code-symbol,
+html body .sl-markdown-content pre code a.dt-code-symbol {
+  color: inherit !important;
+  font: inherit !important;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  background-image: radial-gradient(circle, color-mix(in srgb, currentColor 45%, transparent) 1px, transparent 1px) !important;
+  background-position: 0 100% !important;
+  background-size: 4px 1.5px !important;
+  background-repeat: repeat-x !important;
+  padding-bottom: 1px !important;
+  border-radius: 3px !important;
+  transition: background-color 140ms ease !important;
+}
+html body .expressive-code pre code a.dt-code-symbol:hover,
+html body .expressive-code pre code a.dt-code-symbol:focus-visible,
+html body .sl-markdown-content pre code a.dt-code-symbol:hover,
+html body .sl-markdown-content pre code a.dt-code-symbol:focus-visible {
+  color: inherit !important;
+  text-decoration: none !important;
+  background-color: color-mix(in srgb, var(--sl-color-accent) 15%, transparent) !important;
+  background-image: linear-gradient(var(--sl-color-accent-high), var(--sl-color-accent-high)) !important;
+  background-size: 100% 1.5px !important;
+}

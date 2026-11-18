@@ -834,6 +834,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     // Safe merge: keep toolkit defaults, let site overrides win only for specific components
     components: {
       Banner: '@elcoosp/docs-toolkit/src/config/components/Banner.astro',
+      Search: '@elcoosp/docs-toolkit/src/config/components/Search.astro',
       PageTitle: '@elcoosp/docs-toolkit/src/config/components/PageTitle.astro',
       MarkdownContent: '@elcoosp/docs-toolkit/src/config/components/MarkdownContent.astro',
       TableOfContents: '@elcoosp/docs-toolkit/src/config/components/TableOfContents.astro',

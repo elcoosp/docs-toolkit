@@ -11,7 +11,7 @@ const showBar = Boolean(ctx) && !isSplash && !is404;
 ---
 
 {showBar && ctx && (
-  <div class="sl-reading-context" aria-label="Page metadata">
+  <div class="sl-reading-context" data-reading-minutes={ctx.minutes} aria-label="Page metadata">
     <div class="sl-reading-context-items">
       <span class="sl-rc-pill sl-rc-section">{ctx.sectionLabel}</span>
 

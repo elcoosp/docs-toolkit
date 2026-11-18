@@ -226,8 +226,23 @@ function measureSectionWords(sections: TocSection[]): void {
       text += ' ' + (node.textContent ?? '');
       node = node.nextElementSibling;
     }
-    const count = text.trim().split(/\s+/u).filter(Boolean).length;
-    cur.words = Math.max(15, count);
+    let codeWords = 0;
+    let proseWords = 0;
+    let n2: Element | null = cur.heading.nextElementSibling;
+    const hWords = (cur.heading.textContent ?? "").trim().split(/\s+/u).filter(Boolean).length;
+    proseWords += hWords;
+    while (n2 && n2 !== nextHeading && !n2.contains(nextHeading)) {
+      const pres = Array.from(n2.querySelectorAll("pre"));
+      if (n2.tagName === "PRE") pres.push(n2);
+      let cw = 0;
+      for (const p of pres) cw += (p.textContent ?? "").trim().split(/\s+/u).filter(Boolean).length;
+      const allW = (n2.textContent ?? "").trim().split(/\s+/u).filter(Boolean).length;
+      codeWords += cw;
+      proseWords += Math.max(0, allW - cw);
+      n2 = n2.nextElementSibling;
+    }
+    const weightedWords = proseWords + codeWords * 2;
+    cur.words = Math.max(15, weightedWords);
   }
 }
 
@@ -317,7 +332,7 @@ function mountSmartToc(opts: SmartTocClientOptions): () => void {
       }
       if (state === 'active') {
         const span = Math.max(1, sec.endY - sec.startY);
-        const secRatio = Math.min(1, Math.max(0, (viewportProbe - sec.startY) / span));
+        const secRatio = window.scrollY <= 16 ? 0 : Math.min(1, Math.max(0, (viewportProbe - sec.startY) / span));
         remainingWords += sec.words * (1 - secRatio);
       } else if (state === 'upcoming') {
         remainingWords += sec.words;
@@ -328,7 +343,9 @@ function mountSmartToc(opts: SmartTocClientOptions): () => void {
       const ratio = done ? 1 : Math.min(1, Math.max(0, 1 - remainingWords / Math.max(1, totalWords)));
       const offset = RING_CIRCUMFERENCE * (1 - ratio);
       meta.ringProgress.style.strokeDashoffset = offset.toFixed(2);
-      const minsLeft = done ? 0 : Math.max(1, Math.ceil(remainingWords / wpm));
+      const headerMins = Number(document.querySelector(".sl-reading-context")?.getAttribute("data-reading-minutes") || 0);
+      const baseMins = headerMins > 0 ? headerMins : Math.max(1, Math.round(totalWords / wpm));
+      const minsLeft = done ? 0 : Math.max(1, Math.round(baseMins * (1 - ratio)));
       const label = formatRemaining(minsLeft, isFr);
       if (meta.labelEl.textContent !== label) meta.labelEl.textContent = label;
       meta.root.dataset.done = done ? 'true' : 'false';

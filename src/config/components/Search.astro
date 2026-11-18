@@ -1,0 +1,139 @@
+---
+import { getCollection } from 'astro:content';
+import './search.css';
+
+const isFr = Astro.currentLocale === 'fr' || Astro.url.pathname === '/fr' || Astro.url.pathname.startsWith('/fr/');
+const t = isFr
+  ? {
+      button: 'Rechercher…',
+      ariaLabel: 'Ouvrir la recherche',
+      placeholder: 'Rechercher dans la documentation, les guides, les commandes…',
+      clear: 'Effacer',
+      nav: 'Naviguer',
+      open: 'Ouvrir',
+      newTab: 'Nouvel onglet',
+      newTab: 'Nouvel onglet',
+      newTab: 'Nouvel onglet',
+      copy: 'Copier le lien',
+      pin: 'Favori',
+      filter: 'Filtrer',
+      close: 'Fermer',
+    }
+  : {
+      button: 'Search…',
+      ariaLabel: 'Open search',
+      placeholder: 'Search docs, guides, commands, sections…',
+      clear: 'Clear',
+      nav: 'Navigate',
+      open: 'Open',
+      newTab: 'New tab',
+      newTab: 'New tab',
+      newTab: 'New tab',
+      copy: 'Copy link',
+      pin: 'Pin',
+      filter: 'Filter',
+      close: 'Close',
+    };
+
+const allDocs = await getCollection('docs').catch(() => []);
+const sectionOrder: Record<string, number> = {
+  tutorials: 1,
+  guides: 2,
+  reference: 3,
+  explanation: 4,
+  blog: 5,
+  changelog: 6,
+};
+const sitePages = allDocs
+  .filter((entry) => {
+    if (entry.data?.draft) return false;
+    const id = entry.id.replace(/\.(md|mdx)$/, "");
+    const entryIsFr = id === "fr" || id.startsWith("fr/");
+    if (entryIsFr !== isFr) return false;
+    const stripped = isFr ? id.replace(/^fr\/?/, "") : id;
+    return stripped !== "" && stripped !== "index";
+  })
+  .map((entry) => {
+    const cleanId = entry.id.replace(/\.(md|mdx)$/, "").replace(/(^|\/)index$/, "");
+    const url = "/" + (cleanId ? cleanId + "/" : "");
+    const stripped = isFr ? cleanId.replace(/^fr\/?/, "") : cleanId;
+    const topSeg = stripped.split("/").at(0) || "docs";
+    const title = typeof entry.data?.title === "string" && entry.data.title.trim() ? entry.data.title.trim() : topSeg;
+    const body = typeof entry.body === "string" ? entry.body : "";
+    const headings = Array.from(body.matchAll(/^#{2,3}\s+(.+)$/gm))
+      .map((m) => {
+        const raw = (m.at(1) ?? "").replace(/[`*_]/g, "").replace(/\s*\{#[^}]+\}\s*$/, "").trim();
+        const slug = raw
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        return { title: raw, slug };
+      })
+      .filter((h) => h.title && h.slug);
+    return { title, url, headings, order: sectionOrder[topSeg] ?? 9 };
+  })
+  .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+  .map(({ title, url, headings }) => ({ title, url, headings }));
+---
+
+<div class="sl-cmdk-root" data-cmdk-root data-locale={isFr ? 'fr' : 'en'}>
+  <script type="application/json" data-cmdk-pages set:html={JSON.stringify(sitePages)} />
+  <button type="button" class="sl-cmdk-trigger" data-cmdk-open aria-label={t.ariaLabel}>
+    <span class="sl-cmdk-trigger__left">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.3-4.3" />
+      </svg>
+      <span class="sl-cmdk-trigger__label">{t.button}</span>
+    </span>
+    <kbd class="sl-cmdk-trigger__kbd" data-cmdk-shortcut>⌘K</kbd>
+  </button>
+
+  <dialog id="sl-cmdk-dialog" class="sl-cmdk-dialog" aria-label={t.ariaLabel}>
+    <div class="sl-cmdk-shell">
+      <div class="sl-cmdk-panel">
+        <div class="sl-cmdk-header">
+          <svg class="sl-cmdk-header__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            id="sl-cmdk-input"
+            class="sl-cmdk-input"
+            type="search"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder={t.placeholder}
+          />
+          <button id="sl-cmdk-clear" type="button" class="sl-cmdk-clear" data-visible="false" tabindex="-1" aria-hidden="true">{t.clear}</button>
+        </div>
+
+        <div id="sl-cmdk-tabs" class="sl-cmdk-tabs" role="group" hidden></div>
+
+        <div class="sl-cmdk-body">
+          <div id="sl-cmdk-list" class="sl-cmdk-list" role="listbox"></div>
+          <aside id="sl-cmdk-preview" class="sl-cmdk-preview" aria-live="polite"></aside>
+        </div>
+
+        <div class="sl-cmdk-footer">
+          <div class="sl-cmdk-hints">
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↑↓</kbd> {t.nav}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↵</kbd> {t.open}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-newtab-kbd>⌘↵</kbd> {t.newTab}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-copy-kbd>⌘C</kbd> {t.copy}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-pin-kbd>⌘D</kbd> {t.pin}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">Tab</kbd> {t.filter}</span>
+            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">ESC</kbd> {t.close}</span>
+          </div>
+          <span id="sl-cmdk-status"></span>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  import './search-client.ts';
+</script>

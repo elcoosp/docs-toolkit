@@ -10,6 +10,32 @@ interface LinkPreviewEntry {
 }
 
 let initialized = false;
+const CODE_SYM_CSS = `
+.sl-markdown-content pre code a.dt-code-symbol,
+.expressive-code pre code a.dt-code-symbol {
+  color: inherit !important;
+  font: inherit !important;
+  text-decoration: none !important;
+  background-image: linear-gradient(to right, color-mix(in srgb, currentColor 38%, transparent) 55%, transparent 0%) !important;
+  background-position: 0 100% !important;
+  background-size: 4px 1px !important;
+  background-repeat: repeat-x !important;
+  padding-bottom: 1px !important;
+  border-radius: 2px !important;
+  transition: background-color 140ms ease, background-image 140ms ease !important;
+}
+.sl-markdown-content pre code a.dt-code-symbol:hover,
+.sl-markdown-content pre code a.dt-code-symbol:focus-visible,
+.expressive-code pre code a.dt-code-symbol:hover,
+.expressive-code pre code a.dt-code-symbol:focus-visible {
+  color: inherit !important;
+  text-decoration: none !important;
+  background-color: color-mix(in srgb, var(--sl-color-accent) 14%, transparent) !important;
+  background-image: linear-gradient(to right, var(--sl-color-accent-high, var(--sl-color-accent)) 100%, transparent 0%) !important;
+  background-size: 100% 1.5px !important;
+}
+`;
+
 
 function normalizePathname(pathname: string): string {
   let p = pathname.replace(/[#?].*$/, '');
@@ -42,6 +68,7 @@ export function initLinkPreview(opts: { hoverDelay?: number } = {}): void {
   if (typeof window === 'undefined' || initialized) return;
   initialized = true;
 
+  if (!document.querySelector("#dt-code-symbol-style")) { const st = document.createElement("style"); st.id = "dt-code-symbol-style"; st.textContent = CODE_SYM_CSS; document.head.append(st); }
   const hoverDelay = opts.hoverDelay ?? 180;
   const index = (LINK_PREVIEWS ?? {}) as Record<string, LinkPreviewEntry>;
   const card = createHoverCardController();
