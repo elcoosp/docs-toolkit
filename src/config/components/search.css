@@ -734,7 +734,9 @@ gap: 0.28rem;
 #sl-cmdk-dialog mark {
   background: color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
   color: var(--sl-color-accent-high);
-  border-radius: 0.25rem;
-  padding: 0 0.2rem;
+  border-radius: 0.18rem;
+  padding: 0 0.04em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
   font-weight: 600;
 }
