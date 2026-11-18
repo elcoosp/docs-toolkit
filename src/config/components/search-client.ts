@@ -977,15 +977,14 @@ btn.appendChild(el('span', undefined, String(info.count)));
 tabsEl!.appendChild(btn);
 }
 }
-function updateActiveRow(pulse = false): void {
+function updateActiveRow(shouldScroll = true): void {
 const rows = listEl!.querySelectorAll<HTMLElement>('[data-cmdk-idx]');
 rows.forEach((row) => {
 const idx = Number(row.dataset.cmdkIdx);
 const selected = idx === activeIndex;
 row.setAttribute('aria-selected', selected ? 'true' : 'false');
-if (selected) {
+if (selected && shouldScroll) {
 row.scrollIntoView({ block: 'nearest' });
-
 }
 });
 

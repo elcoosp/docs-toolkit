@@ -282,6 +282,7 @@
 #sl-cmdk-dialog .sl-cmdk-list {
   position: relative;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 0.6rem;
   display: flex;
   flex-direction: column;
