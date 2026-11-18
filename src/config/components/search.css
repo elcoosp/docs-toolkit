@@ -821,6 +821,8 @@ gap: 0.28rem;
 }
 
 #sl-cmdk-dialog .sl-cmdk-preview__code {
+  display: block;
+  flex-shrink: 0;
   margin: 0.4rem 0 0;
   padding: 0.55rem 0.68rem;
   border-radius: 0.48rem;

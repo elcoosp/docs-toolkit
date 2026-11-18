@@ -688,7 +688,10 @@ async function hydratePagePreview(url: string): Promise<void> {
             paraCount += 1;
           }
         } else if (node.tagName === "PRE" && codeCount < 1) {
-          const rawCode = node.textContent?.trim() || "";
+          const ecLines = Array.from(node.querySelectorAll(".ec-line .code"));
+          const rawCode = ecLines.length > 0
+            ? ecLines.map((l) => l.textContent || "").join("\n").trim()
+            : (node.textContent?.trim() || "");
           if (rawCode) {
             blocks.push({ kind: "code", text: rawCode.split("\n").slice(0, 10).join("\n") });
             codeCount += 1;
