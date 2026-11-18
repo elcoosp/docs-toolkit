@@ -419,7 +419,7 @@ export function initCommandSearch(): void {
 
   function syncSelectionIndicator(instant = false): void {
     const selected = listEl!.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
-    if (!selected || selected.closest('.sl-cmdk-card')) {
+    if (!selected || selected.closest('.sl-cmdk-card') || selected.closest('.sl-cmdk-ai-grid')) {
       indicatorEl.style.opacity = '0';
       return;
     }
@@ -736,14 +736,35 @@ function runAction(itemOrId?: FlatItem | string): void {
   const actionId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.actionId;
   const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
   if (actionId === 'toggle-ai-more') {
-    aiCommandsExpanded = !aiCommandsExpanded;
+    if (aiCommandsExpanded) {
+      const extraTiles = Array.from(listEl!.querySelectorAll<HTMLElement>('.sl-cmdk-ai-grid .sl-cmdk-row')).slice(2);
+      const anims = extraTiles.map((tile) => {
+        tile.style.overflow = 'hidden';
+        const h = tile.offsetHeight;
+        return animate(
+          tile,
+          { height: [h + 'px', '0px'], opacity: new Array(1, 0), paddingTop: ['0.5rem', '0px'], paddingBottom: ['0.5rem', '0px'] },
+          { duration: 0.17 },
+        ).finished;
+      });
+      if (listEl!.scrollTop > 0) {
+        listEl!.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      void Promise.all(anims).then(() => {
+        aiCommandsExpanded = false;
+        void handleQuery().then(() => {
+          const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
+          setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), false);
+          syncSelectionIndicator(true);
+          input!.focus();
+        });
+      });
+      return;
+    }
+    aiCommandsExpanded = true;
     void handleQuery().then(() => {
       const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
-      const targetIdx = toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1);
-      if (!aiCommandsExpanded) {
-        listEl!.scrollTop = 0;
-      }
-      setActive(targetIdx, aiCommandsExpanded);
+      setActive(toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1), true);
       syncSelectionIndicator(true);
       input!.focus();
     });
@@ -1459,7 +1480,15 @@ if (q.startsWith("/") || q.startsWith(">")) {
       title: displayTitle,
       titleHtml: cmdQ ? highlightFuzzyHtml(displayTitle, cmdQ) : undefined,
       kbd: act.subtitle,
+      showArrow: useShortTitle,
     });
+    if (useShortTitle) {
+      row.addEventListener('pointermove', (ev) => {
+        const rect = row.getBoundingClientRect();
+        row.style.setProperty('--mx', (ev.clientX - rect.left) + 'px');
+        row.style.setProperty('--my', (ev.clientY - rect.top) + 'px');
+      });
+    }
     if (extraClass) row.classList.add(extraClass);
     return row;
   };
@@ -1496,7 +1525,18 @@ if (q.startsWith("/") || q.startsWith(">")) {
 
       const visibleAi = aiCommandsExpanded ? aiActs : aiActs.slice(0, 2);
       const grid = el("div", "sl-cmdk-ai-grid");
-      for (const act of visibleAi) grid.appendChild(renderActionRow(act, undefined, true));
+      visibleAi.forEach((act, i) => {
+        const tile = renderActionRow(act, undefined, true);
+        if (aiCommandsExpanded && i >= 2) {
+          tile.style.opacity = '0';
+          animate(
+            tile,
+            { opacity: new Array(0, 1), y: new Array(6, 0), scale: [0.97, 1] },
+            { duration: 0.22, delay: Math.min((i - 2) * 0.022, 0.22) },
+          );
+        }
+        grid.appendChild(tile);
+      });
       g.appendChild(grid);
 
       if (aiActs.length > 2) {
