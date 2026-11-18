@@ -441,7 +441,9 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   }
 
   const landingCss = '@elcoosp/docs-toolkit/src/styles/landing.css';
-  const toolkitI18nDir = fileURLToPath(new URL('../../i18n', import.meta.url));
+  const toolkitI18nDir = [new URL('../i18n', import.meta.url), new URL('../../i18n', import.meta.url)]
+    .map((u) => fileURLToPath(u))
+    .find((d) => fs.existsSync(d)) ?? fileURLToPath(new URL('../../i18n', import.meta.url));
   const siteI18nDir = path.join(path.dirname(findDocsRoot()), 'i18n');
   if (fs.existsSync(toolkitI18nDir)) {
     fs.mkdirSync(siteI18nDir, { recursive: true });
@@ -734,6 +736,23 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   starlightPlugins.push(unwrapPlugin(starlightAutoSidebar)());
   starlightPlugins.push(unwrapPlugin(starlightChangelogs)());
 
+  starlightPlugins.push({
+    name: 'docs-toolkit:i18n',
+    hooks: {
+      'config:setup'({ injectTranslations }: any) {
+        if (typeof injectTranslations !== 'function' || !fs.existsSync(toolkitI18nDir)) return;
+        const translations: Record<string, Record<string, string>> = {};
+        for (const file of fs.readdirSync(toolkitI18nDir)) {
+          if (!file.endsWith('.json')) continue;
+          const locale = file.slice(0, -5);
+          try {
+            translations[locale] = JSON.parse(fs.readFileSync(path.join(toolkitI18nDir, file), 'utf8'));
+          } catch {}
+        }
+        injectTranslations(translations);
+      },
+    },
+  });
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
   starlightPlugins.push(
