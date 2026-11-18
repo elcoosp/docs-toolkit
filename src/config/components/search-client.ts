@@ -513,6 +513,7 @@ export function initCommandSearch(): void {
     }
     return qi === q.length ? Math.max(10, s - Math.floor((t.length - q.length) * 0.25)) : 0;
   }
+  function escapeHtml(s: string): string { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function highlightFuzzyHtml(text, q) {
     q = q.trim().toLowerCase(); if (!q) return escapeHtml(text); const lo = text.toLowerCase();
     const di = lo.indexOf(q);
@@ -1370,12 +1371,7 @@ if (q.startsWith("/") || q.startsWith(">")) {
   tabsEl.dataset.collapsed = "true";
   listEl.replaceChildren();
   renderedItems = [];
-  const matchedActions = getQuickActions().filter(
-    (a) =>
-      !cmdQ ||
-      a.title.toLowerCase().includes(cmdQ) ||
-      (a.subtitle && a.subtitle.toLowerCase().includes(cmdQ)),
-  );
+  const matchedActions = getQuickActions().map((a) => ({ a, s: !cmdQ ? 1 : Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).map((x) => x.a);
   if (matchedActions.length === 0) {
     const empty = el("div", "sl-cmdk-empty");
     empty.appendChild(document.createTextNode(isFr ? "Aucune commande pour « " : "No commands matching “"));
