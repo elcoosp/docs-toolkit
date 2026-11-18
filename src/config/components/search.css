@@ -894,11 +894,12 @@ gap: 0.28rem;
 
 /* True 2-line Bento tile layout */
 #sl-cmdk-dialog .sl-cmdk-ai-grid .sl-cmdk-row.sl-cmdk-bento-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  text-align: left !important;
   gap: 0.5rem;
   min-height: 4.35rem;
   padding: 0.62rem 0.68rem;
@@ -996,7 +997,9 @@ gap: 0.28rem;
 #sl-cmdk-dialog .sl-cmdk-bento-tile__meta {
   display: flex;
   flex-direction: column;
-  gap: 0.08rem;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
   min-width: 0;
 }
 
