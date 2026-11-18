@@ -442,3 +442,75 @@ fn main() {
     let svgs: Vec<String> = blocks.iter().map(|b| render_flowchart(b)).collect();
     print!("{}", svgs.join("\n===MERMAID_SEP===\n"));
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_entities_and_xml_escaping() {
+        assert_eq!(decode_entities("A &rarr; B &larr; C &amp; &lt;tag&gt; &quot;q&quot;"), "A → B ← C & <tag> \"q\"");
+        assert_eq!(escape_xml("<a & \"b\">"), "&lt;a &amp; &quot;b&quot;&gt;");
+        assert_eq!(strip_tags("<b>Hello</b> &rarr; <i>World</i>"), "Hello → World");
+    }
+
+    #[test]
+    fn test_split_label_and_node_tokens() {
+        assert_eq!(split_label(""), (String::new(), None));
+        assert_eq!(split_label("\"Single Line\""), ("Single Line".to_string(), None));
+        assert_eq!(
+            split_label("Title<br/>Sub 1<br />Sub 2<br>Sub 3"),
+            ("Title".to_string(), Some("Sub 1 · Sub 2 · Sub 3".to_string()))
+        );
+
+        assert_eq!(
+            parse_node_token("db[(Postgres<br/>v16)]"),
+            ("db".to_string(), Some(("Postgres".to_string(), Some("v16".to_string()), true)))
+        );
+        assert_eq!(
+            parse_node_token("api[API Gateway]"),
+            ("api".to_string(), Some(("API Gateway".to_string(), None, false)))
+        );
+        assert_eq!(
+            parse_node_token("worker(Async Worker)"),
+            ("worker".to_string(), Some(("Async Worker".to_string(), None, false)))
+        );
+        assert_eq!(parse_node_token("plain_node"), ("plain_node".to_string(), None));
+    }
+
+    #[test]
+    fn test_parse_edge_line_variants() {
+        let hops = parse_edge_line("A[Client] -->|HTTP| B(API) -.->|async| C[(DB)] -- flush --> D");
+        assert_eq!(hops.len(), 4);
+        assert_eq!(hops[0], ("A[Client]".to_string(), None, false));
+        assert_eq!(hops[1], ("B(API)".to_string(), Some("HTTP".to_string()), false));
+        assert_eq!(hops[2], ("C[(DB)]".to_string(), Some("async".to_string()), true));
+        assert_eq!(hops[3], ("D".to_string(), Some("flush".to_string()), false));
+
+        let dashed_unlabeled = parse_edge_line("X -.-> Y");
+        assert_eq!(dashed_unlabeled, vec![("X".to_string(), None, false), ("Y".to_string(), None, true)]);
+    }
+
+    #[test]
+    fn test_render_flowchart_td_lr_cycle_and_empty() {
+        assert_eq!(render_flowchart("%% comment only\n\n"), "");
+
+        let td = render_flowchart(
+            "flowchart TD\n             %% pipeline\n             A[Ingest<br/>MDX] & B[Parse<br/>HTML] -->|parallel| C[(Index)]\n             C -.->|emit| D(Output)\n             Standalone",
+        );
+        assert!(td.contains("<figure class=\"sl-static-diagram\">"));
+        assert!(td.contains("Ingest"));
+        assert!(td.contains("MDX"));
+        assert!(td.contains("parallel"));
+        assert!(td.contains("stroke-dasharray=\"5 4\""));
+        assert!(td.contains("rx=\"16.0\""));
+        assert!(td.contains("Standalone"));
+
+        let lr_cycle = render_flowchart(
+            "graph LR\n             A[Start] --> B[Loop]\n             B --> A\n             A[Start Updated]",
+        );
+        assert!(lr_cycle.contains("Start Updated"));
+        assert!(lr_cycle.contains("<svg viewBox="));
+    }
+}
