@@ -235,7 +235,7 @@ function appendHighlightedText(target: HTMLElement, text: string, rawQuery: stri
     target.textContent = text;
     return;
   }
-  const escaped = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\\\function appendHighlightedExcerpt(")).join("|");
+  const escaped = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\" + String.fromCharCode(36) + "&")).join("|");
   const regex = new RegExp(`(${escaped})`, "gi");
   const parts = text.split(regex);
   for (const part of parts) {
