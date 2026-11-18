@@ -1258,7 +1258,14 @@ showArrow: true,
 listEl.appendChild(card);
 }
 renderPreview(renderedItems[activeIndex]);
-animateListCards();
+const searchSig = input.value.trim() + "::" + activeFilter + "::" + renderedItems.length;
+if (searchListAnimTimer) window.clearTimeout(searchListAnimTimer);
+if (searchSig !== lastAnimatedSearchSig) {
+  searchListAnimTimer = window.setTimeout(() => {
+    lastAnimatedSearchSig = searchSig;
+    animateListCards();
+  }, 190);
+}
 if (statusEl) {
 statusEl.textContent = isFr
 ? filtered.length + ' page' + (filtered.length > 1 ? 's' : '') + ' trouvée' + (filtered.length > 1 ? 's' : '')
