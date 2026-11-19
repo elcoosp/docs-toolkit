@@ -87,5 +87,7 @@
   "llms.optional": "Optionnel",
   "llms.fullSubtitle": "documentation complète",
   "llms.smallSubtitle": "résumé essentiel",
-  "llms.localeLabel": "Français"
+  "llms.localeLabel": "Français",
+  "conceptTrail.label": "S’appuie sur",
+  "conceptTrail.ariaLabel": "Concepts prérequis"
 }
