@@ -457,6 +457,58 @@ export function initCommandSearch(): void {
     html?: string;
     text?: string;
   }
+  interface DocGraphEntry {
+    title: string;
+    pageRank: number;
+    incoming: Array<{ route: string; title: string }>;
+    outgoing: Array<{ route: string; title: string }>;
+  }
+  const docGraphMap = new Map<string, DocGraphEntry>();
+  let docGraphLoaded = false;
+  let docGraphLoading = false;
+  async function ensureDocGraph(): Promise<void> {
+    if (docGraphLoaded || docGraphLoading) return;
+    docGraphLoading = true;
+    try {
+      const res = await fetch('/graph.json', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        nodes?: Array<{ route: string; title: string; pageRank: number }>;
+        edges?: Array<{ source: string; target: string }>;
+      };
+      const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+      const edges = Array.isArray(data.edges) ? data.edges : [];
+      const titleByRoute = new Map<string, string>();
+      for (const n of nodes) {
+        const key = normalizePath(n.route);
+        titleByRoute.set(key, n.title || n.route);
+        docGraphMap.set(key, {
+          title: n.title || n.route,
+          pageRank: n.pageRank || 0,
+          incoming: [],
+          outgoing: [],
+        });
+      }
+      for (const e of edges) {
+        const src = normalizePath(e.source);
+        const dst = normalizePath(e.target);
+        const srcNode = docGraphMap.get(src);
+        const dstNode = docGraphMap.get(dst);
+        if (srcNode && dstNode) {
+          if (srcNode.outgoing.length < 4 && !srcNode.outgoing.some((x) => x.route === dst)) {
+            srcNode.outgoing.push({ route: dst, title: titleByRoute.get(dst) || dst });
+          }
+          if (dstNode.incoming.length < 4 && !dstNode.incoming.some((x) => x.route === src)) {
+            dstNode.incoming.push({ route: src, title: titleByRoute.get(src) || src });
+          }
+        }
+      }
+      docGraphLoaded = true;
+    } catch {
+    } finally {
+      docGraphLoading = false;
+    }
+  }
   const pageMetaCache = new Map<string, { blocks: PreviewBlock[]; subs: SubResult[] }>();
   const pendingMetaUrls = new Set<string>();
   let previewCopyBtn: HTMLButtonElement | null = null;
@@ -1177,6 +1229,31 @@ export function initCommandSearch(): void {
         subsBox.appendChild(a);
       });
       top.appendChild(subsBox);
+    }
+
+    const graphInfo = item.url ? docGraphMap.get(normalizePath(item.url)) : undefined;
+    if (graphInfo && (graphInfo.outgoing.length > 0 || graphInfo.incoming.length > 0)) {
+      const graphBox = el('div', 'sl-cmdk-preview__subs sl-cmdk-preview__graph');
+      graphBox.appendChild(
+        el('div', 'sl-cmdk-preview__subs-label', tr('cmdk.graphConnections', 'Connected pages')),
+      );
+      for (const outRef of graphInfo.outgoing.slice(0, 3)) {
+        const a = el('a', 'sl-cmdk-preview__sub-link');
+        a.href = outRef.route;
+        const left = el('span', 'sl-cmdk-preview__sub-left');
+        left.appendChild(document.createTextNode('→ ' + outRef.title));
+        a.appendChild(left);
+        graphBox.appendChild(a);
+      }
+      for (const inRef of graphInfo.incoming.slice(0, 3)) {
+        const a = el('a', 'sl-cmdk-preview__sub-link');
+        a.href = inRef.route;
+        const left = el('span', 'sl-cmdk-preview__sub-left');
+        left.appendChild(document.createTextNode('← ' + inRef.title));
+        a.appendChild(left);
+        graphBox.appendChild(a);
+      }
+      top.appendChild(graphBox);
     }
 
     previewEl.appendChild(top);
@@ -2064,6 +2141,15 @@ export function initCommandSearch(): void {
       return isFr ? itemIsFr : !itemIsFr;
     });
     let finalResults = localeFiltered.length > 0 ? localeFiltered : loaded;
+    if (docGraphMap.size > 1 && finalResults.length > 1) {
+      const head = finalResults[0]!;
+      const tail = finalResults.slice(1).toSorted((a, b) => {
+        const pa = docGraphMap.get(normalizePath(a.url))?.pageRank ?? 0;
+        const pb = docGraphMap.get(normalizePath(b.url))?.pageRank ?? 0;
+        return pb - pa;
+      });
+      finalResults = [head, ...tail];
+    }
     if (finalResults.length === 0 && parsedScope.scope === 'changelog') {
       const qLow = effectiveQ.toLowerCase();
       finalResults = collectSidebarPages()
@@ -2091,6 +2177,7 @@ export function initCommandSearch(): void {
     if (!input!.value.trim()) renderEmptyState();
 
     ensurePagefind();
+    void ensureDocGraph();
     animate(panel, { opacity: new Array(0, 1), scale: [0.985, 1], y: [-4, 0] }, { duration: 0.16 });
     requestAnimationFrame(() => input!.focus());
   }
