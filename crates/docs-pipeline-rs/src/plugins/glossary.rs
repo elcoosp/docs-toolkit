@@ -20,6 +20,7 @@ pub struct GlossaryReport {
     pub avg_per_page: String,
     pub warnings: Vec<String>,
     pub errors: Vec<String>,
+    pub entries: Vec<GlossaryEntry>,
 }
 
 const GENERIC_HEADINGS: &[&str] = &[
@@ -432,5 +433,6 @@ report.warnings.push(format!("Unmatched glossary terms (0 prose hits): {}.", orp
 let n = content_pages.len();
 report.coverage_pct = if n > 0 { ((pages_with_matches as f64 / n as f64) * 100.0).round() as usize } else { 0 };
 report.avg_per_page = if n > 0 { format!("{:.2}", total_matches as f64 / n as f64) } else { "0.00".to_string() };
-report
+    report.entries = entries;
+    report
 }
