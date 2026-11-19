@@ -91,6 +91,14 @@ function loadMergedI18n(siteRoot: string): Record<string, Record<string, string>
   }
   return dicts;
 }
+function buildConceptTrailI18n(dicts: Record<string, Record<string, string>>, def: string) {
+  const fb = dicts[def] ?? dicts.en ?? {};
+  const out: Record<string, { label: string; ariaLabel: string }> = {};
+  for (const [loc, d] of Object.entries(dicts)) {
+    out[loc] = { label: d['conceptTrail.label'] ?? fb['conceptTrail.label'] ?? 'Builds on', ariaLabel: d['conceptTrail.ariaLabel'] ?? fb['conceptTrail.ariaLabel'] ?? 'Prerequisite concepts' };
+  }
+  return out;
+}
 function buildSinceBadgesI18n(dicts: Record<string, Record<string, string>>, def: string) {
   const fb = dicts[def] ?? dicts.en ?? {};
   const out: Record<string, { new: string; breaking: string; deprecated: string }> = {};
@@ -119,7 +127,7 @@ export async function runNativePipelineOnce(
       distDir,
       defaultLocale: state.defaultLocale,
       locales: Array.from(state.locales),
-      i18n: loadMergedI18n(state.siteRoot), sinceBadgesI18n: buildSinceBadgesI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
+      i18n: loadMergedI18n(state.siteRoot), sinceBadgesI18n: buildSinceBadgesI18n(loadMergedI18n(state.siteRoot), state.defaultLocale), conceptTrailI18n: buildConceptTrailI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
       ...state.plugins,
     };
 
@@ -149,7 +157,7 @@ export async function runNativePipelineOnce(
       htmlPages: number;
       mdDocs: number;
       mermaidRendered: number;
-      linkPreviewsIndexed: number; codeSymbolsIndexed?: number; codeSymbolLinks?: number; codeSymbolPages?: number; sinceBadgesIndexed?: number; sinceBadgesInjected?: number; sinceBadgesPages?: number;
+      linkPreviewsIndexed: number; codeSymbolsIndexed?: number; codeSymbolLinks?: number; codeSymbolPages?: number; sinceBadgesIndexed?: number; sinceBadgesInjected?: number; sinceBadgesPages?: number; conceptTrailPages?: number; conceptTrailLinks?: number;
       glossaryIndexed: number;
       glossaryCoveragePct: number;
       glossaryAvgPerPage: string;
@@ -173,7 +181,7 @@ export async function runNativePipelineOnce(
     const metrics = [`${report.htmlPages} HTML`, `${report.mdDocs} MD`];
     if (report.mermaidRendered > 0) metrics.push(`${report.mermaidRendered} diagrams`);
     if (report.linkPreviewsIndexed > 0) metrics.push(`${report.linkPreviewsIndexed} previews`); if ((report.codeSymbolLinks ?? 0) > 0) metrics.push(`${report.codeSymbolLinks} code-links (${report.codeSymbolsIndexed} syms, ${report.codeSymbolPages} pages)`);
-    if ((report.sinceBadgesInjected ?? 0) > 0) metrics.push(`${report.sinceBadgesInjected} since-badges (${report.sinceBadgesPages} pages)`);
+    if ((report.sinceBadgesInjected ?? 0) > 0) metrics.push(`${report.sinceBadgesInjected} since-badges (${report.sinceBadgesPages} pages)`); if ((report.conceptTrailLinks ?? 0) > 0) metrics.push(`${report.conceptTrailLinks} concept-trail (${report.conceptTrailPages} pages)`);
     if (report.glossaryIndexed > 0) {
       metrics.push(
         `${report.glossaryIndexed} glossary (${report.glossaryCoveragePct}% cov, ${report.glossaryAvgPerPage}/page)`,
