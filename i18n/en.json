@@ -87,5 +87,7 @@
   "llms.optional": "Optional",
   "llms.fullSubtitle": "full documentation",
   "llms.smallSubtitle": "curated subset",
-  "llms.localeLabel": ""
+  "llms.localeLabel": "",
+  "conceptTrail.label": "Builds on",
+  "conceptTrail.ariaLabel": "Prerequisite concepts"
 }
