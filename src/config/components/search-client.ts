@@ -171,14 +171,22 @@ function iconBookmark(filled = false): SVGSVGElement {
   return svg;
 }
 
+function matchesCurrentLocale(url: string): boolean {
+  const prefix = document.documentElement.lang === 'fr' ? '/fr' : '';
+  if (prefix) return url === prefix || url.startsWith(prefix + '/');
+  return !/^\/[a-z]{2}(?:-[a-z]{2})?(?:\/|$)/i.test(url);
+}
+
 function getPinnedPages(): RecentPage[] {
   try {
     const raw = localStorage.getItem(PINNED_PAGES_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed)
       ? parsed
-          .filter((x): x is RecentPage =>
-            Boolean(x && typeof x.url === 'string' && typeof x.title === 'string'),
+          .filter(
+            (x): x is RecentPage =>
+              Boolean(x && typeof x.url === 'string' && typeof x.title === 'string') &&
+              matchesCurrentLocale(x.url),
           )
           .slice(0, 8)
       : [];
@@ -322,8 +330,10 @@ function getRecentPages(): RecentPage[] {
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed)
       ? parsed
-          .filter((x): x is RecentPage =>
-            Boolean(x && typeof x.url === 'string' && typeof x.title === 'string'),
+          .filter(
+            (x): x is RecentPage =>
+              Boolean(x && typeof x.url === 'string' && typeof x.title === 'string') &&
+              matchesCurrentLocale(x.url),
           )
           .slice(0, 4)
       : [];
@@ -1827,7 +1837,9 @@ export function initCommandSearch(): void {
 
     if (q.startsWith('/') || q.startsWith('>')) {
       const cmdQ = q.slice(1).trim().toLowerCase();
+      tabsEl!.hidden = true;
       tabsEl!.dataset.collapsed = 'true';
+      tabsEl!.replaceChildren();
       listEl!.replaceChildren();
       renderedItems = [];
       const allActions = getQuickActions();
