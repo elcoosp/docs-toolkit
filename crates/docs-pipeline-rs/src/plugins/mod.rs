@@ -7,3 +7,4 @@ pub mod llms;
 pub mod mermaid;
 pub mod related_pages;
 pub mod since_badges;
+pub mod concept_trail;
