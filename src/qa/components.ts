@@ -6,9 +6,12 @@ const CLS: Record<string, string> = {
   Card: 'sl-card',
   CardGrid: 'card-grid',
   Code: 'expressive-code',
+  DiataxisGrid: 'dt-diataxis',
+  FeatureGrid: 'dt-fg',
   FileTree: 'file-tree',
   LinkButton: 'sl-link-button',
   LinkCard: 'sl-link-card',
+  StatStrip: 'dt-stats',
   Steps: 'sl-steps',
   Tabs: 'sl-tabs',
 };

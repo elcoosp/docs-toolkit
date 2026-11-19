@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 vi.mock('../src/components/DiataxisGrid.astro', () => ({ default: () => null }));
+vi.mock('../src/components/FeatureGrid.astro', () => ({ default: () => null }));
+vi.mock('../src/components/StatStrip.astro', () => ({ default: () => null }));
 vi.mock('astro/config', () => ({ defineConfig: (c: any) => c }));
 vi.mock('astro:content', () => ({ defineCollection: (c: any) => c }));
 vi.mock('@astrojs/starlight', () => ({

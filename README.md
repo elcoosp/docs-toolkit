@@ -29,23 +29,23 @@ pnpm add @elcoosp/docs-toolkit
 
 ```js
 // astro.config.mjs
-import { defineDocsConfig } from "@elcoosp/docs-toolkit/config";
+import { defineDocsConfig } from '@elcoosp/docs-toolkit/config';
 
 export default await defineDocsConfig({
-	site: "https://example.com",
-	domain: "example.com",
-	title: "My Docs",
-	description: "Documentation for my project",
-	plugins: {
-		smartTocProgress: true,
-		termGlossary: true,
-		i18nParity: true,
-		relatedPages: true,
-		diataxisLint: true,
-		linkPreview: true,
-		readingContext: true,
-		apiDrift: { strict: false },
-	},
+  site: 'https://example.com',
+  domain: 'example.com',
+  title: 'My Docs',
+  description: 'Documentation for my project',
+  plugins: {
+    smartTocProgress: true,
+    termGlossary: true,
+    i18nParity: true,
+    relatedPages: true,
+    diataxisLint: true,
+    linkPreview: true,
+    readingContext: true,
+    apiDrift: { strict: false },
+  },
 });
 ```
 
@@ -90,18 +90,18 @@ The index covers `pub fn`, `pub struct`, `pub enum`, `pub trait`, enum variants,
 
 ```js
 // astro.config.mjs
-import { defineDocsConfig } from "@elcoosp/docs-toolkit/config";
+import { defineDocsConfig } from '@elcoosp/docs-toolkit/config';
 
 export default await defineDocsConfig({
-	site: "https://example.com",
-	domain: "example.com",
-	title: "My Docs",
-	description: "Documentation for my project",
-	plugins: {
-		apiDrift: { strict: true, writeReport: true },
-		i18nParity: { defaultLocale: "en" },
-		diataxisLint: { warnOnly: false },
-	},
+  site: 'https://example.com',
+  domain: 'example.com',
+  title: 'My Docs',
+  description: 'Documentation for my project',
+  plugins: {
+    apiDrift: { strict: true, writeReport: true },
+    i18nParity: { defaultLocale: 'en' },
+    diataxisLint: { warnOnly: false },
+  },
 });
 ```
 
@@ -109,23 +109,23 @@ export default await defineDocsConfig({
 
 ```js
 import {
-	starlightSmartTocProgress,
-	starlightTermGlossary,
-	starlightI18nParity,
-	starlightRelatedPages,
-	starlightDiataxisLint,
-} from "@elcoosp/docs-toolkit";
+  starlightSmartTocProgress,
+  starlightTermGlossary,
+  starlightI18nParity,
+  starlightRelatedPages,
+  starlightDiataxisLint,
+} from '@elcoosp/docs-toolkit';
 
 export default {
-	plugins: [
-		starlightSmartTocProgress(),
-		starlightTermGlossary({
-			entries: [{ term: "AST", definition: "Abstract syntax tree" }],
-		}),
-		starlightI18nParity(),
-		starlightRelatedPages(),
-		starlightDiataxisLint(),
-	],
+  plugins: [
+    starlightSmartTocProgress(),
+    starlightTermGlossary({
+      entries: [{ term: 'AST', definition: 'Abstract syntax tree' }],
+    }),
+    starlightI18nParity(),
+    starlightRelatedPages(),
+    starlightDiataxisLint(),
+  ],
 };
 ```
 
@@ -133,12 +133,12 @@ export default {
 
 ```json
 {
-	"sourceSymbols": 1232,
-	"matchedSymbols": 74,
-	"coveragePct": 6,
-	"phantoms": [],
-	"warnings": [],
-	"errors": []
+  "sourceSymbols": 1232,
+  "matchedSymbols": 74,
+  "coveragePct": 6,
+  "phantoms": [],
+  "warnings": [],
+  "errors": []
 }
 ```
 

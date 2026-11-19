@@ -1,0 +1,31 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+import type { StarlightIcon } from '@astrojs/starlight/types';
+export interface FeatureItem { title: string; description: string; icon?: StarlightIcon; badge?: string; }
+interface Props { items: FeatureItem[]; columns?: 2 | 3; }
+const ICONS: StarlightIcon[] = ['approve-check-circle', 'setting', 'rocket', 'puzzle', 'document', 'laptop'];
+const { items, columns = 2 } = Astro.props;
+---
+<div class:list={['dt-fg not-content', columns === 3 && 'dt-fg--3']}>
+  {items.map((it, i) => (
+    <article class="dt-fg-card">
+      <div class="dt-fg-head">
+        <span class="dt-fg-icon" aria-hidden="true"><Icon name={it.icon ?? ICONS[i % ICONS.length] ?? 'rocket'} size="1.05rem" /></span>
+        <h3>{it.title}</h3>
+        {it.badge && <span class="dt-fg-badge">{it.badge}</span>}
+      </div>
+      <p>{it.description}</p>
+    </article>
+  ))}
+</div>
+<style>
+  .dt-fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.95rem;margin-block:1.35rem 2rem}
+  .dt-fg--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media(max-width:44rem){.dt-fg,.dt-fg--3{grid-template-columns:1fr}}
+  .dt-fg-card{display:flex;flex-direction:column;gap:.55rem;padding:1.15rem 1.25rem;border-radius:.8rem;border:1px solid var(--sl-color-hairline-shade,var(--sl-color-gray-5));background:color-mix(in srgb,var(--sl-color-bg-nav) 45%,var(--sl-color-bg))}
+  .dt-fg-head{display:flex;align-items:center;gap:.6rem}
+  .dt-fg-icon{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:1.85rem;height:1.85rem;border-radius:.48rem;background:color-mix(in srgb,var(--sl-color-accent-low) 65%,transparent);color:var(--sl-color-text-accent)}
+  .dt-fg h3{margin:0!important;font-size:.98rem;font-weight:650;line-height:1.3;color:var(--sl-color-white)}
+  .dt-fg-badge{margin-left:auto;font-size:.66rem;font-weight:600;padding:.1rem .45rem;border-radius:999px;background:color-mix(in srgb,var(--sl-color-accent) 14%,transparent);color:var(--sl-color-text-accent)}
+  .dt-fg p{margin:0!important;font-size:.89rem;line-height:1.56;color:var(--sl-color-gray-2)}
+</style>

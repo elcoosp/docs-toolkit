@@ -1,0 +1,19 @@
+---
+export interface StatItem { value: string; label: string; }
+interface Props { items: StatItem[]; }
+const { items } = Astro.props;
+---
+<div class="dt-stats not-content" role="list">
+  {items.map((it) => (
+    <div class="dt-stat" role="listitem">
+      <span class="dt-stat-val">{it.value}</span>
+      <span class="dt-stat-lbl">{it.label}</span>
+    </div>
+  ))}
+</div>
+<style>
+  .dt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:.75rem;margin-block:1.35rem 2rem}
+  .dt-stat{display:flex;flex-direction:column;gap:.25rem;padding:.95rem 1.1rem;border-radius:.75rem;border:1px solid var(--sl-color-hairline-shade,var(--sl-color-gray-5));background:color-mix(in srgb,var(--sl-color-bg-nav) 55%,var(--sl-color-bg))}
+  .dt-stat-val{font-family:var(--sl-font-mono);font-size:1.35rem;font-weight:700;line-height:1.15;letter-spacing:-.02em;color:var(--sl-color-text-accent)}
+  .dt-stat-lbl{font-size:.82rem;line-height:1.4;color:var(--sl-color-gray-2)}
+</style>

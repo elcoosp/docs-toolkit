@@ -7,10 +7,10 @@
     "url": "git+https://github.com/elcoosp/docs-toolkit.git"
   },
   "bin": {
-    "docs-toolkit-qa-components": "dist/qa/components.mjs",
-    "docs-toolkit-qa-screenshots": "dist/qa/screenshots.mjs",
     "docs-toolkit-bootstrap-artifacts": "dist/qa/bootstrap-artifacts.mjs",
-    "docs-toolkit-lint": "dist/qa/lint.mjs"
+    "docs-toolkit-lint": "dist/qa/lint.mjs",
+    "docs-toolkit-qa-components": "dist/qa/components.mjs",
+    "docs-toolkit-qa-screenshots": "dist/qa/screenshots.mjs"
   },
   "files": [
     "dist",
