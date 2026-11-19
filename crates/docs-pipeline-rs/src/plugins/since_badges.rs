@@ -82,6 +82,14 @@ fn extract_backticked_symbols(line: &str, self_names: &HashSet<String>) -> Vec<S
         if is_valid_badge_symbol(ident, self_names) && !out.iter().any(|x| x == ident) {
             out.push(ident.to_string());
         }
+        if let Some((_, tail)) = ident.rsplit_once("::") {
+            if tail.len() >= 5
+                && is_valid_badge_symbol(tail, self_names)
+                && !out.iter().any(|x| x == tail)
+            {
+                out.push(tail.to_string());
+            }
+        }
         rest = &after[end + 1..];
     }
     out
@@ -115,7 +123,15 @@ fn clean_note(version: &str, line: &str) -> String {
         .replace('`', "")
         .replace("**", "");
     let compact: String = trimmed.split_whitespace().collect::<Vec<_>>().join(" ");
-    let clipped: String = compact.chars().take(120).collect();
+    let clipped = if compact.chars().count() > 110 {
+        let sub: String = compact.chars().take(110).collect();
+        match sub.rfind(' ') {
+            Some(idx) if idx > 40 => format!("{}…", &sub[..idx]),
+            _ => format!("{sub}…"),
+        }
+    } else {
+        compact
+    };
     format!("v{version} — {clipped}")
 }
 
