@@ -66,6 +66,7 @@ pkg.exports['./PageActions.astro'] = './src/config/components/PageActions.astro'
 pkg.exports['./components'] = './src/components/index.ts';
 pkg.exports['./tsconfig.base.json'] = './tsconfig.base.json';
 pkg.exports['./rumdl.toml'] = './rumdl.toml';
+pkg.exports['./mdsf.json'] = './mdsf.json';
 pkg.exports['./plugins/link-preview'] = {
   types: './dist/plugins/link-preview/index.d.mts',
   import: './dist/plugins/link-preview/index.mjs',

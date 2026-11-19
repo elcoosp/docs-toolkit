@@ -22,7 +22,8 @@
     "ec.config.mjs",
     "rumdl.toml",
     ".oxlintrc.json",
-    ".oxfmtrc.json"
+    ".oxfmtrc.json",
+    "mdsf.json"
   ],
   "type": "module",
   "main": "./dist/index.mjs",
@@ -54,6 +55,7 @@
     "./components": "./src/components/index.ts",
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./rumdl.toml": "./rumdl.toml",
+    "./mdsf.json": "./mdsf.json",
     "./plugins/link-preview": {
       "types": "./dist/plugins/link-preview/index.d.mts",
       "import": "./dist/plugins/link-preview/index.mjs"

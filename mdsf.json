@@ -1,0 +1,87 @@
+{
+  "$schema": "https://githubusercontent.com",
+  "files": {
+    "extensions": [".md", ".mdx"]
+  },
+  "newline": "lf",
+  "format_finished_document": false,
+  "on_missing_language_definition": "ignore",
+  "on_missing_tool_binary": "ignore",
+  "language_aliases": {
+    "rs": "rust",
+    "ts": "typescript",
+    "tsx": "typescript",
+    "js": "javascript",
+    "jsx": "javascript",
+    "sh": "shell",
+    "bash": "shell",
+    "zsh": "shell",
+    "jsonc": "json",
+    "yml": "yaml"
+  },
+  "languages": {
+    "rust": "rustfmt",
+    "javascript": [
+      [
+        {
+          "binary": "./node_modules/@elcoosp/docs-toolkit/node_modules/.bin/oxfmt",
+          "arguments": ["-c", "./node_modules/@elcoosp/docs-toolkit/.oxfmtrc.json", "$PATH"]
+        },
+        "oxfmt",
+        "prettier"
+      ]
+    ],
+    "typescript": [
+      [
+        {
+          "binary": "./node_modules/@elcoosp/docs-toolkit/node_modules/.bin/oxfmt",
+          "arguments": ["-c", "./node_modules/@elcoosp/docs-toolkit/.oxfmtrc.json", "$PATH"]
+        },
+        "oxfmt",
+        "prettier"
+      ]
+    ],
+    "json": [
+      [
+        {
+          "binary": "./node_modules/@elcoosp/docs-toolkit/node_modules/.bin/oxfmt",
+          "arguments": ["-c", "./node_modules/@elcoosp/docs-toolkit/.oxfmtrc.json", "$PATH"]
+        },
+        "oxfmt",
+        "prettier"
+      ]
+    ],
+    "css": [
+      [
+        {
+          "binary": "./node_modules/@elcoosp/docs-toolkit/node_modules/.bin/oxfmt",
+          "arguments": ["-c", "./node_modules/@elcoosp/docs-toolkit/.oxfmtrc.json", "$PATH"]
+        },
+        "oxfmt",
+        "prettier"
+      ]
+    ],
+    "html": [
+      [
+        {
+          "binary": "./node_modules/@elcoosp/docs-toolkit/node_modules/.bin/oxfmt",
+          "arguments": ["-c", "./node_modules/@elcoosp/docs-toolkit/.oxfmtrc.json", "$PATH"]
+        },
+        "oxfmt",
+        "prettier"
+      ]
+    ],
+    "yaml": [
+      [
+        {
+          "binary": "./node_modules/@elcoosp/docs-toolkit/node_modules/.bin/oxfmt",
+          "arguments": ["-c", "./node_modules/@elcoosp/docs-toolkit/.oxfmtrc.json", "$PATH"]
+        },
+        "oxfmt",
+        "prettier"
+      ]
+    ],
+    "toml": "taplo",
+    "shell": ["shfmt"]
+  }
+}
