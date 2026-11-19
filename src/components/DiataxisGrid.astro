@@ -1,148 +1,67 @@
 ---
 import { Icon } from '@astrojs/starlight/components';
 import type { StarlightIcon } from '@astrojs/starlight/types';
-
-export interface DiataxisItem {
-  title: string;
-  description: string;
-  href: string;
-  icon?: StarlightIcon;
-  badge?: string;
-}
+import type { DiataxisItem } from './index';
 
 interface Props {
-  items: DiataxisItem[];
+  items?: DiataxisItem[];
   stagger?: boolean;
 }
 
-const DEFAULT_ICONS: StarlightIcon[] = ['rocket', 'puzzle', 'open-book', 'information'];
+const ICONS: Record<DiataxisItem['quadrant'], StarlightIcon> = {
+  tutorials: 'rocket',
+  'how-to': 'puzzle',
+  reference: 'open-book',
+  explanation: 'information',
+};
 
-const { items, stagger = false } = Astro.props;
+const isFr = Astro.currentLocale?.startsWith('fr') || Astro.url.pathname.startsWith('/fr');
+const p = isFr ? '/fr' : '';
+
+const DEFAULTS: DiataxisItem[] = isFr
+  ? [
+      { quadrant: 'tutorials', title: 'Tutoriels', description: "Suivez un parcours pas à pas de l'installation à un projet fonctionnel.", href: `${p}/tutorials/` },
+      { quadrant: 'how-to', title: 'Guides pratiques', description: 'Résolvez des tâches précises avec des recettes ciblées et des exemples concrets.', href: `${p}/guides/` },
+      { quadrant: 'reference', title: 'Référence', description: 'Consultez les API exactes, les types, les options CLI et la configuration.', href: `${p}/reference/` },
+      { quadrant: 'explanation', title: 'Explications', description: "Comprenez l'architecture, les choix de conception et le fonctionnement interne.", href: `${p}/explanation/` },
+    ]
+  : [
+      { quadrant: 'tutorials', title: 'Tutorials', description: 'Follow a step-by-step walkthrough from installation to a working project.', href: `${p}/tutorials/` },
+      { quadrant: 'how-to', title: 'How-to Guides', description: 'Solve specific tasks with focused, practical recipes and configuration patterns.', href: `${p}/guides/` },
+      { quadrant: 'reference', title: 'Reference', description: 'Look up exact APIs, types, CLI flags, configuration keys, and error codes.', href: `${p}/reference/` },
+      { quadrant: 'explanation', title: 'Explanation', description: 'Understand the architecture, design trade-offs, and mental model under the hood.', href: `${p}/explanation/` },
+    ];
+
+const { items = DEFAULTS, stagger = true } = Astro.props;
 ---
 
-<div class:list={['dt-grid not-content', { 'dt-stagger': stagger }]}>
-  {items.map((item, idx) => {
-    const iconName = item.icon ?? DEFAULT_ICONS[idx % DEFAULT_ICONS.length]!;
-    return (
-      <a class="dt-card" href={item.href}>
-        <div class="dt-card-head">
-          <span class="dt-icon" aria-hidden="true">
-            <Icon name={iconName} size="1.15rem" />
-          </span>
-          <h3 class="dt-title">
-            <span>{item.title}</span>
-            <span class="dt-arrow" aria-hidden="true">→</span>
-          </h3>
-        </div>
-        <p class="dt-desc">{item.description}</p>
-      </a>
-    );
-  })}
+<div class:list={['dt-diataxis not-content', { 'dt-stagger': stagger }]}>
+  {items.map((item) => (
+    <a class="dt-card" href={item.href}>
+      <div class="dt-card-head">
+        <span class="dt-icon" aria-hidden="true"><Icon name={ICONS[item.quadrant] ?? 'rocket'} size="1.15rem" /></span>
+        <h3 class="dt-title">
+          <span>{item.title}</span>
+          {item.badge && <span class="dt-badge">{item.badge}</span>}
+          <span class="dt-arrow" aria-hidden="true">→</span>
+        </h3>
+      </div>
+      <p class="dt-desc">{item.description}</p>
+    </a>
+  ))}
 </div>
 
 <style>
-  .dt-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-    margin-block: 1.5rem 2.25rem;
-  }
-
-  @media (max-width: 44rem) {
-    .dt-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (min-width: 50rem) {
-    .dt-stagger > :nth-child(2n) {
-      transform: translateY(0.75rem);
-    }
-    .dt-stagger {
-      padding-bottom: 0.75rem;
-    }
-  }
-
-  .dt-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    padding: 1.25rem 1.35rem;
-    border-radius: 0.85rem;
-    border: 1px solid var(--sl-color-hairline-shade, var(--sl-color-gray-5));
-    background: color-mix(in srgb, var(--sl-color-bg-nav) 65%, var(--sl-color-bg));
-    text-decoration: none !important;
-    color: inherit;
-    transition:
-      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 0.18s ease,
-      box-shadow 0.18s ease,
-      background-color 0.18s ease;
-  }
-
-  .dt-card:hover,
-  .dt-card:focus-visible {
-    transform: translateY(-2px);
-    border-color: var(--sl-color-accent);
-    background: color-mix(in srgb, var(--sl-color-accent-low) 28%, var(--sl-color-bg));
-    box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
-  }
-
-  @media (min-width: 50rem) {
-    .dt-stagger > :nth-child(2n):hover,
-    .dt-stagger > :nth-child(2n):focus-visible {
-      transform: translateY(calc(0.75rem - 2px));
-    }
-  }
-
-  .dt-card-head {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .dt-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 2.15rem;
-    height: 2.15rem;
-    border-radius: 0.55rem;
-    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
-    background: color-mix(in srgb, var(--sl-color-accent-low) 55%, transparent);
-    color: var(--sl-color-text-accent);
-  }
-
-  .dt-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    flex: 1;
-    margin: 0 !important;
-    font-size: 1.02rem;
-    font-weight: 650;
-    line-height: 1.3;
-    color: var(--sl-color-white);
-  }
-
-  .dt-arrow {
-    color: var(--sl-color-gray-3);
-    font-weight: 500;
-    transition: transform 0.18s ease, color 0.18s ease;
-  }
-
-  .dt-card:hover .dt-arrow,
-  .dt-card:focus-visible .dt-arrow {
-    transform: translateX(3px);
-    color: var(--sl-color-text-accent);
-  }
-
-  .dt-desc {
-    margin: 0 !important;
-    font-size: 0.91rem;
-    line-height: 1.58;
-    color: var(--sl-color-gray-2);
-  }
+  .dt-diataxis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-block: 1.5rem 2.25rem; }
+  @media (max-width: 44rem) { .dt-diataxis { grid-template-columns: 1fr; } }
+  @media (min-width: 50rem) { .dt-stagger > :nth-child(2n) { transform: translateY(0.65rem); } .dt-stagger { padding-bottom: 0.65rem; } }
+  .dt-card { display: flex; flex-direction: column; gap: 0.65rem; padding: 1.25rem 1.35rem; border-radius: 0.85rem; border: 1px solid var(--sl-color-hairline-shade, var(--sl-color-gray-5)); background: color-mix(in srgb, var(--sl-color-bg-nav) 65%, var(--sl-color-bg)); text-decoration: none !important; color: inherit; transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease; }
+  .dt-card:hover, .dt-card:focus-visible { transform: translateY(-2px); border-color: var(--sl-color-accent); background: color-mix(in srgb, var(--sl-color-accent-low) 28%, var(--sl-color-bg)); }
+  .dt-card-head { display: flex; align-items: center; gap: 0.75rem; }
+  .dt-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2.15rem; height: 2.15rem; border-radius: 0.55rem; background: color-mix(in srgb, var(--sl-color-accent-low) 55%, transparent); color: var(--sl-color-text-accent); }
+  .dt-title { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex: 1; margin: 0 !important; font-size: 1.02rem; font-weight: 650; line-height: 1.3; color: var(--sl-color-white); }
+  .dt-badge { font-size: 0.68rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 999px; background: color-mix(in srgb, var(--sl-color-accent) 14%, transparent); color: var(--sl-color-text-accent); }
+  .dt-arrow { color: var(--sl-color-gray-3); transition: transform 0.18s ease, color 0.18s ease; }
+  .dt-card:hover .dt-arrow { transform: translateX(3px); color: var(--sl-color-text-accent); }
+  .dt-desc { margin: 0 !important; font-size: 0.91rem; line-height: 1.58; color: var(--sl-color-gray-2); }
 </style>
