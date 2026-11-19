@@ -307,4 +307,48 @@ describe('Command Palette Real Browser DOM & E2E Suite', () => {
     copyBtn?.click();
     delete (window as any).__slPagefindModule;
   });
+
+  it('loads /graph.json on modal open and renders connected pages in preview', async () => {
+    const origFetch = window.fetch.bind(window);
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url;
+      if (url.endsWith('/graph.json')) {
+        return new Response(
+          JSON.stringify({
+            nodes: [
+              { route: '/guides/write-your-own-macro/', title: 'Write Your Own Macro', pageRank: 40 },
+              { route: '/reference/megamac/', title: 'Megamac Reference', pageRank: 95 },
+              { route: '/tutorials/getting-started/', title: 'Getting Started', pageRank: 60 },
+            ],
+            edges: [
+              { source: '/guides/write-your-own-macro/', target: '/reference/megamac/' },
+              { source: '/tutorials/getting-started/', target: '/guides/write-your-own-macro/' },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return origFetch(input, init);
+    }) as typeof window.fetch;
+
+    document.body.innerHTML = '';
+    mountPalette('en');
+    try {
+      document.querySelector<HTMLButtonElement>('[data-cmdk-open]')!.click();
+      await new Promise((r) => setTimeout(r, 80));
+
+      const input = document.querySelector<HTMLInputElement>('#sl-cmdk-input')!;
+      input.value = 'Write Your Own Macro';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 120));
+
+      const graphLinks = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>('#sl-cmdk-preview .sl-cmdk-preview__graph a'),
+      ).map((a) => a.textContent?.trim());
+      expect(graphLinks).toContain('→ Megamac Reference');
+      expect(graphLinks).toContain('← Getting Started');
+    } finally {
+      window.fetch = origFetch;
+    }
+  });
 });
