@@ -14,6 +14,7 @@ pub struct PageDom {
     pub headings: Vec<(String, String)>,
     pub ids: HashSet<String>,
     pub prose_text: String,
+    pub concept_text: String,
     pub main_word_count: usize,
 }
 
@@ -83,6 +84,7 @@ fn parse_single_html(rel_path: String, route: String, locale: String, html: &str
     let mut headings = Vec::new();
     let mut ids = HashSet::new();
     let mut prose_parts = Vec::new();
+    let mut concept_parts = Vec::new();
     let mut first_para = String::new();
     let mut main_words = 0usize;
 
@@ -159,6 +161,7 @@ fn parse_single_html(rel_path: String, route: String, locale: String, html: &str
                 if let Some(n) = h.get(parser) {
                     main_words = n.inner_text(parser).split_whitespace().count();
                     collect_prose(&dom, n, false, &mut prose_parts);
+                    collect_concept_text(&dom, n, false, &mut concept_parts);
                 }
             }
         }
@@ -175,6 +178,7 @@ fn parse_single_html(rel_path: String, route: String, locale: String, html: &str
         headings,
         ids,
         prose_text: prose_parts.join(" "),
+        concept_text: collapse_ws(&concept_parts.join(" ")),
         main_word_count: main_words,
     }
 }
@@ -195,6 +199,29 @@ fn collect_prose<'a>(dom: &VDom<'a>, node: &Node<'a>, skip: bool, out: &mut Vec<
             for ch in tag.children().top().iter() {
                 if let Some(c) = ch.get(dom.parser()) {
                     collect_prose(dom, c, next_skip, out);
+                }
+            }
+        }
+        Node::Comment(_) => {}
+    }
+}
+
+fn collect_concept_text<'a>(dom: &VDom<'a>, node: &Node<'a>, skip: bool, out: &mut Vec<String>) {
+    match node {
+        Node::Raw(b) => {
+            if !skip {
+                let s = b.as_utf8_str();
+                if !s.trim().is_empty() {
+                    out.push(s.into_owned());
+                }
+            }
+        }
+        Node::Tag(tag) => {
+            let name = tag.name().as_utf8_str();
+            let next_skip = skip || matches!(name.as_ref(), "pre" | "script" | "style" | "svg" | "nav");
+            for ch in tag.children().top().iter() {
+                if let Some(c) = ch.get(dom.parser()) {
+                    collect_concept_text(dom, c, next_skip, out);
                 }
             }
         }
