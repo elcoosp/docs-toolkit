@@ -23,7 +23,7 @@ import type { AstroIntegration } from 'astro';
 
 function parallelBuildDoneIntegration(): AstroIntegration {
   const HTML_MUTATING_INTEGRATIONS = new Set([
-    "@elcoosp/docs-toolkit/static-mermaid",
+    "@elcoosp/docs-toolkit/pipeline",
     "starlight-term-glossary",
     "starlight-term-glossary-integration",
   ]);
@@ -38,13 +38,13 @@ function parallelBuildDoneIntegration(): AstroIntegration {
   let auditHooks: Array<(ctx: any) => unknown> = [];
 
   return {
-    name: "@elcoosp/docs-toolkit/parallel-build-done",
+    name: "@elcoosp/docs-toolkit/postbuild",
     hooks: {
       "astro:config:done"({ config }) {
         const producers: Array<(ctx: any) => unknown> = [];
         const auditors: Array<(ctx: any) => unknown> = [];
         for (const integration of config.integrations) {
-          if (!integration || integration.name === "@elcoosp/docs-toolkit/parallel-build-done") continue;
+          if (!integration || integration.name === "@elcoosp/docs-toolkit/postbuild") continue;
           if (HTML_MUTATING_INTEGRATIONS.has(integration.name)) continue;
           const origDone = integration.hooks?.["astro:build:done"];
           if (typeof origDone === "function") {
@@ -122,6 +122,7 @@ export interface DocsConfigOptions {
   llmsTxt?: LlmsTxtConfig | false;
   sinceBadges?: boolean;
   conceptTrail?: boolean;
+  apiDrift?: boolean | { strict?: boolean; writeReport?: boolean };
   giscus?: any;
   blog?: boolean | Record<string, unknown>;
 }
@@ -758,6 +759,18 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   });
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
+  if (options.apiDrift !== false) {
+    starlightPlugins.push({
+      name: "docs-toolkit:api-drift",
+      hooks: {
+        "config:setup"({ config }: any) {
+          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
+          const adCfg = typeof options.apiDrift === "object" ? options.apiDrift : { strict: false, writeReport: true };
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "apiDrift", adCfg);
+        },
+      },
+    });
+  }
   if (options.conceptTrail !== false) {
     starlightPlugins.push({
       name: "docs-toolkit:concept-trail",
