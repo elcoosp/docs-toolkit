@@ -6,3 +6,4 @@ pub mod link_preview;
 pub mod llms;
 pub mod mermaid;
 pub mod related_pages;
+pub mod since_badges;

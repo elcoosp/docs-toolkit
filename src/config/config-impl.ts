@@ -74,6 +74,7 @@ function parallelBuildDoneIntegration(): AstroIntegration {
 import { autoTranslateSidebar } from './i18n/sidebar-labels';
 import { inlineBashIntegration } from './rehype-inline-bash';
 import { starlightLinkPreview } from '../plugins/link-preview/index';
+import { hasNativePipeline, registerNativePipelinePlugin } from '../plugins/shared/pipeline-host';
 import { starlightReadingContext } from '../plugins/reading-context/index';
 
 export type { LlmsTxtConfig } from './llms';
@@ -119,6 +120,7 @@ export interface DocsConfigOptions {
   extraIntegrations?: NonNullable<AstroUserConfig['integrations']>;
   extraVite?: Record<string, unknown>;
   llmsTxt?: LlmsTxtConfig | false;
+  sinceBadges?: boolean;
   giscus?: any;
   blog?: boolean | Record<string, unknown>;
 }
@@ -755,6 +757,28 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   });
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
+  if (options.sinceBadges !== false) {
+    starlightPlugins.push({
+      name: "docs-toolkit:since-badges",
+      hooks: {
+        "config:setup"({ config }: any) {
+          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "sinceBadges", true);
+        },
+      },
+    });
+  }
+  if (options.sinceBadges !== false) {
+    starlightPlugins.push({
+      name: "docs-toolkit:since-badges",
+      hooks: {
+        "config:setup"({ config }: any) {
+          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "sinceBadges", true);
+        },
+      },
+    });
+  }
   starlightPlugins.push(
     starlightReadingContext(),
     starlightSmartTocProgress(),
