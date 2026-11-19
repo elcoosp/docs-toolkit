@@ -6,30 +6,7 @@ import PageActions from "./PageActions.astro";
 const is404 = Astro.props.id === "404" || Astro.url.pathname.endsWith("/404") || Astro.url.pathname.endsWith("/404/");
 ---
 
-<div class="sl-title-zen-row">
-  <DefaultPageTitle {...Astro.props} />
-  {!is404 && (
-    <button
-      type="button"
-      class="sl-zen-toggle"
-      data-zen-toggle
-      data-pagefind-ignore="all"
-      aria-pressed="false"
-      title="Toggle Zen Mode (Alt+Z)"
-    >
-      <span class="sl-zen-icon" aria-hidden="true">
-        <svg class="sl-zen-icon--expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-        </svg>
-        <svg class="sl-zen-icon--compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
-        </svg>
-      </span>
-      <span class="sl-zen-label">Zen</span>
-      <span class="sl-zen-dot" aria-hidden="true"></span>
-    </button>
-  )}
-</div>
+<DefaultPageTitle {...Astro.props} />
 {!is404 && <ReadingContextBar />}
 {!is404 && <PageActions {...Astro.props} />}
 
@@ -38,81 +15,6 @@ const is404 = Astro.props.id === "404" || Astro.url.pathname.endsWith("/404") ||
 </script>
 
 <style>
-  .sl-title-zen-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-  .sl-zen-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: 0.35rem;
-    padding: 0.32rem 0.66rem;
-    border-radius: 999px;
-    border: 1px solid var(--sl-color-hairline);
-    background: var(--sl-color-bg-nav);
-    color: var(--sl-color-gray-2);
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition:
-      background-color 180ms ease,
-      border-color 180ms ease,
-      color 180ms ease,
-      box-shadow 180ms ease;
-  }
-  .sl-zen-toggle:hover {
-    color: var(--sl-color-text);
-    border-color: var(--sl-color-accent);
-    background: var(--sl-color-bg-sidebar);
-  }
-  :global(html[data-zen-mode="true"]) .sl-zen-toggle {
-    color: var(--sl-color-accent-high);
-    border-color: color-mix(in srgb, var(--sl-color-accent) 60%, var(--sl-color-hairline));
-    background: color-mix(in srgb, var(--sl-color-accent) 14%, var(--sl-color-bg-nav));
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
-  }
-  .sl-zen-icon {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-  }
-  .sl-zen-icon--expand,
-  .sl-zen-icon--compress {
-    position: absolute;
-    inset: 0;
-    transform-origin: center;
-  }
-  .sl-zen-icon--compress {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  :global(html[data-zen-mode="true"]) .sl-zen-icon--expand {
-    opacity: 0;
-  }
-  :global(html[data-zen-mode="true"]) .sl-zen-icon--compress {
-    opacity: 1;
-    transform: scale(1);
-  }
-  .sl-zen-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 999px;
-    background: var(--sl-color-gray-3);
-    opacity: 0.45;
-    transition: background-color 180ms ease, opacity 180ms ease;
-  }
-  :global(html[data-zen-mode="true"]) .sl-zen-dot {
-    background: var(--sl-color-accent-high);
-    opacity: 1;
-  }
   :global(html[data-zen-mode="true"] header.header),
   :global(html[data-zen-mode="true"] nav.sidebar),
   :global(html[data-zen-mode="true"] .right-sidebar-container),
