@@ -2,6 +2,8 @@ minimumReleaseAgeExclude:
   - 'starlight-links-validator'
   - '@elcoosp/astro-takumi@2.1.0 || 2.1.1 || 2.1.2 || 2.2.0'
   - starlight-view-modes@0.16.0
+  - '@astrojs/runtime@0.1.2'
+  - astro@7.4.13
 permissions:
   esbuild:
     build: true

@@ -80,6 +80,36 @@ export function registerNativePipelinePlugin(
  * Returns `true` if the native pipeline handled execution (either on this call or a sibling plugin's call),
  * or `false` if no native binary is available for the current platform (triggering JS fallback).
  */
+function loadSinceBadgesI18n(siteRoot: string, defaultLocale: string): Record<string, { new: string; breaking: string; deprecated: string }> {
+  const dicts: Record<string, Record<string, string>> = {};
+  const dirs = [
+    fileURLToPath(new URL('../../i18n', import.meta.url)),
+    fileURLToPath(new URL('../../../i18n', import.meta.url)),
+    path.join(siteRoot, 'src/content/i18n'),
+  ];
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir)) {
+      if (!file.endsWith('.json')) continue;
+      const loc = file.slice(0, -5);
+      try {
+        const parsed = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+        dicts[loc] = { ...(dicts[loc] ?? {}), ...parsed };
+      } catch {}
+    }
+  }
+  const fb = dicts[defaultLocale] ?? dicts.en ?? {};
+  const out: Record<string, { new: string; breaking: string; deprecated: string }> = {};
+  for (const [loc, d] of Object.entries(dicts)) {
+    out[loc] = {
+      new: d['sinceBadges.new'] ?? fb['sinceBadges.new'] ?? 'New in v{version}',
+      breaking: d['sinceBadges.breaking'] ?? fb['sinceBadges.breaking'] ?? 'Breaking v{version}',
+      deprecated: d['sinceBadges.deprecated'] ?? fb['sinceBadges.deprecated'] ?? 'Deprecated v{version}',
+    };
+  }
+  return out;
+}
+
 export async function runNativePipelineOnce(
   siteRoot: string,
   dir: URL | string,
@@ -100,6 +130,7 @@ export async function runNativePipelineOnce(
       distDir,
       defaultLocale: state.defaultLocale,
       locales: Array.from(state.locales),
+      sinceBadgesI18n: loadSinceBadgesI18n(state.siteRoot, state.defaultLocale),
       ...state.plugins,
     };
 

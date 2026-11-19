@@ -262,40 +262,50 @@ fn esc_attr(s: &str) -> String {
         .replace('>', "&gt;")
 }
 
-fn render_badge_html(entry: &SinceEntry, is_fr: bool) -> String {
-    let (cls, label) = match entry.kind {
-        BadgeKind::New => (
-            "dt-since-new",
-            if is_fr {
-                format!("Nouveau v{}", entry.version)
-            } else {
-                format!("New in v{}", entry.version)
-            },
-        ),
-        BadgeKind::Breaking => (
-            "dt-since-breaking",
-            if is_fr {
-                format!("Rupture v{}", entry.version)
-            } else {
-                format!("Breaking v{}", entry.version)
-            },
-        ),
-        BadgeKind::Deprecated => (
-            "dt-since-deprecated",
-            if is_fr {
-                format!("Obsolète v{}", entry.version)
-            } else {
-                format!("Deprecated v{}", entry.version)
-            },
-        ),
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct BadgeLabels {
+    #[serde(default = "default_new_label")]
+    pub new: String,
+    #[serde(default = "default_breaking_label")]
+    pub breaking: String,
+    #[serde(default = "default_deprecated_label")]
+    pub deprecated: String,
+}
+
+fn default_new_label() -> String { "New in v{version}".to_string() }
+fn default_breaking_label() -> String { "Breaking v{version}".to_string() }
+fn default_deprecated_label() -> String { "Deprecated v{version}".to_string() }
+
+impl Default for BadgeLabels {
+    fn default() -> Self {
+        Self {
+            new: default_new_label(),
+            breaking: default_breaking_label(),
+            deprecated: default_deprecated_label(),
+        }
+    }
+}
+
+fn render_badge_html(entry: &SinceEntry, labels: &BadgeLabels) -> String {
+    let (cls, tpl) = match entry.kind {
+        BadgeKind::New => ("dt-since-new", labels.new.as_str()),
+        BadgeKind::Breaking => ("dt-since-breaking", labels.breaking.as_str()),
+        BadgeKind::Deprecated => ("dt-since-deprecated", labels.deprecated.as_str()),
     };
+    let label = tpl.replace("{version}", &entry.version);
     format!(
         " <span class=\"dt-since-badge {cls}\" title=\"{}\">{label}</span>",
         esc_attr(&entry.note)
     )
 }
 
-pub fn run_since_badges(site_root: &Path, dist_dir: &Path, pages: &[PageDom]) -> SinceBadgesReport {
+pub fn run_since_badges(
+    site_root: &Path,
+    dist_dir: &Path,
+    pages: &[PageDom],
+    default_locale: &str,
+    i18n_map: &HashMap<String, BadgeLabels>,
+) -> SinceBadgesReport {
     let table = parse_changelog(site_root);
     if table.is_empty() {
         return SinceBadgesReport::default();
@@ -329,7 +339,8 @@ return;
 if html.contains("dt-since-badge") {
 return;
 }
-let is_fr = page.locale == "fr";
+let fallback_labels = BadgeLabels::default();
+let labels = i18n_map.get(&page.locale).or_else(|| i18n_map.get(default_locale)).or_else(|| i18n_map.get("en")).unwrap_or(&fallback_labels);
 let injected = Rc::new(RefCell::new(0usize));
 let inj_clone = Rc::clone(&injected);
         let rewritten = rewrite_str(
@@ -339,7 +350,7 @@ let inj_clone = Rc::clone(&injected);
                 move |el| {
                     if let Some(id) = el.get_attribute("id") {
                         if let Some(entry) = by_id.get(&id) {
-                            el.append(&render_badge_html(entry, is_fr), ContentType::Html);
+                            el.append(&render_badge_html(entry, labels), ContentType::Html);
                             *inj_clone.borrow_mut() += 1;
                         }
                     }

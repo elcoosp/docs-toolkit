@@ -67,5 +67,8 @@
   "cmdk.groupLanguage": "Langue",
   "cmdk.groupAi": "Demander à un assistant IA",
   "cmdk.moreAi": "Afficher les {total} assistants IA",
-  "cmdk.lessAi": "Réduire les assistants IA"
+  "cmdk.lessAi": "Réduire les assistants IA",
+  "sinceBadges.new": "Nouveau v{version}",
+  "sinceBadges.breaking": "Rupture v{version}",
+  "sinceBadges.deprecated": "Obsolète v{version}"
 }
