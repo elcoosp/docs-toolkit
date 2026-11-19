@@ -104,7 +104,5 @@
   "diataxis.referenceDesc": "Look up exact APIs, types, CLI flags, configuration keys, and error codes.",
   "diataxis.explanation": "Explanation",
   "diataxis.explanationDesc": "Understand the architecture, design trade-offs, and mental model under the hood.",
-  "cmdk.graphConnections": "Connected pages",
-  "cmdk.graphIncoming": "Referenced by",
-  "cmdk.graphOutgoing": "Links to"
+  "cmdk.graphConnections": "Connected pages"
 }
