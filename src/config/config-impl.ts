@@ -819,19 +819,6 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
       },
     });
   }
-  if (options.sinceBadges !== false) {
-    starlightPlugins.push({
-      name: 'docs-toolkit:since-badges',
-      hooks: {
-        'config:setup'({ config }: any) {
-          const rDir = (config as { root?: string }).root
-            ? fileURLToPath((config as { root?: string }).root!)
-            : process.cwd();
-          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'sinceBadges', true);
-        },
-      },
-    });
-  }
   starlightPlugins.push(
     starlightReadingContext(),
     starlightSmartTocProgress(),

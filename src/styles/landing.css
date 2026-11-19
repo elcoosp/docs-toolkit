@@ -1,11 +1,24 @@
 /* Unified landing & hero UX polish across the @elcoosp/docs-toolkit fleet */
 .hero {
+  position: relative;
   align-items: center;
-  gap: clamp(1.5rem, 4vw, 3.5rem);
+  gap: clamp(1.75rem, 4vw, 3.75rem);
+  padding-block: clamp(1.5rem, 3.5vw, 2.75rem);
 }
 
 .hero .copy {
   max-width: 44rem;
+}
+
+.hero h1 {
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.hero .tagline {
+  font-size: clamp(1.02rem, 1.35vw, 1.2rem);
+  line-height: 1.6;
+  color: var(--sl-color-gray-2);
 }
 
 .hero .actions {
@@ -13,20 +26,39 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin-top: 1.65rem;
 }
 
 .hero .actions a {
   border-radius: 999px;
   font-weight: 600;
+  padding: 0.65rem 1.35rem;
   white-space: nowrap;
   transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease;
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.hero .actions a.primary {
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--sl-color-accent) 65%, transparent);
+}
+
+.hero .actions a.minimal,
+.hero .actions a.secondary {
+  border: 1px solid var(--sl-color-hairline-shade, var(--sl-color-gray-5));
+  background: color-mix(in srgb, var(--sl-color-bg-nav) 75%, var(--sl-color-bg));
 }
 
 .hero .actions a:hover {
   transform: translateY(-2px);
+}
+
+.hero .actions a.minimal:hover,
+.hero .actions a.secondary:hover {
+  border-color: var(--sl-color-accent);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 35%, var(--sl-color-bg));
 }
 
 @media (max-width: 36rem) {
@@ -44,20 +76,21 @@
   }
 }
 
-/* Keep wide or square hero logos crisp and balanced */
+/* Keep wide or square hero logos crisp, balanced, and softly backlit */
 .hero > img,
 .hero > picture img {
   width: auto;
-  max-width: min(300px, 38vw);
-  max-height: 240px;
+  max-width: min(280px, 36vw);
+  max-height: 230px;
   object-fit: contain;
+  filter: drop-shadow(0 16px 32px color-mix(in srgb, var(--sl-color-accent) 22%, rgba(0, 0, 0, 0.18)));
 }
 
 @media (max-width: 50rem) {
   .hero > img,
   .hero > picture img {
-    max-width: min(200px, 58vw);
-    max-height: 150px;
+    max-width: min(190px, 54vw);
+    max-height: 145px;
   }
 }
 

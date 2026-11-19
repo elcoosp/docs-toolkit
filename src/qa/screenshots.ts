@@ -262,7 +262,7 @@ async function worker() {
     if (idx >= jobs.length) break;
     const job = jobs[idx]!;
     const { route, vpName, theme, outFile } = job;
-    const isNotFound = route === '/404.html';
+    const isNotFound = route === '/404.html' || route.endsWith('/404/');
     const slot = pool.get(vpName + ':' + theme)!;
     slot.activeJob = job;
     const { page } = slot;
@@ -292,7 +292,7 @@ async function worker() {
           .filter((i) => {
             const src = (i as HTMLImageElement).currentSrc || (i as HTMLImageElement).src;
             if (!src.startsWith(window.location.origin)) return false;
-            return !i.complete || (i as HTMLImageElement).naturalWidth === 0;
+            return i.complete && (i as HTMLImageElement).naturalWidth === 0;
           })
           .map((i) => (i as HTMLImageElement).currentSrc || (i as HTMLImageElement).src),
         logo: logo
