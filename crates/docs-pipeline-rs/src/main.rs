@@ -3,6 +3,7 @@ mod plugins;
 
 use host::html_dom::parse_all_html;
 use host::md_source::load_all_markdown;
+use plugins::api_drift::{run_api_drift, ApiDriftCfg, ApiDriftLabels};
 use plugins::code_symbols::{run_code_symbols, CodeSymbolsCfg};
 use plugins::concept_trail::{run_concept_trail, ConceptTrailLabels};
 use plugins::diataxis_lint::run_diataxis_lint;
@@ -55,6 +56,10 @@ struct PipelineRequest {
     diataxis_lint: Option<DiataxisCfg>,
     #[serde(default)]
     llms: Option<LlmsConfig>,
+    #[serde(default)]
+    api_drift: Option<ApiDriftCfg>,
+    #[serde(default)]
+    api_drift_i18n: HashMap<String, ApiDriftLabels>,
 }
 
 fn default_locale() -> String {
@@ -128,6 +133,9 @@ struct PipelineResponse {
     llms_pages: usize,
     i18n_pairs: usize,
     diataxis_audited: usize,
+    api_drift_source_syms: usize,
+    api_drift_coverage_pct: usize,
+    api_drift_phantoms: usize,
     warnings: Vec<String>,
     errors: Vec<String>,
 }
@@ -237,6 +245,15 @@ fn main() {
         0
     };
 
+    let (api_drift_source_syms, api_drift_coverage_pct, api_drift_phantoms) = if let Some(ad_cfg) = &req.api_drift {
+        let rep = run_api_drift(&site_root, &dist_dir, &pages, &docs, ad_cfg, &req.default_locale, &req.api_drift_i18n);
+        warnings.extend(rep.warnings);
+        errors.extend(rep.errors);
+        (rep.source_symbols, rep.coverage_pct, rep.phantoms.len())
+    } else {
+        (0, 0, 0)
+    };
+
     let diataxis_audited = if let Some(d_cfg) = &req.diataxis_lint {
         let rep = run_diataxis_lint(
             &docs,
@@ -292,6 +309,9 @@ fn main() {
         llms_pages,
         i18n_pairs,
         diataxis_audited,
+        api_drift_source_syms,
+        api_drift_coverage_pct,
+        api_drift_phantoms,
         warnings,
         errors,
     };
