@@ -2,7 +2,7 @@
 <img src="https://cdn.jsdelivr.net/gh/elcoosp/docs-toolkit@main/docs/logo.png" alt="docs-toolkit Logo" width="300"/>
   <p>
     <strong>A Starlight docs toolkit that verifies API references against source AST and keeps multilingual docs in parity.</strong><br/>
-    Combines a Rust pipeline powered by tree-sitter with TypeScript plugins for OG images, glossaries, related pages, and Diátaxis linting. Built for maintainers of Starlight sites who need fast, deterministic docs QA without hardcoded strings.
+    Combines a Rust pipeline powered by tree-sitter with TypeScript plugins for OG images, glossaries, related pages, semantic doc graphs, and Diátaxis linting. Built for maintainers of Starlight sites who need fast, deterministic docs QA without hardcoded strings.
   </p>
   <p>
     <a href="https://www.npmjs.com/package/@elcoosp/docs-toolkit"><img src="https://img.shields.io/npm/v/@elcoosp/docs-toolkit?style=flat-square" alt="npm version"/></a>
@@ -45,6 +45,8 @@ export default await defineDocsConfig({
     linkPreview: true,
     readingContext: true,
     apiDrift: { strict: false },
+    snippetDrift: { strict: false },
+    docGraph: { strict: false, warnOrphans: true },
   },
 });
 ```
@@ -54,31 +56,33 @@ pnpm build
 ```
 
 ```text
-Rust pipeline completed in 12 ms — api-drift: 1,232 source symbols, 74 matched, 0 phantoms
+Rust pipeline completed in 12 ms — doc-graph (42 nodes, 142 edges, 0 orphans) · api-drift (86% cov, 0 phantom) · snippet-drift (52 blocks, 0 issues)
 ```
 
 ## Features
 
-- **AST-verified API references**: `api-drift` parses Rust and TypeScript with tree-sitter, flags symbols in `/reference/` pages that no longer exist in public source. No regex heuristics.
+- **AST-verified API & snippet drift**: `api-drift` and `snippet-drift` parse Rust and TypeScript with tree-sitter, flagging phantom symbols, syntax errors, and stale versions in `/reference/` pages and code blocks.
+- **Semantic doc graph & PageRank**: `doc-graph` computes the directed link graph per locale, ranks hub pages with PageRank, detects orphan pages, writes `dist/graph.json`, and surfaces connected pages inside the `⌘K` palette.
 - **Multilingual parity**: `i18n-parity` ensures every key in `i18n/en.json` has a matching entry in every locale, using the conventional Starlight translation flow.
 - **Diátaxis-aware linting**: `diataxis-lint` checks that pages fit one of the four documentation types and warns when a tutorial becomes reference or vice versa.
-- **Fast native pipeline**: the Rust `docs-pipeline-rs` crate runs AST extraction and API indexing in parallel with rayon, adding milliseconds to a build.
+- **Fast native pipeline**: the Rust `docs-pipeline-rs` crate runs AST extraction, link graph analysis, and API indexing in parallel with rayon, adding milliseconds to a build.
 - **OG images and badges**: auto-derived accent colours, per-page PNG generation, and section badges from a single `defineDocsConfig` call.
-- **Discovery plugins**: related pages, term glossary, smart TOC progress, link preview, and reading context.
+- **Discovery plugins**: `⌘K` command palette, related pages, term glossary, smart TOC progress, link preview, and reading context.
 - **No hardcoded strings**: every user-facing message flows through `injectTranslations` and the standard `i18n/*.json` files.
 
 ## How it works
 
-`defineDocsConfig` wires Starlight plugins into the Astro build. When the native pipeline is enabled, the Rust binary builds a public-API index from your repository using tree-sitter, then compares that index against symbols referenced in `/reference/` routes and code snippets.
+`defineDocsConfig` wires Starlight plugins into the Astro build. When the native pipeline is enabled, the Rust binary builds a public-API index from your repository using tree-sitter, computes the directed documentation graph, and audits `/reference/` routes and code snippets in parallel.
 
 ```mermaid
 flowchart LR
   A[Astro build] --> B[Starlight plugins]
   B --> C[Rust docs-pipeline-rs]
   C --> D[tree-sitter AST index]
-  D --> E[api-drift report]
-  B --> F[i18n parity]
-  B --> G[Diátaxis lint]
+  C --> G[Directed doc graph]
+  D --> E[api-drift & snippet-drift]
+  G --> K[dist/graph.json & ⌘K palette]
+  B --> F[i18n parity & Diátaxis lint]
   E --> H[Build warnings / errors]
 ```
 
@@ -99,6 +103,8 @@ export default await defineDocsConfig({
   description: 'Documentation for my project',
   plugins: {
     apiDrift: { strict: true, writeReport: true },
+    snippetDrift: { strict: true, writeReport: true },
+    docGraph: { strict: false, warnOrphans: true },
     i18nParity: { defaultLocale: 'en' },
     diataxisLint: { warnOnly: false },
   },
@@ -129,7 +135,7 @@ export default {
 };
 ```
 
-### API drift report
+### API drift & doc graph reports
 
 ```json
 {
@@ -142,12 +148,12 @@ export default {
 }
 ```
 
-The report is written to `dist/api-drift.json` when `writeReport` is enabled. Set `strict: true` to turn phantom references into build errors.
+Reports are written to `dist/api-drift.json`, `dist/snippet-drift.json`, and `dist/graph.json` during postbuild. Set `strict: true` to turn phantom references, snippet errors, or orphan pages into build errors.
 
 ## Status
 
 > [!NOTE]
-> Stable at v1.6.9. The Rust pipeline ships prebuilt binaries for macOS, Linux, and Windows through `assets/bin`; building from source requires a Rust toolchain. TypeScript plugins target Starlight on Astro 5+. The test suite covers unit, browser, and real-site e2e projects through Vitest.
+> Stable at v1.6.13. The Rust pipeline ships prebuilt binaries for macOS, Linux, and Windows through `assets/bin`; building from source requires a Rust toolchain. TypeScript plugins target Starlight on Astro 5+. The test suite covers unit, browser, and real-site e2e projects through Vitest.
 
 ## Learn more
 
