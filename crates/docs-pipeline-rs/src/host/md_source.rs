@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct MdDoc {
