@@ -15,22 +15,25 @@ const ICONS: Record<DiataxisItem['quadrant'], StarlightIcon> = {
   explanation: 'information',
 };
 
+const t = (Astro.locals as any).t as ((k: string) => string) | undefined;
+const tr = (key: string, fallback: string): string => {
+  try {
+    const val = t?.(key);
+    return val && val !== key ? val : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const isFr = Astro.currentLocale?.startsWith('fr') || Astro.url.pathname.startsWith('/fr');
 const p = isFr ? '/fr' : '';
 
-const DEFAULTS: DiataxisItem[] = isFr
-  ? [
-      { quadrant: 'tutorials', title: 'Tutoriels', description: "Suivez un parcours pas à pas de l'installation à un projet fonctionnel.", href: `${p}/tutorials/` },
-      { quadrant: 'how-to', title: 'Guides pratiques', description: 'Résolvez des tâches précises avec des recettes ciblées et des exemples concrets.', href: `${p}/guides/` },
-      { quadrant: 'reference', title: 'Référence', description: 'Consultez les API exactes, les types, les options CLI et la configuration.', href: `${p}/reference/` },
-      { quadrant: 'explanation', title: 'Explications', description: "Comprenez l'architecture, les choix de conception et le fonctionnement interne.", href: `${p}/explanation/` },
-    ]
-  : [
-      { quadrant: 'tutorials', title: 'Tutorials', description: 'Follow a step-by-step walkthrough from installation to a working project.', href: `${p}/tutorials/` },
-      { quadrant: 'how-to', title: 'How-to Guides', description: 'Solve specific tasks with focused, practical recipes and configuration patterns.', href: `${p}/guides/` },
-      { quadrant: 'reference', title: 'Reference', description: 'Look up exact APIs, types, CLI flags, configuration keys, and error codes.', href: `${p}/reference/` },
-      { quadrant: 'explanation', title: 'Explanation', description: 'Understand the architecture, design trade-offs, and mental model under the hood.', href: `${p}/explanation/` },
-    ];
+const DEFAULTS: DiataxisItem[] = [
+  { quadrant: 'tutorials', title: tr('diataxis.tutorials', 'Tutorials'), description: tr('diataxis.tutorialsDesc', 'Follow a step-by-step walkthrough from installation to a working project.'), href: `${p}/tutorials/` },
+  { quadrant: 'how-to', title: tr('diataxis.howTo', 'How-to Guides'), description: tr('diataxis.howToDesc', 'Solve specific tasks with focused, practical recipes and configuration patterns.'), href: `${p}/guides/` },
+  { quadrant: 'reference', title: tr('diataxis.reference', 'Reference'), description: tr('diataxis.referenceDesc', 'Look up exact APIs, types, CLI flags, configuration keys, and error codes.'), href: `${p}/reference/` },
+  { quadrant: 'explanation', title: tr('diataxis.explanation', 'Explanation'), description: tr('diataxis.explanationDesc', 'Understand the architecture, design trade-offs, and mental model under the hood.'), href: `${p}/explanation/` },
+];
 
 const { items = DEFAULTS, stagger = true } = Astro.props;
 ---
