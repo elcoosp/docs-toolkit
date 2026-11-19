@@ -31,7 +31,11 @@ fn analyze_markdown(body: &str, all_locales: &HashSet<String>) -> DocStructure {
         if buf.is_empty() {
             return;
         }
-        let joined = buf.join(" ").split_whitespace().collect::<Vec<_>>().join(" ");
+        let joined = buf
+            .join(" ")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
         buf.clear();
         let mut prose_letters = 0usize;
         let mut in_code = false;
@@ -111,7 +115,11 @@ fn analyze_markdown(body: &str, all_locales: &HashSet<String>) -> DocStructure {
             let seg = raw_href.split('/').nth(1).unwrap_or("");
             let mut href = if !seg.is_empty() && all_locales.contains(seg) {
                 let stripped = &raw_href[seg.len() + 1..];
-                if stripped.is_empty() { "/".to_string() } else { stripped.to_string() }
+                if stripped.is_empty() {
+                    "/".to_string()
+                } else {
+                    stripped.to_string()
+                }
             } else {
                 raw_href.to_string()
             };
@@ -146,7 +154,11 @@ pub fn run_i18n_parity(
     }
 
     let is_ignored = |rel: &str| -> bool {
-        if rel == "404.md" || rel == "404.mdx" || rel.ends_with("/404.md") || rel.ends_with("/404.mdx") {
+        if rel == "404.md"
+            || rel == "404.mdx"
+            || rel.ends_with("/404.md")
+            || rel.ends_with("/404.mdx")
+        {
             return true;
         }
         ignore_paths.iter().any(|p| rel.starts_with(p.as_str()))
@@ -163,15 +175,17 @@ pub fn run_i18n_parity(
             if !is_ignored(&doc.rel_no_locale) {
                 default_docs.insert(doc.rel_no_locale.as_str(), doc);
             }
-        } else if let Some(map) = localized_docs.get_mut(doc.locale.as_str()) {
-            if !is_ignored(&doc.rel_no_locale) {
-                map.insert(doc.rel_no_locale.as_str(), doc);
-            }
+        } else if let Some(map) = localized_docs.get_mut(doc.locale.as_str())
+            && !is_ignored(&doc.rel_no_locale)
+        {
+            map.insert(doc.rel_no_locale.as_str(), doc);
         }
     }
 
     for loc in secondary_locales {
-        let Some(loc_map) = localized_docs.get(loc.as_str()) else { continue };
+        let Some(loc_map) = localized_docs.get(loc.as_str()) else {
+            continue;
+        };
         for (&rel, &en_doc) in &default_docs {
             let Some(&loc_doc) = loc_map.get(rel) else {
                 report.errors.push(format!(
@@ -183,7 +197,11 @@ pub fn run_i18n_parity(
             let en_s = analyze_markdown(&en_doc.body, all_locales);
             let loc_s = analyze_markdown(&loc_doc.body, all_locales);
 
-            let is_changelog = rel == "changelog.md" || rel == "changelog.mdx" || rel == "release-notes.md" || rel == "release-notes.mdx" || rel.ends_with("/changelog.md")
+            let is_changelog = rel == "changelog.md"
+                || rel == "changelog.mdx"
+                || rel == "release-notes.md"
+                || rel == "release-notes.mdx"
+                || rel.ends_with("/changelog.md")
                 || rel.ends_with("changelog.mdx")
                 || rel.ends_with("release-notes.md")
                 || rel.ends_with("release-notes.mdx");
@@ -212,9 +230,15 @@ pub fn run_i18n_parity(
                 ));
             }
             if en_s.links != loc_s.links {
-                report.warnings.push(format!("Internal link drift on \"{rel}\" between default and \"{loc}\"."));
+                report.warnings.push(format!(
+                    "Internal link drift on \"{rel}\" between default and \"{loc}\"."
+                ));
             }
-            let untranslated = loc_s.paragraphs.iter().filter(|p| en_s.paragraphs.contains(*p)).count();
+            let untranslated = loc_s
+                .paragraphs
+                .iter()
+                .filter(|p| en_s.paragraphs.contains(*p))
+                .count();
             if untranslated > 0 {
                 report.warnings.push(format!(
                     "Possible untranslated English prose in \"{loc}/{rel}\" ({untranslated} identical paragraph(s))."

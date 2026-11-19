@@ -22,10 +22,18 @@ function animateZenToggle(btn: HTMLButtonElement, on: boolean): void {
   if (expandIcon && compressIcon) {
     if (on) {
       animate(expandIcon, { opacity: 0, scale: 0.45, rotate: -45 }, { duration: 0.18, ease: 'easeOut' });
-      animate(compressIcon, { opacity: 1, scale: [0.5, 1.15, 1], rotate: [45, 0] }, { type: spring, stiffness: 520, damping: 26 });
+      animate(
+        compressIcon,
+        { opacity: 1, scale: [0.5, 1.15, 1], rotate: [45, 0] },
+        { type: spring, stiffness: 520, damping: 26 },
+      );
     } else {
       animate(compressIcon, { opacity: 0, scale: 0.45, rotate: 45 }, { duration: 0.18, ease: 'easeOut' });
-      animate(expandIcon, { opacity: 1, scale: [0.5, 1.15, 1], rotate: [-45, 0] }, { type: spring, stiffness: 520, damping: 26 });
+      animate(
+        expandIcon,
+        { opacity: 1, scale: [0.5, 1.15, 1], rotate: [-45, 0] },
+        { type: spring, stiffness: 520, damping: 26 },
+      );
     }
   }
 }
@@ -50,7 +58,10 @@ function setZenState(on: boolean, shouldAnimate: boolean): void {
 export function initZenMode(): void {
   const root = document.documentElement;
   const params = new URLSearchParams(window.location.search);
-  const initial = params.get('zen') === '1' || localStorage.getItem('sl-zen-mode') === '1' || root.getAttribute('data-zen-mode') === 'true';
+  const initial =
+    params.get('zen') === '1' ||
+    localStorage.getItem('sl-zen-mode') === '1' ||
+    root.getAttribute('data-zen-mode') === 'true';
   setZenState(initial, false);
 
   if (root.dataset.zenBound === 'true') return;

@@ -37,6 +37,52 @@ pub struct PhantomRef {
     pub symbol: String,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct PublicApiIndex {
+    pub repo_root: Option<PathBuf>,
+    pub syms: HashSet<String>,
+    pub fields: HashSet<String>,
+    pub literals: HashSet<String>,
+}
+
+pub fn build_public_api_index(site_root: &Path) -> PublicApiIndex {
+    let Some(repo_root) = find_repo_root(site_root) else {
+        return PublicApiIndex::default();
+    };
+    let rs_lang = tree_sitter_rust::LANGUAGE.into();
+    let ts_lang = tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into();
+    let tsx_lang = tree_sitter_typescript::LANGUAGE_TSX.into();
+    let (Ok(rs_q), Ok(ts_q), Ok(tsx_q)) = (
+        Query::new(&rs_lang, RUST_QUERY),
+        Query::new(&ts_lang, TS_QUERY),
+        Query::new(&tsx_lang, TS_QUERY),
+    ) else {
+        return PublicApiIndex {
+            repo_root: Some(repo_root),
+            ..Default::default()
+        };
+    };
+    let files = collect_source_files(&repo_root);
+    let extracted: Vec<_> = files
+        .par_iter()
+        .filter_map(|p| parse_file_ast(p, &rs_q, &ts_q, &tsx_q))
+        .collect();
+    let mut syms = HashSet::new();
+    let mut fields = HashSet::new();
+    let mut literals = HashSet::new();
+    for item in extracted {
+        syms.extend(item.syms);
+        fields.extend(item.fields);
+        literals.extend(item.literals);
+    }
+    PublicApiIndex {
+        repo_root: Some(repo_root),
+        syms,
+        fields,
+        literals,
+    }
+}
+
 #[derive(Debug, Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiDriftReport {
@@ -50,14 +96,34 @@ pub struct ApiDriftReport {
 }
 
 const SKIP_DIRS: &[&str] = &[
-    "target", "node_modules", "examples", "benches", "fuzz", "tests",
-    "test", "stubs", "website", "bench", ".git", "dist", ".astro",
+    "target",
+    "node_modules",
+    "examples",
+    "benches",
+    "fuzz",
+    "tests",
+    "test",
+    "stubs",
+    "website",
+    "bench",
+    ".git",
+    "dist",
+    ".astro",
 ];
 
 const SKIP_PAGES: &[&str] = &[
-    "language", "syntax", "grammar", "changelog", "release-notes",
-    "benchmarks", "compile-error-catalogue", "error-messages",
-    "tui-keys", "wire-protocol", "lint-codes", "skill-format",
+    "language",
+    "syntax",
+    "grammar",
+    "changelog",
+    "release-notes",
+    "benchmarks",
+    "compile-error-catalogue",
+    "error-messages",
+    "tui-keys",
+    "wire-protocol",
+    "lint-codes",
+    "skill-format",
     "presets-and-themes",
 ];
 
@@ -136,7 +202,10 @@ fn collect_source_files(repo_root: &Path) -> Vec<PathBuf> {
             if name.ends_with(".test.ts") || name.ends_with(".spec.ts") || name.ends_with(".d.ts") {
                 return false;
             }
-            matches!(p.extension().and_then(|e| e.to_str()), Some("rs" | "ts" | "tsx"))
+            matches!(
+                p.extension().and_then(|e| e.to_str()),
+                Some("rs" | "ts" | "tsx")
+            )
         })
         .collect()
 }
@@ -168,7 +237,9 @@ fn parse_file_ast(path: &Path, rs_q: &Query, ts_q: &Query, tsx_q: &Query) -> Opt
     let mut matches = cursor.matches(query, tree.root_node(), bytes.as_slice());
     while let Some(m) = matches.next() {
         for cap in m.captures() {
-            let Ok(text) = cap.node.utf8_text(&bytes) else { continue };
+            let Ok(text) = cap.node.utf8_text(&bytes) else {
+                continue;
+            };
             if Some(cap.index) == idx_sym {
                 out.syms.insert(text.to_string());
             } else if Some(cap.index) == idx_macro {
@@ -178,12 +249,13 @@ fn parse_file_ast(path: &Path, rs_q: &Query, ts_q: &Query, tsx_q: &Query) -> Opt
                 if text.len() >= 3 {
                     out.fields.insert(text.to_string());
                 }
-            } else if Some(cap.index) == idx_lit {
-                if (3..=36).contains(&text.len())
-                    && text.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
-                {
-                    out.literals.insert(text.to_string());
-                }
+            } else if Some(cap.index) == idx_lit
+                && (3..=36).contains(&text.len())
+                && text
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
+            {
+                out.literals.insert(text.to_string());
             }
         }
     }
@@ -192,7 +264,9 @@ fn parse_file_ast(path: &Path, rs_q: &Query, ts_q: &Query, tsx_q: &Query) -> Opt
 
 fn is_camel_case(s: &str) -> bool {
     let mut chars = s.chars();
-    let Some(first) = chars.next() else { return false };
+    let Some(first) = chars.next() else {
+        return false;
+    };
     first.is_ascii_uppercase()
         && s.chars().any(|c| c.is_ascii_lowercase())
         && s.chars().skip(1).any(|c| c.is_ascii_uppercase())
@@ -202,7 +276,8 @@ fn is_camel_case(s: &str) -> bool {
 fn is_snake_case(s: &str) -> bool {
     s.contains('_')
         && s.len() >= 3
-        && s.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
 fn extract_heading_symbols(heading: &str, page_slug: &str) -> Vec<String> {
@@ -220,7 +295,9 @@ fn extract_heading_symbols(heading: &str, page_slug: &str) -> Vec<String> {
             || code.contains(' ')
             || code.contains('/')
             || code.starts_with("--")
-            || [".toml", ".json", ".rs", ".ts", ".md"].iter().any(|ext| code.contains(ext))
+            || [".toml", ".json", ".rs", ".ts", ".md"]
+                .iter()
+                .any(|ext| code.contains(ext))
         {
             continue;
         }
@@ -234,11 +311,21 @@ fn extract_heading_symbols(heading: &str, page_slug: &str) -> Vec<String> {
         }
     }
 
-    if out.is_empty() && !had_backtick && !matches!(page_slug, "cli" | "configuration" | "config" | "feature-flags") {
+    if out.is_empty()
+        && !had_backtick
+        && !matches!(
+            page_slug,
+            "cli" | "configuration" | "config" | "feature-flags"
+        )
+    {
         let trimmed = heading.trim();
         if is_camel_case(trimmed)
             || is_snake_case(trimmed)
-            || (trimmed.ends_with('!') && trimmed.len() >= 4 && trimmed[..trimmed.len() - 1].bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_'))
+            || (trimmed.ends_with('!')
+                && trimmed.len() >= 4
+                && trimmed[..trimmed.len() - 1]
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_'))
         {
             out.push(trimmed.to_string());
         }
@@ -246,8 +333,8 @@ fn extract_heading_symbols(heading: &str, page_slug: &str) -> Vec<String> {
     out
 }
 
-pub fn run_api_drift(
-    site_root: &Path,
+pub fn run_api_drift_with_index(
+    api: &PublicApiIndex,
     dist_dir: &Path,
     pages: &[PageDom],
     docs: &[MdDoc],
@@ -255,117 +342,110 @@ pub fn run_api_drift(
     default_locale: &str,
     i18n: &HashMap<String, ApiDriftLabels>,
 ) -> ApiDriftReport {
-    let Some(repo_root) = find_repo_root(site_root) else {
+    if api.syms.is_empty() {
         return ApiDriftReport::default();
+    }
+    let fb = i18n
+        .get(default_locale)
+        .or_else(|| i18n.get("en"))
+        .cloned()
+        .unwrap_or_default();
+    let mut matched_set = HashSet::new();
+    let mut phantoms = Vec::new();
+    let mut seen_phantoms = HashSet::new();
+
+    for page in pages {
+        if !page.route.contains("/reference/") {
+            continue;
+        }
+        let slug = page
+            .route
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .unwrap_or("");
+        if SKIP_PAGES.contains(&slug) {
+            continue;
+        }
+        for (_, htxt) in &page.headings {
+            for sym in extract_heading_symbols(htxt, slug) {
+                let bare = sym.trim_end_matches('!');
+                let found = api.syms.contains(&sym)
+                    || api.syms.contains(bare)
+                    || api.fields.contains(bare)
+                    || (matches!(slug, "cli" | "tools") && api.literals.contains(bare));
+                if found {
+                    matched_set.insert(bare.to_string());
+                } else if seen_phantoms.insert((page.route.clone(), sym.clone())) {
+                    phantoms.push(PhantomRef {
+                        route: page.route.clone(),
+                        symbol: sym,
+                    });
+                }
+            }
+        }
+    }
+
+    let all_syms_vec: Vec<&String> = api.syms.iter().collect();
+    for doc in docs {
+        if !doc.route.contains("/reference/") {
+            continue;
+        }
+        for s in &all_syms_vec {
+            if s.len() >= 4 && doc.body.contains(s.as_str()) {
+                matched_set.insert((*s).clone());
+            }
+        }
+    }
+
+    let source_symbols = api.syms.len();
+    let matched_symbols = matched_set.len();
+    let coverage_pct = (matched_symbols * 100)
+        .checked_div(source_symbols)
+        .unwrap_or(0);
+
+    let labels = i18n.get(default_locale).unwrap_or(&fb);
+    let tpl = if labels.phantom_warning.is_empty() {
+        &fb.phantom_warning
+    } else {
+        &labels.phantom_warning
     };
 
-    let rs_lang = tree_sitter_rust::LANGUAGE.into();
-    let ts_lang = tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into();
-    let tsx_lang = tree_sitter_typescript::LANGUAGE_TSX.into();
+    let mut warnings = Vec::new();
+    let mut errors = Vec::new();
+    for ph in &phantoms {
+        let msg = format!(
+            "[docs-toolkit:api-drift] {}",
+            tpl.replace("{symbol}", &ph.symbol)
+                .replace("{route}", &ph.route)
+        );
+        if cfg.strict {
+            errors.push(msg);
+        } else {
+            warnings.push(msg);
+        }
+    }
 
-    let (Ok(rs_q), Ok(ts_q), Ok(tsx_q)) = (
-        Query::new(&rs_lang, RUST_QUERY),
-        Query::new(&ts_lang, TS_QUERY),
-Query::new(&tsx_lang, TS_QUERY),
-) else {
-return ApiDriftReport::default();
-};
-let files = collect_source_files(&repo_root);
-let extracted: Vec<_> = files
-.par_iter()
-.filter_map(|p| parse_file_ast(p, &rs_q, &ts_q, &tsx_q))
-.collect();
-let mut all_syms = HashSet::new();
-let mut all_fields = HashSet::new();
-let mut all_literals = HashSet::new();
-for item in extracted {
-all_syms.extend(item.syms);
-all_fields.extend(item.fields);
-all_literals.extend(item.literals);
-}
-if all_syms.is_empty() {
-return ApiDriftReport::default();
-}
-let fb = i18n.get(default_locale).or_else(|| i18n.get("en")).cloned().unwrap_or_default();
-let mut matched_set = HashSet::new();
-let mut phantoms = Vec::new();
-let mut seen_phantoms = HashSet::new();
-for page in pages {
-if !page.route.contains("/reference/") {
-continue;
-}
-let slug = page.route.trim_end_matches('/').rsplit('/').next().unwrap_or("");
-if SKIP_PAGES.contains(&slug) {
-continue;
-}
-for (_, htxt) in &page.headings {
-for sym in extract_heading_symbols(htxt, slug) {
-let bare = sym.trim_end_matches('!');
-let found = all_syms.contains(&sym)
-|| all_syms.contains(bare)
-|| all_fields.contains(bare)
-|| (matches!(slug, "cli" | "tools") && all_literals.contains(bare));
-if found {
-matched_set.insert(bare.to_string());
-} else if seen_phantoms.insert((page.route.clone(), sym.clone())) {
-phantoms.push(PhantomRef {
-route: page.route.clone(),
-symbol: sym,
-});
-}
-}
-}
-}
-let all_syms_vec: Vec<&String> = all_syms.iter().collect();
-for doc in docs {
-if !doc.route.contains("/reference/") {
-continue;
-}
-for s in &all_syms_vec {
-if s.len() >= 4 && doc.body.contains(s.as_str()) {
-matched_set.insert((*s).clone());
-}
-}
-}
-let source_symbols = all_syms.len();
-let matched_symbols = matched_set.len();
-let coverage_pct = if source_symbols > 0 {
-(matched_symbols * 100) / source_symbols
-} else {
-0
-};
-let labels = i18n.get(default_locale).unwrap_or(&fb);
-let tpl = if labels.phantom_warning.is_empty() {
-&fb.phantom_warning
-} else {
-&labels.phantom_warning
-};
-let mut warnings = Vec::new();
-let mut errors = Vec::new();
-for ph in &phantoms {
-let msg = format!(
-"[docs-toolkit:api-drift] {}",
-tpl.replace("{symbol}", &ph.symbol).replace("{route}", &ph.route)
-);
-if cfg.strict {
-errors.push(msg);
-} else {
-warnings.push(msg);
-}
-}
-let report = ApiDriftReport {
-        title: if labels.report_title.is_empty() { fb.report_title.clone() } else { labels.report_title.clone() },
-source_symbols,
-matched_symbols,
-coverage_pct,
-phantoms,
-warnings,
-errors,
-};
-if cfg.write_report {
-if let Ok(json) = serde_json::to_string_pretty(&report) {
-let _ = fs::write(dist_dir.join("api-drift.json"), json);
-}
-}
-report
+    let title = if labels.report_title.is_empty() {
+        fb.report_title.clone()
+    } else {
+        labels.report_title.clone()
+    };
+    let report = ApiDriftReport {
+        title,
+        source_symbols,
+        matched_symbols,
+        coverage_pct,
+        phantoms,
+        warnings,
+        errors,
+    };
+
+    if cfg.write_report
+        && let Ok(json) = serde_json::to_string_pretty(&report)
+    {
+        let _ = fs::write(dist_dir.join("api-drift.json"), json);
+    }
+
+    report
 }

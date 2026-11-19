@@ -42,7 +42,10 @@ export function resolvePipelineBinary(): string | null {
     fileURLToPath(new URL(`../assets/bin/docs-pipeline-rs-${suffix}`, import.meta.url)),
     fileURLToPath(new URL(`../../assets/bin/docs-pipeline-rs-${suffix}`, import.meta.url)),
     fileURLToPath(new URL(`../../../assets/bin/docs-pipeline-rs-${suffix}`, import.meta.url)),
-    path.resolve(process.cwd(), `node_modules/@elcoosp/docs-toolkit/dist/assets/bin/docs-pipeline-rs-${suffix}`),
+    path.resolve(
+      process.cwd(),
+      `node_modules/@elcoosp/docs-toolkit/dist/assets/bin/docs-pipeline-rs-${suffix}`,
+    ),
     path.resolve(process.cwd(), `node_modules/@elcoosp/docs-toolkit/assets/bin/docs-pipeline-rs-${suffix}`),
   ];
   for (const candidate of candidates) {
@@ -82,11 +85,20 @@ export function registerNativePipelinePlugin(
  */
 function loadMergedI18n(siteRoot: string): Record<string, Record<string, string>> {
   const dicts: Record<string, Record<string, string>> = {};
-  for (const dir of [fileURLToPath(new URL('../../i18n', import.meta.url)), fileURLToPath(new URL('../../../i18n', import.meta.url)), path.join(siteRoot, 'src/content/i18n')]) {
+  for (const dir of [
+    fileURLToPath(new URL('../../i18n', import.meta.url)),
+    fileURLToPath(new URL('../../../i18n', import.meta.url)),
+    path.join(siteRoot, 'src/content/i18n'),
+  ]) {
     if (!fs.existsSync(dir)) continue;
     for (const file of fs.readdirSync(dir)) {
       if (!file.endsWith('.json')) continue;
-      try { dicts[file.slice(0, -5)] = { ...(dicts[file.slice(0, -5)] ?? {}), ...JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) }; } catch {}
+      try {
+        dicts[file.slice(0, -5)] = {
+          ...(dicts[file.slice(0, -5)] ?? {}),
+          ...JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')),
+        };
+      } catch {}
     }
   }
   return dicts;
@@ -95,7 +107,26 @@ function buildConceptTrailI18n(dicts: Record<string, Record<string, string>>, de
   const fb = dicts[def] ?? dicts.en ?? {};
   const out: Record<string, { label: string; ariaLabel: string }> = {};
   for (const [loc, d] of Object.entries(dicts)) {
-    out[loc] = { label: d['conceptTrail.label'] ?? fb['conceptTrail.label'] ?? 'Builds on', ariaLabel: d['conceptTrail.ariaLabel'] ?? fb['conceptTrail.ariaLabel'] ?? 'Prerequisite concepts' };
+    out[loc] = {
+      label: d['conceptTrail.label'] ?? fb['conceptTrail.label'] ?? 'Builds on',
+      ariaLabel: d['conceptTrail.ariaLabel'] ?? fb['conceptTrail.ariaLabel'] ?? 'Prerequisite concepts',
+    };
+  }
+  return out;
+}
+function buildSnippetDriftI18n(dicts: Record<string, Record<string, string>>, def: string) {
+  const fb = dicts[def] ?? dicts.en ?? {};
+  const out: Record<
+    string,
+    { syntaxError: string; importPhantom: string; versionDrift: string; reportTitle: string }
+  > = {};
+  for (const [loc, d] of Object.entries(dicts)) {
+    out[loc] = {
+      syntaxError: d['snippetDrift.syntaxError'] ?? fb['snippetDrift.syntaxError'] ?? '',
+      importPhantom: d['snippetDrift.importPhantom'] ?? fb['snippetDrift.importPhantom'] ?? '',
+      versionDrift: d['snippetDrift.versionDrift'] ?? fb['snippetDrift.versionDrift'] ?? '',
+      reportTitle: d['snippetDrift.reportTitle'] ?? fb['snippetDrift.reportTitle'] ?? '',
+    };
   }
   return out;
 }
@@ -114,7 +145,11 @@ function buildSinceBadgesI18n(dicts: Record<string, Record<string, string>>, def
   const fb = dicts[def] ?? dicts.en ?? {};
   const out: Record<string, { new: string; breaking: string; deprecated: string }> = {};
   for (const [loc, d] of Object.entries(dicts)) {
-    out[loc] = { new: d['sinceBadges.new'] ?? fb['sinceBadges.new'] ?? 'New in v{version}', breaking: d['sinceBadges.breaking'] ?? fb['sinceBadges.breaking'] ?? 'Breaking v{version}', deprecated: d['sinceBadges.deprecated'] ?? fb['sinceBadges.deprecated'] ?? 'Deprecated v{version}' };
+    out[loc] = {
+      new: d['sinceBadges.new'] ?? fb['sinceBadges.new'] ?? 'New in v{version}',
+      breaking: d['sinceBadges.breaking'] ?? fb['sinceBadges.breaking'] ?? 'Breaking v{version}',
+      deprecated: d['sinceBadges.deprecated'] ?? fb['sinceBadges.deprecated'] ?? 'Deprecated v{version}',
+    };
   }
   return out;
 }
@@ -138,7 +173,11 @@ export async function runNativePipelineOnce(
       distDir,
       defaultLocale: state.defaultLocale,
       locales: Array.from(state.locales),
-      i18n: loadMergedI18n(state.siteRoot), sinceBadgesI18n: buildSinceBadgesI18n(loadMergedI18n(state.siteRoot), state.defaultLocale), conceptTrailI18n: buildConceptTrailI18n(loadMergedI18n(state.siteRoot), state.defaultLocale), apiDriftI18n: buildApiDriftI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
+      i18n: loadMergedI18n(state.siteRoot),
+      sinceBadgesI18n: buildSinceBadgesI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
+      conceptTrailI18n: buildConceptTrailI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
+      apiDriftI18n: buildApiDriftI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
+      snippetDriftI18n: buildSnippetDriftI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
       ...state.plugins,
     };
 
@@ -168,7 +207,15 @@ export async function runNativePipelineOnce(
       htmlPages: number;
       mdDocs: number;
       mermaidRendered: number;
-      linkPreviewsIndexed: number; codeSymbolsIndexed?: number; codeSymbolLinks?: number; codeSymbolPages?: number; sinceBadgesIndexed?: number; sinceBadgesInjected?: number; sinceBadgesPages?: number; conceptTrailPages?: number; conceptTrailLinks?: number;
+      linkPreviewsIndexed: number;
+      codeSymbolsIndexed?: number;
+      codeSymbolLinks?: number;
+      codeSymbolPages?: number;
+      sinceBadgesIndexed?: number;
+      sinceBadgesInjected?: number;
+      sinceBadgesPages?: number;
+      conceptTrailPages?: number;
+      conceptTrailLinks?: number;
       glossaryIndexed: number;
       glossaryCoveragePct: number;
       glossaryAvgPerPage: string;
@@ -180,6 +227,8 @@ export async function runNativePipelineOnce(
       apiDriftSourceSyms?: number;
       apiDriftCoveragePct?: number;
       apiDriftPhantoms?: number;
+      snippetDriftChecked?: number;
+      snippetDriftIssues?: number;
       warnings: string[];
       errors: string[];
     };
@@ -187,15 +236,20 @@ export async function runNativePipelineOnce(
     try {
       report = JSON.parse((stdout || '').trim());
     } catch {
-      throw new Error(
-        `[docs-pipeline-rs] Failed to parse output (exit ${exitCode}):\n${stderr || stdout}`,
-      );
+      throw new Error(`[docs-pipeline-rs] Failed to parse output (exit ${exitCode}):\n${stderr || stdout}`);
     }
 
     const metrics = [`${report.htmlPages} HTML`, `${report.mdDocs} MD`];
     if (report.mermaidRendered > 0) metrics.push(`${report.mermaidRendered} diagrams`);
-    if (report.linkPreviewsIndexed > 0) metrics.push(`${report.linkPreviewsIndexed} previews`); if ((report.codeSymbolLinks ?? 0) > 0) metrics.push(`${report.codeSymbolLinks} code-links (${report.codeSymbolsIndexed} syms, ${report.codeSymbolPages} pages)`);
-    if ((report.sinceBadgesInjected ?? 0) > 0) metrics.push(`${report.sinceBadgesInjected} since-badges (${report.sinceBadgesPages} pages)`); if ((report.conceptTrailLinks ?? 0) > 0) metrics.push(`${report.conceptTrailLinks} concept-trail (${report.conceptTrailPages} pages)`);
+    if (report.linkPreviewsIndexed > 0) metrics.push(`${report.linkPreviewsIndexed} previews`);
+    if ((report.codeSymbolLinks ?? 0) > 0)
+      metrics.push(
+        `${report.codeSymbolLinks} code-links (${report.codeSymbolsIndexed} syms, ${report.codeSymbolPages} pages)`,
+      );
+    if ((report.sinceBadgesInjected ?? 0) > 0)
+      metrics.push(`${report.sinceBadgesInjected} since-badges (${report.sinceBadgesPages} pages)`);
+    if ((report.conceptTrailLinks ?? 0) > 0)
+      metrics.push(`${report.conceptTrailLinks} concept-trail (${report.conceptTrailPages} pages)`);
     if (report.glossaryIndexed > 0) {
       metrics.push(
         `${report.glossaryIndexed} glossary (${report.glossaryCoveragePct}% cov, ${report.glossaryAvgPerPage}/page)`,
@@ -207,12 +261,27 @@ export async function runNativePipelineOnce(
     if (report.llmsPages > 0) metrics.push(`${report.llmsPages} llms`);
     if (report.i18nPairs > 0) metrics.push(`${report.i18nPairs} i18n pairs`);
     if (report.diataxisAudited > 0) metrics.push(`${report.diataxisAudited} diataxis`);
-    if ((report.apiDriftSourceSyms ?? 0) > 0) metrics.push(`api-drift (${report.apiDriftCoveragePct}% cov, ${report.apiDriftPhantoms} phantom)`);
+    if ((report.apiDriftSourceSyms ?? 0) > 0)
+      metrics.push(`api-drift (${report.apiDriftCoveragePct}% cov, ${report.apiDriftPhantoms} phantom)`);
+    if ((report.snippetDriftChecked ?? 0) > 0)
+      metrics.push(
+        `snippet-drift (${report.snippetDriftChecked} blocks, ${report.snippetDriftIssues} issues)`,
+      );
 
-    logger.info(`Rust pipeline completed in ${report.elapsedMs}ms (${metrics.join(' · ')})`);
+    const forkLog = (tag: string) => (typeof logger.fork === 'function' ? logger.fork(tag) : logger);
+    const emitScoped = (level: 'warn' | 'error', msg: string): void => {
+      const m = msg.match(/^\[([^\]]+)\]\s*(.*)$/s);
+      if (m) {
+        forkLog(m[1])[level](m[2]);
+      } else {
+        forkLog('docs-toolkit')[level](msg);
+      }
+    };
 
-    for (const w of report.warnings) logger.warn(w);
-    for (const e of report.errors) logger.error(e);
+    forkLog('docs-toolkit').info(`Rust pipeline completed in ${report.elapsedMs}ms (${metrics.join(' · ')})`);
+
+    for (const w of report.warnings) emitScoped('warn', w);
+    for (const e of report.errors) emitScoped('error', e);
 
     if (exitCode !== 0 || report.errors.length > 0) {
       throw new Error(`[docs-pipeline-rs] Build failed with ${report.errors.length || 1} error(s).`);

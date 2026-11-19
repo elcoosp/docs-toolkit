@@ -13,12 +13,11 @@ pub struct RelatedItem {
 }
 
 const STOPWORDS: &[&str] = &[
-    "the", "and", "for", "with", "that", "this", "from", "into", "your", "when",
-    "where", "what", "which", "how", "why", "are", "was", "were", "will", "can",
-    "could", "should", "would", "have", "has", "had", "not", "but", "use", "using",
-    "les", "des", "une", "dans", "pour", "avec", "sans", "sur", "par", "est",
-    "sont", "cette", "ces", "qui", "que", "quoi", "comment", "pourquoi", "quand",
-    "plus", "tout", "tous", "chaque", "entre", "vers", "aux", "vous", "nous",
+    "the", "and", "for", "with", "that", "this", "from", "into", "your", "when", "where", "what",
+    "which", "how", "why", "are", "was", "were", "will", "can", "could", "should", "would", "have",
+    "has", "had", "not", "but", "use", "using", "les", "des", "une", "dans", "pour", "avec",
+    "sans", "sur", "par", "est", "sont", "cette", "ces", "qui", "que", "quoi", "comment",
+    "pourquoi", "quand", "plus", "tout", "tous", "chaque", "entre", "vers", "aux", "vous", "nous",
 ];
 
 fn normalize_ascii_lower(s: &str) -> String {
@@ -79,9 +78,17 @@ fn strip_code_and_tags(body: &str) -> String {
         let mut in_code = false;
         for ch in t.chars() {
             match ch {
-                '<' => { in_tag = true; clean.push(' '); }
-                '>' => { in_tag = false; }
-                '`' => { in_code = !in_code; clean.push(' '); }
+                '<' => {
+                    in_tag = true;
+                    clean.push(' ');
+                }
+                '>' => {
+                    in_tag = false;
+                }
+                '`' => {
+                    in_code = !in_code;
+                    clean.push(' ');
+                }
                 _ if !in_tag && !in_code => clean.push(ch),
                 _ => {}
             }
@@ -108,13 +115,20 @@ struct DocRecord<'a> {
     doc_len: f64,
 }
 
-pub fn run_related_pages(dist_dir: &Path, docs: &[MdDoc], max_related: usize) -> (usize, String, usize) {
+pub fn run_related_pages(
+    dist_dir: &Path,
+    docs: &[MdDoc],
+    max_related: usize,
+) -> (usize, String, usize) {
     let mut by_locale: HashMap<&str, Vec<DocRecord<'_>>> = HashMap::new();
     for doc in docs {
         if doc.rel_path.ends_with("404.md") || doc.rel_path.ends_with("404.mdx") {
             continue;
         }
-        if doc.rel_no_locale == "index.md" || doc.rel_no_locale == "index.mdx" || doc.rel_no_locale.starts_with("blog/") {
+        if doc.rel_no_locale == "index.md"
+            || doc.rel_no_locale == "index.mdx"
+            || doc.rel_no_locale.starts_with("blog/")
+        {
             continue;
         }
         if doc.title.is_empty() {
@@ -131,12 +145,15 @@ pub fn run_related_pages(dist_dir: &Path, docs: &[MdDoc], max_related: usize) ->
             *tf.entry(t).or_insert(0.0) += 1.0;
         }
         let doc_len: f64 = tf.values().copied().sum::<f64>().max(1.0);
-        by_locale.entry(doc.locale.as_str()).or_default().push(DocRecord {
-            doc,
-            category: detect_category(&doc.rel_no_locale),
-            tf,
-            doc_len,
-        });
+        by_locale
+            .entry(doc.locale.as_str())
+            .or_default()
+            .push(DocRecord {
+                doc,
+                category: detect_category(&doc.rel_no_locale),
+                tf,
+                doc_len,
+            });
     }
 
     let mut graph: HashMap<String, Vec<RelatedItem>> = HashMap::new();
@@ -166,10 +183,13 @@ pub fn run_related_pages(dist_dir: &Path, docs: &[MdDoc], max_related: usize) ->
                 }
                 let mut score: f64 = 0.0;
                 for (term, src_w) in &src.tf {
-                    let Some(&cand_tf) = cand.tf.get(term) else { continue };
+                    let Some(&cand_tf) = cand.tf.get(term) else {
+                        continue;
+                    };
                     let term_df: f64 = df.get(term.as_str()).copied().unwrap_or(1.0);
                     let idf: f64 = (1.0_f64 + (n_docs - term_df + 0.5) / (term_df + 0.5)).ln();
-                    let norm_tf: f64 = (cand_tf * (k1 + 1.0)) / (cand_tf + k1 * (1.0 - b + b * (cand.doc_len / avgdl)));
+                    let norm_tf: f64 = (cand_tf * (k1 + 1.0))
+                        / (cand_tf + k1 * (1.0 - b + b * (cand.doc_len / avgdl)));
                     score += idf * norm_tf * src_w.min(4.0);
                 }
                 if cand.category != src.category {
@@ -179,7 +199,12 @@ pub fn run_related_pages(dist_dir: &Path, docs: &[MdDoc], max_related: usize) ->
                     scored.push((cand, score));
                 }
             }
-            scored.sort_by(|a, b_item| b_item.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            scored.sort_by(|a, b_item| {
+                b_item
+                    .1
+                    .partial_cmp(&a.1)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
 
             let mut picked: Vec<&DocRecord<'_>> = Vec::new();
             let mut used_cats = HashSet::from([src.category]);

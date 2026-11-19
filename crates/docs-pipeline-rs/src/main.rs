@@ -3,17 +3,20 @@ mod plugins;
 
 use host::html_dom::parse_all_html;
 use host::md_source::load_all_markdown;
-use plugins::api_drift::{run_api_drift, ApiDriftCfg, ApiDriftLabels};
-use plugins::code_symbols::{run_code_symbols, CodeSymbolsCfg};
-use plugins::concept_trail::{run_concept_trail, ConceptTrailLabels};
+use plugins::api_drift::{
+    ApiDriftCfg, ApiDriftLabels, build_public_api_index, run_api_drift_with_index,
+};
+use plugins::code_symbols::{CodeSymbolsCfg, run_code_symbols};
+use plugins::concept_trail::{ConceptTrailLabels, run_concept_trail};
 use plugins::diataxis_lint::run_diataxis_lint;
 use plugins::glossary::run_glossary;
 use plugins::i18n_parity::run_i18n_parity;
 use plugins::link_preview::run_link_preview;
-use plugins::llms::{run_llms, LlmsConfig};
+use plugins::llms::{LlmsConfig, run_llms};
 use plugins::mermaid::run_mermaid_mutator;
 use plugins::related_pages::run_related_pages;
-use plugins::since_badges::{run_since_badges, BadgeLabels};
+use plugins::since_badges::{BadgeLabels, run_since_badges};
+use plugins::snippet_drift::{SnippetDriftCfg, SnippetDriftLabels, run_snippet_drift};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -60,6 +63,10 @@ struct PipelineRequest {
     api_drift: Option<ApiDriftCfg>,
     #[serde(default)]
     api_drift_i18n: HashMap<String, ApiDriftLabels>,
+    #[serde(default)]
+    snippet_drift: Option<SnippetDriftCfg>,
+    #[serde(default)]
+    snippet_drift_i18n: HashMap<String, SnippetDriftLabels>,
 }
 
 fn default_locale() -> String {
@@ -102,12 +109,24 @@ struct DiataxisCfg {
     min_explanation_words: usize,
 }
 
-fn default_true() -> bool { true }
-fn default_max_related() -> usize { 3 }
-fn default_ignore_paths() -> Vec<String> { vec!["blog/".to_string()] }
-fn default_min_desc() -> usize { 24 }
-fn default_max_desc() -> usize { 180 }
-fn default_min_words() -> usize { 200 }
+fn default_true() -> bool {
+    true
+}
+fn default_max_related() -> usize {
+    3
+}
+fn default_ignore_paths() -> Vec<String> {
+    vec!["blog/".to_string()]
+}
+fn default_min_desc() -> usize {
+    24
+}
+fn default_max_desc() -> usize {
+    180
+}
+fn default_min_words() -> usize {
+    200
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -136,6 +155,8 @@ struct PipelineResponse {
     api_drift_source_syms: usize,
     api_drift_coverage_pct: usize,
     api_drift_phantoms: usize,
+    snippet_drift_checked: usize,
+    snippet_drift_issues: usize,
     warnings: Vec<String>,
     errors: Vec<String>,
 }
@@ -182,9 +203,30 @@ fn main() {
     let mut errors = Vec::new();
 
     // Phase 3: Modular plugins attached to shared PageDom & MdDoc slices
-    let link_previews_indexed = if req.link_preview { run_link_preview(&dist_dir, &pages, &req.default_locale, &i18n) } else { 0 };
-    let (code_symbols_indexed, code_symbol_links, code_symbol_pages) = if let Some(cs_cfg) = &req.code_symbols { let rep = run_code_symbols(&dist_dir, &pages, &docs, cs_cfg); (rep.symbols_indexed, rep.links_injected, rep.pages_enriched) } else { (0, 0, 0) };
-    let (since_badges_indexed, since_badges_injected, since_badges_pages) = if req.since_badges { let rep = run_since_badges(&site_root, &dist_dir, &pages, &req.default_locale, &req.since_badges_i18n); (rep.symbols_indexed, rep.badges_injected, rep.pages_enriched) } else { (0, 0, 0) };
+    let link_previews_indexed = if req.link_preview {
+        run_link_preview(&dist_dir, &pages, &req.default_locale, &i18n)
+    } else {
+        0
+    };
+    let (code_symbols_indexed, code_symbol_links, code_symbol_pages) =
+        if let Some(cs_cfg) = &req.code_symbols {
+            let rep = run_code_symbols(&dist_dir, &pages, &docs, cs_cfg);
+            (rep.symbols_indexed, rep.links_injected, rep.pages_enriched)
+        } else {
+            (0, 0, 0)
+        };
+    let (since_badges_indexed, since_badges_injected, since_badges_pages) = if req.since_badges {
+        let rep = run_since_badges(
+            &site_root,
+            &dist_dir,
+            &pages,
+            &req.default_locale,
+            &req.since_badges_i18n,
+        );
+        (rep.symbols_indexed, rep.badges_injected, rep.pages_enriched)
+    } else {
+        (0, 0, 0)
+    };
 
     let (glossary_indexed, glossary_coverage_pct, glossary_avg_per_page, glossary_entries) =
         if let Some(g_cfg) = &req.glossary {
@@ -204,7 +246,13 @@ fn main() {
             (0, 0, "0.00".to_string(), Vec::new())
         };
     let (concept_trail_pages, concept_trail_links) = if req.concept_trail {
-        let rep = run_concept_trail(&dist_dir, &pages, &glossary_entries, &req.default_locale, &req.concept_trail_i18n);
+        let rep = run_concept_trail(
+            &dist_dir,
+            &pages,
+            &glossary_entries,
+            &req.default_locale,
+            &req.concept_trail_i18n,
+        );
         (rep.pages_enriched, rep.links_injected)
     } else {
         (0, 0)
@@ -245,13 +293,43 @@ fn main() {
         0
     };
 
-    let (api_drift_source_syms, api_drift_coverage_pct, api_drift_phantoms) = if let Some(ad_cfg) = &req.api_drift {
-        let rep = run_api_drift(&site_root, &dist_dir, &pages, &docs, ad_cfg, &req.default_locale, &req.api_drift_i18n);
+    let api_index = if req.api_drift.is_some() || req.snippet_drift.is_some() {
+        build_public_api_index(&site_root)
+    } else {
+        Default::default()
+    };
+    let (api_drift_source_syms, api_drift_coverage_pct, api_drift_phantoms) =
+        if let Some(ad_cfg) = &req.api_drift {
+            let rep = run_api_drift_with_index(
+                &api_index,
+                &dist_dir,
+                &pages,
+                &docs,
+                ad_cfg,
+                &req.default_locale,
+                &req.api_drift_i18n,
+            );
+            warnings.extend(rep.warnings);
+            errors.extend(rep.errors);
+            (rep.source_symbols, rep.coverage_pct, rep.phantoms.len())
+        } else {
+            (0, 0, 0)
+        };
+    let (snippet_drift_checked, snippet_drift_issues) = if let Some(sd_cfg) = &req.snippet_drift {
+        let rep = run_snippet_drift(
+            &dist_dir,
+            &pages,
+            &docs,
+            &api_index,
+            sd_cfg,
+            &req.default_locale,
+            &req.snippet_drift_i18n,
+        );
         warnings.extend(rep.warnings);
         errors.extend(rep.errors);
-        (rep.source_symbols, rep.coverage_pct, rep.phantoms.len())
+        (rep.checked_snippets, rep.issues.len())
     } else {
-        (0, 0, 0)
+        (0, 0)
     };
 
     let diataxis_audited = if let Some(d_cfg) = &req.diataxis_lint {
@@ -312,6 +390,8 @@ fn main() {
         api_drift_source_syms,
         api_drift_coverage_pct,
         api_drift_phantoms,
+        snippet_drift_checked,
+        snippet_drift_issues,
         warnings,
         errors,
     };

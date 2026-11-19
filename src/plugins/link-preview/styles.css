@@ -93,7 +93,11 @@ html body .sl-markdown-content pre code a.dt-code-symbol {
   font: inherit !important;
   text-decoration: none !important;
   border-bottom: none !important;
-  background-image: radial-gradient(circle, color-mix(in srgb, currentColor 45%, transparent) 1px, transparent 1px) !important;
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, currentColor 45%, transparent) 1px,
+    transparent 1px
+  ) !important;
   background-position: 0 100% !important;
   background-size: 4px 1.5px !important;
   background-repeat: repeat-x !important;

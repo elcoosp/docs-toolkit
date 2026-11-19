@@ -108,26 +108,26 @@ export function staticMermaidIntegration(): AstroIntegration {
 
         const bin = resolveLegacyBinary();
         const input = matches.map((m) => m.source).join(SEP);
-const rendered = execFileSync(bin, [], { input, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-const svgs = rendered.split(SEP);
-const byFile = new Map<string, Array<{ start: number; end: number; svg: string }>>();
-for (let i = 0; i < matches.length; i++) {
-const m = matches[i];
-const svg = (svgs[i] ?? '').trim();
-if (!m || !svg) continue;
-const list = byFile.get(m.file) ?? [];
-list.push({ start: m.start, end: m.end, svg });
-byFile.set(m.file, list);
-}
-for (const [file, edits] of byFile) {
-let html = fileCache.get(file) ?? '';
-for (const edit of edits.toSorted((a, b) => b.start - a.start)) {
-html = html.slice(0, edit.start) + edit.svg + html.slice(edit.end);
-}
-fs.writeFileSync(file, html);
-}
-logger.info('Rendered ' + matches.length + ' static SVG diagram(s) via static-mermaid-rs.');
-},
-},
-};
+        const rendered = execFileSync(bin, [], { input, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+        const svgs = rendered.split(SEP);
+        const byFile = new Map<string, Array<{ start: number; end: number; svg: string }>>();
+        for (let i = 0; i < matches.length; i++) {
+          const m = matches[i];
+          const svg = (svgs[i] ?? '').trim();
+          if (!m || !svg) continue;
+          const list = byFile.get(m.file) ?? [];
+          list.push({ start: m.start, end: m.end, svg });
+          byFile.set(m.file, list);
+        }
+        for (const [file, edits] of byFile) {
+          let html = fileCache.get(file) ?? '';
+          for (const edit of edits.toSorted((a, b) => b.start - a.start)) {
+            html = html.slice(0, edit.start) + edit.svg + html.slice(edit.end);
+          }
+          fs.writeFileSync(file, html);
+        }
+        logger.info('Rendered ' + matches.length + ' static SVG diagram(s) via static-mermaid-rs.');
+      },
+    },
+  };
 }

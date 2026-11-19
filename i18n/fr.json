@@ -91,5 +91,9 @@
   "conceptTrail.label": "S’appuie sur",
   "conceptTrail.ariaLabel": "Concepts prérequis",
   "apiDrift.phantomWarning": "Le symbole `{symbol}` référencé dans {route} est introuvable dans l'AST public du code source.",
-  "apiDrift.reportTitle": "Rapport de dérive et couverture d'API"
+  "apiDrift.reportTitle": "Rapport de dérive et couverture d'API",
+  "snippetDrift.syntaxError": "Le bloc de code dans {route} ({lang}) contient une erreur de syntaxe : {detail}.",
+  "snippetDrift.importPhantom": "Le bloc de code dans {route} importe un symbole introuvable `{detail}`.",
+  "snippetDrift.versionDrift": "Le bloc de code dans {route} référence une version obsolète `{detail}`.",
+  "snippetDrift.reportTitle": "Rapport de dérive des extraits de code"
 }

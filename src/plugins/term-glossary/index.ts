@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AstroIntegrationLogger } from 'astro';
 import type { StarlightPlugin } from '@astrojs/starlight/types';
-import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
+import {
+  hasNativePipeline,
+  registerNativePipelinePlugin,
+  runNativePipelineOnce,
+} from '../shared/pipeline-host.js';
 
 export interface GlossaryEntry {
   term: string;
@@ -441,7 +445,9 @@ export function starlightTermGlossary(options: TermGlossaryOptions = {}): Starli
     name: 'starlight-term-glossary',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        const rootDir = (config as { root?: string }).root ? new URL((config as { root?: string }).root!).pathname : process.cwd();
+        const rootDir = (config as { root?: string }).root
+          ? new URL((config as { root?: string }).root!).pathname
+          : process.cwd();
         cachedLocales = new Set(['en', 'fr', ...Object.keys(config.locales ?? {})]);
         if (hasNativePipeline()) {
           registerNativePipelinePlugin(rootDir, 'glossary', { strict }, cachedLocales, config.defaultLocale);

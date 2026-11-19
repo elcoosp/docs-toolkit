@@ -20,12 +20,20 @@ fn covers_html_meta_headings_and_i18n_drift_branches() {
     fs::write(dist.join("fr/index.html"), "<html><head><title>Accueil — Site</title></head><body><main><h1>Accueil</h1></main></body></html>").unwrap();
 
     let cfg_path = tmp.join("cfg.json");
-    fs::write(&cfg_path, serde_json::json!({
-        "siteRoot": tmp, "distDir": dist, "defaultLocale": "en", "locales": ["en", "fr"],
-        "linkPreview": true, "i18nParity": { "strict": false }
-    }).to_string()).unwrap();
+    fs::write(
+        &cfg_path,
+        serde_json::json!({
+            "siteRoot": tmp, "distDir": dist, "defaultLocale": "en", "locales": ["en", "fr"],
+            "linkPreview": true, "i18nParity": { "strict": false }
+        })
+        .to_string(),
+    )
+    .unwrap();
 
-    let out = Command::new(env!("CARGO_BIN_EXE_docs-pipeline-rs")).arg(&cfg_path).output().unwrap();
+    let out = Command::new(env!("CARGO_BIN_EXE_docs-pipeline-rs"))
+        .arg(&cfg_path)
+        .output()
+        .unwrap();
     assert!(out.status.success());
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert!(v["warnings"].as_array().unwrap().len() >= 4);

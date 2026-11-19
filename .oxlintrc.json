@@ -7,7 +7,12 @@
     "perf": "error"
   },
   "rules": {
-    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-console": [
+      "error",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
     "no-debugger": "error",
     "no-eval": "error",
     "no-implied-eval": "error",
@@ -15,10 +20,21 @@
     "prefer-const": "error",
     "eqeqeq": ["error", "always"],
     "no-useless-escape": "error",
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
     "typescript/no-explicit-any": "warn",
     "typescript/no-non-null-assertion": "warn",
-    "typescript/consistent-type-imports": ["error", { "prefer": "type-imports" }],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports"
+      }
+    ],
     "unicorn/prefer-node-protocol": "error",
     "unicorn/no-array-sort": "error",
     "unicorn/no-useless-fallback-in-spread": "error",
@@ -31,11 +47,26 @@
   },
   "overrides": [
     {
-      "files": ["scripts/**", "src/qa/**"],
+      "files": ["scripts/**", "**/scripts/**", "src/qa/**", "**/src/qa/**", "tests/**", "**/tests/**"],
       "rules": {
-        "no-console": "off"
+        "no-console": "off",
+        "no-await-in-loop": "off",
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
+    },
+    {
+      "files": ["src/env.d.ts", "**/src/env.d.ts"],
+      "rules": {
+        "typescript/triple-slash-reference": "off"
       }
     }
   ],
-  "ignorePatterns": ["dist/**", "node_modules/**", "src/assets/font-b64.ts"]
+  "ignorePatterns": [
+    "**/src/env.d.ts",
+    "dist/**",
+    "node_modules/**",
+    "src/assets/font-b64.ts",
+    "src/env.d.ts"
+  ]
 }

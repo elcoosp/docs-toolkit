@@ -1,5 +1,9 @@
 import type { StarlightPlugin } from '@astrojs/starlight/types';
-import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
+import {
+  hasNativePipeline,
+  registerNativePipelinePlugin,
+  runNativePipelineOnce,
+} from '../shared/pipeline-host.js';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -186,11 +190,17 @@ export function starlightLinkPreview(options: LinkPreviewPluginOptions = {}): St
     name: 'starlight-link-preview',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        rootDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
+        rootDir = (config as { root?: string }).root
+          ? fileURLToPath((config as { root?: string }).root!)
+          : process.cwd();
         if (hasNativePipeline()) {
           registerNativePipelinePlugin(rootDir, 'linkPreview', true);
           if (options.codeSymbols !== false) {
-            registerNativePipelinePlugin(rootDir, 'codeSymbols', typeof options.codeSymbols === 'object' ? options.codeSymbols : { maxLinksPerBlock: 8 });
+            registerNativePipelinePlugin(
+              rootDir,
+              'codeSymbols',
+              typeof options.codeSymbols === 'object' ? options.codeSymbols : { maxLinksPerBlock: 8 },
+            );
           }
         }
         addIntegration({

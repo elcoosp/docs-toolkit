@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AstroIntegrationLogger } from 'astro';
 import type { StarlightPlugin } from '@astrojs/starlight/types';
-import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
+import {
+  hasNativePipeline,
+  registerNativePipelinePlugin,
+  runNativePipelineOnce,
+} from '../shared/pipeline-host.js';
 
 export interface RelatedPagesOptions {
   maxRelated?: number;
@@ -290,11 +294,19 @@ export function starlightRelatedPages(options: RelatedPagesOptions = {}): Starli
     name: 'starlight-related-pages',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        const rootDir = (config as { root?: string }).root ? new URL((config as { root?: string }).root!).pathname : process.cwd();
+        const rootDir = (config as { root?: string }).root
+          ? new URL((config as { root?: string }).root!).pathname
+          : process.cwd();
         const docsDir = path.join(rootDir, 'src/content/docs');
         const locales = new Set(['en', 'fr', ...Object.keys(config.locales ?? {})]);
         if (hasNativePipeline()) {
-          registerNativePipelinePlugin(rootDir, 'relatedPages', { maxRelated }, locales, config.defaultLocale);
+          registerNativePipelinePlugin(
+            rootDir,
+            'relatedPages',
+            { maxRelated },
+            locales,
+            config.defaultLocale,
+          );
         } else {
           cachedGraph = buildRelatedGraph(docsDir, locales, maxRelated);
         }

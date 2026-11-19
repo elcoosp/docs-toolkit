@@ -1,5 +1,6 @@
 pub mod api_drift;
 pub mod code_symbols;
+pub mod concept_trail;
 pub mod diataxis_lint;
 pub mod glossary;
 pub mod i18n_parity;
@@ -8,4 +9,4 @@ pub mod llms;
 pub mod mermaid;
 pub mod related_pages;
 pub mod since_badges;
-pub mod concept_trail;
+pub mod snippet_drift;

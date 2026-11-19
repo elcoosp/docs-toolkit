@@ -24,7 +24,11 @@ pub fn normalize_route(route: &str) -> String {
         clean.insert(0, '/');
     }
     if let Some(s) = clean.strip_suffix("/index.html") {
-        clean = if s.is_empty() { "/".to_string() } else { format!("{s}/") };
+        clean = if s.is_empty() {
+            "/".to_string()
+        } else {
+            format!("{s}/")
+        };
     } else if let Some(s) = clean.strip_suffix(".html") {
         clean = format!("{s}/");
     }
@@ -38,7 +42,9 @@ pub fn collect_html_files(dist_dir: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut stack = vec![dist_dir.to_path_buf()];
     while let Some(dir) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        let Ok(entries) = fs::read_dir(&dir) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
@@ -51,15 +57,27 @@ pub fn collect_html_files(dist_dir: &Path) -> Vec<PathBuf> {
     out
 }
 
-pub fn parse_all_html(dist_dir: &Path, locales: &HashSet<String>, default_locale: &str) -> Vec<PageDom> {
+pub fn parse_all_html(
+    dist_dir: &Path,
+    locales: &HashSet<String>,
+    default_locale: &str,
+) -> Vec<PageDom> {
     collect_html_files(dist_dir)
         .par_iter()
         .filter_map(|file_path| {
             let html = fs::read_to_string(file_path).ok()?;
-            let rel = file_path.strip_prefix(dist_dir).ok()?.to_string_lossy().replace('\\', "/");
+            let rel = file_path
+                .strip_prefix(dist_dir)
+                .ok()?
+                .to_string_lossy()
+                .replace('\\', "/");
             let route = normalize_route(&format!("/{rel}"));
             let seg = route.split('/').nth(1).unwrap_or("");
-            let locale = if !seg.is_empty() && seg != default_locale && locales.contains(seg) { seg.to_string() } else { default_locale.to_string() };
+            let locale = if !seg.is_empty() && seg != default_locale && locales.contains(seg) {
+                seg.to_string()
+            } else {
+                default_locale.to_string()
+            };
             Some(parse_single_html(rel, route, locale, &html))
         })
         .collect()
@@ -91,79 +109,72 @@ fn parse_single_html(rel_path: String, route: String, locale: String, html: &str
     if let Ok(dom) = tl::parse(html, ParserOptions::new().track_classes()) {
         let parser = dom.parser();
         for node in dom.nodes() {
-            if let Node::Tag(tag) = node {
-                if let Some(Some(id_b)) = tag.attributes().get("id") {
-                    let id_s = id_b.as_utf8_str();
-                    if !id_s.is_empty() {
-                        ids.insert(id_s.into_owned());
-                    }
+            if let Node::Tag(tag) = node
+                && let Some(Some(id_b)) = tag.attributes().get("id")
+            {
+                let id_s = id_b.as_utf8_str();
+                if !id_s.is_empty() {
+                    ids.insert(id_s.into_owned());
                 }
             }
         }
-        if let Some(mut it) = dom.query_selector("meta[name=\"description\"]") {
-            if let Some(h) = it.next() {
-                if let Some(tag) = h.get(parser).and_then(|n| n.as_tag()) {
-                    if let Some(Some(c)) = tag.attributes().get("content") {
-                        description = c.as_utf8_str().trim().to_string();
-                    }
-                }
-            }
+        if let Some(mut it) = dom.query_selector("meta[name=\"description\"]")
+            && let Some(h) = it.next()
+            && let Some(tag) = h.get(parser).and_then(|n| n.as_tag())
+            && let Some(Some(c)) = tag.attributes().get("content")
+        {
+            description = c.as_utf8_str().trim().to_string();
         }
-        if let Some(mut it) = dom.query_selector("main h1") {
-            if let Some(h) = it.next() {
-                if let Some(n) = h.get(parser) {
-                    title = strip_site_suffix(&collapse_ws(&n.inner_text(parser)));
-                }
-            }
+        if let Some(mut it) = dom.query_selector("main h1")
+            && let Some(h) = it.next()
+            && let Some(n) = h.get(parser)
+        {
+            title = strip_site_suffix(&collapse_ws(&n.inner_text(parser)));
         }
-        if title.is_empty() {
-            if let Some(mut it) = dom.query_selector("title") {
-                if let Some(h) = it.next() {
-                    if let Some(n) = h.get(parser) {
-                        title = strip_site_suffix(&collapse_ws(&n.inner_text(parser)));
-                    }
-                }
-            }
+        if title.is_empty()
+            && let Some(mut it) = dom.query_selector("title")
+            && let Some(h) = it.next()
+            && let Some(n) = h.get(parser)
+        {
+            title = strip_site_suffix(&collapse_ws(&n.inner_text(parser)));
         }
         for sel in ["h2", "h3", "h4"] {
             if let Some(it) = dom.query_selector(sel) {
                 for h in it {
-                    if let Some(n) = h.get(parser) {
-                        if let Some(tag) = n.as_tag() {
-                            if let Some(Some(id_v)) = tag.attributes().get("id") {
-                                let id_s = id_v.as_utf8_str().into_owned();
-                                let raw_t = collapse_ws(&n.inner_text(parser));
-                                let clean_t = raw_t.strip_suffix('#').unwrap_or(&raw_t).trim().to_string();
-                                if !id_s.is_empty() && !clean_t.is_empty() {
-                                    headings.push((id_s, clean_t));
-                                }
-                            }
+                    if let Some(n) = h.get(parser)
+                        && let Some(tag) = n.as_tag()
+                        && let Some(Some(id_v)) = tag.attributes().get("id")
+                    {
+                        let id_s = id_v.as_utf8_str().into_owned();
+                        let raw_t = collapse_ws(&n.inner_text(parser));
+                        let clean_t = raw_t.strip_suffix('#').unwrap_or(&raw_t).trim().to_string();
+                        if !id_s.is_empty() && !clean_t.is_empty() {
+                            headings.push((id_s, clean_t));
                         }
                     }
                 }
             }
         }
-        if description.is_empty() {
-            if let Some(it) = dom.query_selector(".sl-markdown-content p") {
-                for h in it {
-                    if let Some(n) = h.get(parser) {
-                        let txt = collapse_ws(&n.inner_text(parser));
-                        if txt.chars().count() >= 24 {
-                            first_para = txt;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        if let Some(mut it) = dom.query_selector(".sl-markdown-content") {
-            if let Some(h) = it.next() {
+        if description.is_empty()
+            && let Some(it) = dom.query_selector(".sl-markdown-content p")
+        {
+            for h in it {
                 if let Some(n) = h.get(parser) {
-                    main_words = n.inner_text(parser).split_whitespace().count();
-                    collect_prose(&dom, n, false, &mut prose_parts);
-                    collect_concept_text(&dom, n, false, &mut concept_parts);
+                    let txt = collapse_ws(&n.inner_text(parser));
+                    if txt.chars().count() >= 24 {
+                        first_para = txt;
+                        break;
+                    }
                 }
             }
+        }
+        if let Some(mut it) = dom.query_selector(".sl-markdown-content")
+            && let Some(h) = it.next()
+            && let Some(n) = h.get(parser)
+        {
+            main_words = n.inner_text(parser).split_whitespace().count();
+            collect_prose(&dom, n, false, &mut prose_parts);
+            collect_concept_text(&dom, n, false, &mut concept_parts);
         }
     }
     if description.is_empty() {
@@ -195,7 +206,11 @@ fn collect_prose<'a>(dom: &VDom<'a>, node: &Node<'a>, skip: bool, out: &mut Vec<
         }
         Node::Tag(tag) => {
             let name = tag.name().as_utf8_str();
-            let next_skip = skip || matches!(name.as_ref(), "pre" | "code" | "a" | "script" | "style" | "svg");
+            let next_skip = skip
+                || matches!(
+                    name.as_ref(),
+                    "pre" | "code" | "a" | "script" | "style" | "svg"
+                );
             for ch in tag.children().top().iter() {
                 if let Some(c) = ch.get(dom.parser()) {
                     collect_prose(dom, c, next_skip, out);
@@ -218,7 +233,8 @@ fn collect_concept_text<'a>(dom: &VDom<'a>, node: &Node<'a>, skip: bool, out: &m
         }
         Node::Tag(tag) => {
             let name = tag.name().as_utf8_str();
-            let next_skip = skip || matches!(name.as_ref(), "pre" | "script" | "style" | "svg" | "nav");
+            let next_skip =
+                skip || matches!(name.as_ref(), "pre" | "script" | "style" | "svg" | "nav");
             for ch in tag.children().top().iter() {
                 if let Some(c) = ch.get(dom.parser()) {
                     collect_concept_text(dom, c, next_skip, out);

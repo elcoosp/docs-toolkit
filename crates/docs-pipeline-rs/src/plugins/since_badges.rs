@@ -1,6 +1,6 @@
 use crate::host::html_dom::PageDom;
 use lol_html::html_content::ContentType;
-use lol_html::{element, rewrite_str, RewriteStrSettings};
+use lol_html::{RewriteStrSettings, element, rewrite_str};
 use rayon::prelude::*;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -31,10 +31,42 @@ pub struct SinceBadgesReport {
 }
 
 const NOISE_WORDS: &[&str] = &[
-    "toml", "json", "yaml", "html", "css", "svg", "wasm", "rust", "cargo", "crate",
-    "serde", "tokio", "gpui", "leptos", "dioxus", "astro", "starlight", "when", "watch",
-    "error", "result", "option", "string", "config", "builder", "default", "version",
-    "feature", "features", "module", "struct", "enum", "trait", "impl", "async", "await",
+    "toml",
+    "json",
+    "yaml",
+    "html",
+    "css",
+    "svg",
+    "wasm",
+    "rust",
+    "cargo",
+    "crate",
+    "serde",
+    "tokio",
+    "gpui",
+    "leptos",
+    "dioxus",
+    "astro",
+    "starlight",
+    "when",
+    "watch",
+    "error",
+    "result",
+    "option",
+    "string",
+    "config",
+    "builder",
+    "default",
+    "version",
+    "feature",
+    "features",
+    "module",
+    "struct",
+    "enum",
+    "trait",
+    "impl",
+    "async",
+    "await",
 ];
 
 fn is_noise_line(line: &str) -> bool {
@@ -67,7 +99,8 @@ fn is_valid_badge_symbol(sym: &str, self_names: &HashSet<String>) -> bool {
     }
     let has_upper = core.bytes().any(|b| b.is_ascii_uppercase());
     let has_lower = core.bytes().any(|b| b.is_ascii_lowercase());
-    let has_sep = core.contains('_') || core.contains("::") || sym.starts_with("--") || sym.ends_with('!');
+    let has_sep =
+        core.contains('_') || core.contains("::") || sym.starts_with("--") || sym.ends_with('!');
     has_sep || (has_upper && has_lower)
 }
 
@@ -78,17 +111,20 @@ fn extract_backticked_symbols(line: &str, self_names: &HashSet<String>) -> Vec<S
         let after = &rest[start + 1..];
         let Some(end) = after.find('`') else { break };
         let token = after[..end].trim();
-        let ident = token.split(['(', '<', '{', ' ']).next().unwrap_or("").trim();
+        let ident = token
+            .split(['(', '<', '{', ' '])
+            .next()
+            .unwrap_or("")
+            .trim();
         if is_valid_badge_symbol(ident, self_names) && !out.iter().any(|x| x == ident) {
             out.push(ident.to_string());
         }
-        if let Some((_, tail)) = ident.rsplit_once("::") {
-            if tail.len() >= 5
-                && is_valid_badge_symbol(tail, self_names)
-                && !out.iter().any(|x| x == tail)
-            {
-                out.push(tail.to_string());
-            }
+        if let Some((_, tail)) = ident.rsplit_once("::")
+            && tail.len() >= 5
+            && is_valid_badge_symbol(tail, self_names)
+            && !out.iter().any(|x| x == tail)
+        {
+            out.push(tail.to_string());
         }
         rest = &after[end + 1..];
     }
@@ -138,7 +174,10 @@ fn clean_note(version: &str, line: &str) -> String {
 fn parse_changelog(site_root: &Path) -> HashMap<String, SinceEntry> {
     let candidates = [
         site_root.join("CHANGELOG.md"),
-        site_root.parent().map(|p| p.join("CHANGELOG.md")).unwrap_or_default(),
+        site_root
+            .parent()
+            .map(|p| p.join("CHANGELOG.md"))
+            .unwrap_or_default(),
     ];
     let Some(cl_path) = candidates.into_iter().find(|p| p.is_file()) else {
         return HashMap::new();
@@ -150,7 +189,10 @@ fn parse_changelog(site_root: &Path) -> HashMap<String, SinceEntry> {
     let mut self_names = HashSet::new();
     for p in [Some(site_root), site_root.parent()] {
         if let Some(name) = p.and_then(|x| x.file_name()).and_then(|n| n.to_str()) {
-            let clean = name.strip_suffix("-docs").unwrap_or(name).to_ascii_lowercase();
+            let clean = name
+                .strip_suffix("-docs")
+                .unwrap_or(name)
+                .to_ascii_lowercase();
             self_names.insert(clean.clone());
             self_names.insert(clean.replace('-', "_"));
         }
@@ -170,7 +212,9 @@ fn parse_changelog(site_root: &Path) -> HashMap<String, SinceEntry> {
             if let Some(end) = rest.find(']') {
                 let ver = rest[..end].trim();
                 let is_semver = ver.split('.').count() == 3
-                    && ver.split('.').all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()));
+                    && ver
+                        .split('.')
+                        .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()));
                 if is_semver && ver != "0.1.0" {
                     cur_ver = Some(ver.to_string());
                 }
@@ -230,7 +274,10 @@ fn parse_changelog(site_root: &Path) -> HashMap<String, SinceEntry> {
     map
 }
 
-fn match_heading_entry<'a>(heading: &str, table: &'a HashMap<String, SinceEntry>) -> Option<&'a SinceEntry> {
+fn match_heading_entry<'a>(
+    heading: &str,
+    table: &'a HashMap<String, SinceEntry>,
+) -> Option<&'a SinceEntry> {
     let mut best: Option<(&str, &SinceEntry)> = None;
     for (sym, entry) in table {
         let mut pos = 0;
@@ -244,7 +291,7 @@ fn match_heading_entry<'a>(heading: &str, table: &'a HashMap<String, SinceEntry>
                 || !heading.as_bytes()[end].is_ascii_alphanumeric()
                     && heading.as_bytes()[end] != b'_';
             if left_ok && right_ok {
-                if best.map_or(true, |(b_sym, _)| sym.len() > b_sym.len()) {
+                if best.is_none_or(|(b_sym, _)| sym.len() > b_sym.len()) {
                     best = Some((sym.as_str(), entry));
                 }
                 break;
@@ -272,9 +319,15 @@ pub struct BadgeLabels {
     pub deprecated: String,
 }
 
-fn default_new_label() -> String { "New in v{version}".to_string() }
-fn default_breaking_label() -> String { "Breaking v{version}".to_string() }
-fn default_deprecated_label() -> String { "Deprecated v{version}".to_string() }
+fn default_new_label() -> String {
+    "New in v{version}".to_string()
+}
+fn default_breaking_label() -> String {
+    "Breaking v{version}".to_string()
+}
+fn default_deprecated_label() -> String {
+    "Deprecated v{version}".to_string()
+}
 
 impl Default for BadgeLabels {
     fn default() -> Self {
@@ -315,62 +368,65 @@ pub fn run_since_badges(
     let pages_enriched = AtomicUsize::new(0);
 
     pages.par_iter().for_each(|page| {
-if page.route.contains("/404/")
-|| page.route.contains("/changelog/")
-|| page.route.contains("/blog/")
-{
-return;
-}
-let mut by_id: HashMap<String, &SinceEntry> = HashMap::new();
-for (id, htxt) in &page.headings {
-if !id.is_empty() {
-if let Some(entry) = match_heading_entry(htxt, &table) {
-by_id.insert(id.clone(), entry);
-}
-}
-}
-if by_id.is_empty() {
-return;
-}
-let html_path = dist_dir.join(&page.rel_path);
-let Ok(html) = fs::read_to_string(&html_path) else {
-return;
-};
-if html.contains("dt-since-badge") {
-return;
-}
-let fallback_labels = BadgeLabels::default();
-let labels = i18n_map.get(&page.locale).or_else(|| i18n_map.get(default_locale)).or_else(|| i18n_map.get("en")).unwrap_or(&fallback_labels);
-let injected = Rc::new(RefCell::new(0usize));
-let inj_clone = Rc::clone(&injected);
+        if page.route.contains("/404/")
+            || page.route.contains("/changelog/")
+            || page.route.contains("/blog/")
+        {
+            return;
+        }
+        let mut by_id: HashMap<String, &SinceEntry> = HashMap::new();
+        for (id, htxt) in &page.headings {
+            if !id.is_empty()
+                && let Some(entry) = match_heading_entry(htxt, &table)
+            {
+                by_id.insert(id.clone(), entry);
+            }
+        }
+        if by_id.is_empty() {
+            return;
+        }
+        let html_path = dist_dir.join(&page.rel_path);
+        let Ok(html) = fs::read_to_string(&html_path) else {
+            return;
+        };
+        if html.contains("dt-since-badge") {
+            return;
+        }
+        let fallback_labels = BadgeLabels::default();
+        let labels = i18n_map
+            .get(&page.locale)
+            .or_else(|| i18n_map.get(default_locale))
+            .or_else(|| i18n_map.get("en"))
+            .unwrap_or(&fallback_labels);
+        let injected = Rc::new(RefCell::new(0usize));
+        let inj_clone = Rc::clone(&injected);
         let rewritten = rewrite_str(
             &html,
             RewriteStrSettings::new().append_element_content_handler(element!(
                 ".sl-markdown-content h2[id], .sl-markdown-content h3[id]",
                 move |el| {
-                    if let Some(id) = el.get_attribute("id") {
-                        if let Some(entry) = by_id.get(&id) {
-                            el.append(&render_badge_html(entry, labels), ContentType::Html);
-                            *inj_clone.borrow_mut() += 1;
-                        }
+                    if let Some(id) = el.get_attribute("id")
+                        && let Some(entry) = by_id.get(&id)
+                    {
+                        el.append(&render_badge_html(entry, labels), ContentType::Html);
+                        *inj_clone.borrow_mut() += 1;
                     }
                     Ok(())
                 }
             )),
         );
-let count = *injected.borrow();
-if count > 0 {
-if let Ok(next_html) = rewritten {
-if fs::write(&html_path, next_html).is_ok() {
-badges_injected.fetch_add(count, Ordering::Relaxed);
-pages_enriched.fetch_add(1, Ordering::Relaxed);
-}
-}
-}
-});
-SinceBadgesReport {
-symbols_indexed,
-badges_injected: badges_injected.load(Ordering::Relaxed),
-pages_enriched: pages_enriched.load(Ordering::Relaxed),
-}
+        let count = *injected.borrow();
+        if count > 0
+            && let Ok(next_html) = rewritten
+            && fs::write(&html_path, next_html).is_ok()
+        {
+            badges_injected.fetch_add(count, Ordering::Relaxed);
+            pages_enriched.fetch_add(1, Ordering::Relaxed);
+        }
+    });
+    SinceBadgesReport {
+        symbols_indexed,
+        badges_injected: badges_injected.load(Ordering::Relaxed),
+        pages_enriched: pages_enriched.load(Ordering::Relaxed),
+    }
 }

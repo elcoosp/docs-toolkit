@@ -26,13 +26,13 @@ for (const f of await walk('dist')) {
   const html = await readFile(f, 'utf8');
   const rel = path.relative('dist', f).replace('/index.html', '/');
   const found = Object.keys(CLS).filter((c) => html.includes(CLS[c]));
-  for (const reqId of ["sl-cmdk-dialog", "sl-cmdk-input", "sl-cmdk-list", "sl-cmdk-preview"]) {
+  for (const reqId of ['sl-cmdk-dialog', 'sl-cmdk-input', 'sl-cmdk-list', 'sl-cmdk-preview']) {
     if (!html.includes(`id="${reqId}"`)) {
       console.log(`  ${rel}: missing #${reqId}`);
       fails++;
     }
   }
-  for (const uiCls of ["sl-zen-toggle", "sl-reading-context", "page-actions-container"]) {
+  for (const uiCls of ['sl-zen-toggle', 'sl-reading-context', 'page-actions-container']) {
     const tagMatch = html.match(new RegExp(`<[^>]*class="[^"]*\\b${uiCls}\\b[^"]*"[^>]*>`));
     if (tagMatch && !tagMatch[0].includes('data-pagefind-ignore="all"')) {
       console.log(`  ${rel}: .${uiCls} missing data-pagefind-ignore="all"`);

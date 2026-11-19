@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AstroIntegrationLogger } from 'astro';
 import type { StarlightPlugin } from '@astrojs/starlight/types';
-import { hasNativePipeline, registerNativePipelinePlugin, runNativePipelineOnce } from '../shared/pipeline-host.js';
+import {
+  hasNativePipeline,
+  registerNativePipelinePlugin,
+  runNativePipelineOnce,
+} from '../shared/pipeline-host.js';
 
 export interface I18nParityOptions {
   strict?: boolean;
@@ -317,13 +321,22 @@ export function starlightI18nParity(options: I18nParityOptions = {}): StarlightP
     name: 'starlight-i18n-parity',
     hooks: {
       'config:setup'({ addIntegration, config }) {
-        const rootDir = (config as { root?: string }).root ? new URL((config as { root?: string }).root!).pathname : process.cwd();
+        const rootDir = (config as { root?: string }).root
+          ? new URL((config as { root?: string }).root!).pathname
+          : process.cwd();
         const docsDir = path.join(rootDir, 'src/content/docs');
         const localeKeys = Object.keys(config.locales ?? {});
         const defaultLocale = config.defaultLocale || 'en';
         const secondaryLocales = localeKeys.filter((k) => k !== defaultLocale && k !== 'root');
         const allLocales = new Set<string>([defaultLocale, ...secondaryLocales]);
-        if (hasNativePipeline()) registerNativePipelinePlugin(rootDir, 'i18nParity', { strict, ignorePaths }, allLocales, defaultLocale);
+        if (hasNativePipeline())
+          registerNativePipelinePlugin(
+            rootDir,
+            'i18nParity',
+            { strict, ignorePaths },
+            allLocales,
+            defaultLocale,
+          );
         addIntegration({
           name: 'starlight-i18n-parity',
           hooks: {

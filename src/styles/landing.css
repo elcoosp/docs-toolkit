@@ -155,7 +155,9 @@
   color: var(--sl-color-gray-2);
   text-decoration: none;
   border-bottom: 1px dotted color-mix(in srgb, var(--sl-color-accent) 48%, transparent);
-  transition: color 120ms ease, border-color 120ms ease;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease;
 }
 .sl-markdown-content > .dt-concept-trail .dt-ct-link:hover {
   color: var(--sl-color-accent-high);

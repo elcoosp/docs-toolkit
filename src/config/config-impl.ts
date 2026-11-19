@@ -23,43 +23,43 @@ import type { AstroIntegration } from 'astro';
 
 function parallelBuildDoneIntegration(): AstroIntegration {
   const HTML_MUTATING_INTEGRATIONS = new Set([
-    "@elcoosp/docs-toolkit/pipeline",
-    "starlight-term-glossary",
-    "starlight-term-glossary-integration",
+    '@elcoosp/docs-toolkit/pipeline',
+    'starlight-term-glossary',
+    'starlight-term-glossary-integration',
   ]);
   const AUDIT_INTEGRATIONS = new Set([
-    "starlight-seo",
-    "starlight-link-preview",
-    "starlight-i18n-parity",
-    "starlight-related-pages",
-    "starlight-diataxis-lint",
+    'starlight-seo',
+    'starlight-link-preview',
+    'starlight-i18n-parity',
+    'starlight-related-pages',
+    'starlight-diataxis-lint',
   ]);
   let producerHooks: Array<(ctx: any) => unknown> = [];
   let auditHooks: Array<(ctx: any) => unknown> = [];
 
   return {
-    name: "@elcoosp/docs-toolkit/postbuild",
+    name: '@elcoosp/docs-toolkit/postbuild',
     hooks: {
-      "astro:config:done"({ config }) {
+      'astro:config:done'({ config }) {
         const producers: Array<(ctx: any) => unknown> = [];
         const auditors: Array<(ctx: any) => unknown> = [];
         for (const integration of config.integrations) {
-          if (!integration || integration.name === "@elcoosp/docs-toolkit/postbuild") continue;
+          if (!integration || integration.name === '@elcoosp/docs-toolkit/postbuild') continue;
           if (HTML_MUTATING_INTEGRATIONS.has(integration.name)) continue;
-          const origDone = integration.hooks?.["astro:build:done"];
-          if (typeof origDone === "function") {
+          const origDone = integration.hooks?.['astro:build:done'];
+          if (typeof origDone === 'function') {
             if (AUDIT_INTEGRATIONS.has(integration.name)) {
               auditors.push(origDone);
             } else {
               producers.push(origDone);
             }
-            integration.hooks["astro:build:done"] = () => {};
+            integration.hooks['astro:build:done'] = () => {};
           }
         }
         producerHooks = producers;
         auditHooks = auditors;
       },
-      async "astro:build:done"(ctx) {
+      async 'astro:build:done'(ctx) {
         if (producerHooks.length > 0) {
           await Promise.all(producerHooks.map((fn) => Promise.resolve().then(() => fn(ctx))));
         }
@@ -123,6 +123,7 @@ export interface DocsConfigOptions {
   sinceBadges?: boolean;
   conceptTrail?: boolean;
   apiDrift?: boolean | { strict?: boolean; writeReport?: boolean };
+  snippetDrift?: boolean | { strict?: boolean; writeReport?: boolean };
   giscus?: any;
   blog?: boolean | Record<string, unknown>;
 }
@@ -445,9 +446,10 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   }
 
   const landingCss = '@elcoosp/docs-toolkit/src/styles/landing.css';
-  const toolkitI18nDir = [new URL('../i18n', import.meta.url), new URL('../../i18n', import.meta.url)]
-    .map((u) => fileURLToPath(u))
-    .find((d) => fs.existsSync(d)) ?? fileURLToPath(new URL('../../i18n', import.meta.url));
+  const toolkitI18nDir =
+    [new URL('../i18n', import.meta.url), new URL('../../i18n', import.meta.url)]
+      .map((u) => fileURLToPath(u))
+      .find((d) => fs.existsSync(d)) ?? fileURLToPath(new URL('../../i18n', import.meta.url));
   const siteI18nDir = path.join(path.dirname(findDocsRoot()), 'i18n');
   if (fs.existsSync(toolkitI18nDir)) {
     fs.mkdirSync(siteI18nDir, { recursive: true });
@@ -759,47 +761,73 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   });
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
+  if (options.snippetDrift !== false) {
+    starlightPlugins.push({
+      name: 'docs-toolkit:snippet-drift',
+      hooks: {
+        'config:setup'({ config }: any) {
+          const rDir = (config as { root?: string }).root
+            ? fileURLToPath((config as { root?: string }).root!)
+            : process.cwd();
+          const sdCfg =
+            typeof options.snippetDrift === 'object'
+              ? options.snippetDrift
+              : { strict: false, writeReport: true };
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'snippetDrift', sdCfg);
+        },
+      },
+    });
+  }
   if (options.apiDrift !== false) {
     starlightPlugins.push({
-      name: "docs-toolkit:api-drift",
+      name: 'docs-toolkit:api-drift',
       hooks: {
-        "config:setup"({ config }: any) {
-          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
-          const adCfg = typeof options.apiDrift === "object" ? options.apiDrift : { strict: false, writeReport: true };
-          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "apiDrift", adCfg);
+        'config:setup'({ config }: any) {
+          const rDir = (config as { root?: string }).root
+            ? fileURLToPath((config as { root?: string }).root!)
+            : process.cwd();
+          const adCfg =
+            typeof options.apiDrift === 'object' ? options.apiDrift : { strict: false, writeReport: true };
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'apiDrift', adCfg);
         },
       },
     });
   }
   if (options.conceptTrail !== false) {
     starlightPlugins.push({
-      name: "docs-toolkit:concept-trail",
+      name: 'docs-toolkit:concept-trail',
       hooks: {
-        "config:setup"({ config }: any) {
-          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
-          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "conceptTrail", true);
+        'config:setup'({ config }: any) {
+          const rDir = (config as { root?: string }).root
+            ? fileURLToPath((config as { root?: string }).root!)
+            : process.cwd();
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'conceptTrail', true);
         },
       },
     });
   }
   if (options.sinceBadges !== false) {
     starlightPlugins.push({
-      name: "docs-toolkit:since-badges",
+      name: 'docs-toolkit:since-badges',
       hooks: {
-        "config:setup"({ config }: any) {
-          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
-          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "sinceBadges", true);
+        'config:setup'({ config }: any) {
+          const rDir = (config as { root?: string }).root
+            ? fileURLToPath((config as { root?: string }).root!)
+            : process.cwd();
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'sinceBadges', true);
         },
       },
     });
   }
   if (options.sinceBadges !== false) {
     starlightPlugins.push({
-      name: "docs-toolkit:since-badges",
+      name: 'docs-toolkit:since-badges',
       hooks: {
-        "config:setup"({ config }: any) {
-          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
-          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "sinceBadges", true);
+        'config:setup'({ config }: any) {
+          const rDir = (config as { root?: string }).root
+            ? fileURLToPath((config as { root?: string }).root!)
+            : process.cwd();
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'sinceBadges', true);
         },
       },
     });
@@ -913,7 +941,14 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   const integrations: NonNullable<AstroUserConfig['integrations']> = [
     inlineBashIntegration(),
     astroTakumi({
-      options: { domBackend: 'linkedom', fonts: [fontBuf], width: 1200, height: 630, format: 'webp', quality: 85 },
+      options: {
+        domBackend: 'linkedom',
+        fonts: [fontBuf],
+        width: 1200,
+        height: 630,
+        format: 'webp',
+        quality: 85,
+      },
       render,
     } as unknown as Parameters<typeof astroTakumi>[0]),
     staticMermaidIntegration(),

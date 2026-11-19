@@ -28,13 +28,19 @@ pub fn run_diataxis_lint(
             continue;
         }
         if !doc.has_frontmatter {
-            report.errors.push(format!(r#"Missing YAML frontmatter in "{}"."#, doc.rel_path));
+            report.errors.push(format!(
+                r#"Missing YAML frontmatter in "{}"."#,
+                doc.rel_path
+            ));
             continue;
         }
         report.audited += 1;
 
         if doc.title.is_empty() {
-            report.errors.push(format!(r#"Missing frontmatter title in "{}"."#, doc.rel_path));
+            report.errors.push(format!(
+                r#"Missing frontmatter title in "{}"."#,
+                doc.rel_path
+            ));
         } else {
             let key = format!("{}:{}", doc.locale, doc.title.to_lowercase());
             if let Some(&prev) = seen_titles.get(&key) {
@@ -49,7 +55,10 @@ pub fn run_diataxis_lint(
 
         let dlen = doc.description.chars().count();
         if dlen < min_desc_len {
-            report.warnings.push(format!(r#"Short/missing description ({dlen} chars) in "{}"."#, doc.rel_path));
+            report.warnings.push(format!(
+                r#"Short/missing description ({dlen} chars) in "{}"."#,
+                doc.rel_path
+            ));
         } else if dlen > max_desc_len {
             report.warnings.push(format!(
                 r#"Long description ({dlen} > {max_desc_len} chars) in "{}"."#,
@@ -90,23 +99,36 @@ pub fn run_diataxis_lint(
             if t.starts_with('|') && t.ends_with('|') {
                 has_table = true;
             }
-            if t.contains("LOREM IPSUM") || t.split(|c: char| !c.is_ascii_alphanumeric() && c != '_').any(|w| matches!(w, "TODO" | "FIXME" | "TBD")) {
+            if t.contains("LOREM IPSUM")
+                || t.split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                    .any(|w| matches!(w, "TODO" | "FIXME" | "TBD"))
+            {
                 has_todo = true;
             }
-            if !t.is_empty() && !t.starts_with("import ") && !t.starts_with("export ") && !t.starts_with('<') {
+            if !t.is_empty()
+                && !t.starts_with("import ")
+                && !t.starts_with("export ")
+                && !t.starts_with('<')
+            {
                 word_count += t.split_whitespace().count();
             }
         }
 
         if has_todo {
-            report.warnings.push(format!(r#"Unfinished placeholder (TODO/FIXME/TBD) found in "{}"."#, doc.rel_path));
+            report.warnings.push(format!(
+                r#"Unfinished placeholder (TODO/FIXME/TBD) found in "{}"."#,
+                doc.rel_path
+            ));
         }
 
         let quadrant = doc.rel_no_locale.split('/').next().unwrap_or("");
         match quadrant {
             "tutorials" => {
                 if code_blocks == 0 {
-                    report.warnings.push(format!(r#"Tutorial "{}" has 0 runnable code blocks."#, doc.rel_path));
+                    report.warnings.push(format!(
+                        r#"Tutorial "{}" has 0 runnable code blocks."#,
+                        doc.rel_path
+                    ));
                 }
                 if h2_count < 2 && !has_steps {
                     report.warnings.push(format!(
@@ -135,13 +157,11 @@ pub fn run_diataxis_lint(
                     ));
                 }
             }
-            "explanation" => {
-                if word_count < min_explanation_words {
-                    report.warnings.push(format!(
+            "explanation" if word_count < min_explanation_words => {
+                report.warnings.push(format!(
                         r#"Explanation page "{}" is thin ({word_count} < {min_explanation_words} words)."#,
                         doc.rel_path
                     ));
-                }
             }
             _ => {}
         }

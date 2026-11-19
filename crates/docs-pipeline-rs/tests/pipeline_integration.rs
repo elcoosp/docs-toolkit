@@ -41,7 +41,11 @@ fn cli_full_pipeline_success_and_strict_failure() {
 
     let bin = env!("CARGO_BIN_EXE_docs-pipeline-rs");
     let out = Command::new(bin).arg(&cfg_path).output().unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(v["mermaidRendered"], 1);
     assert_eq!(v["linkPreviewsIndexed"], 2);
@@ -107,18 +111,27 @@ fn concept_trail_injects_prerequisite_links() {
             "locales": ["en"],
             "conceptTrail": true,
             "glossary": { "strict": false }
-        }).to_string(),
-    ).unwrap();
+        })
+        .to_string(),
+    )
+    .unwrap();
 
     let out = std::process::Command::new(env!("CARGO_BIN_EXE_docs-pipeline-rs"))
         .arg(&cfg)
         .output()
         .unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let json: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(json["conceptTrailPages"], 1, "report: {json}");
     assert_eq!(json["conceptTrailLinks"], 1, "report: {json}");
     let ref_html = fs::read_to_string(dist.join("reference/style/index.html")).unwrap();
-    assert!(ref_html.contains("dt-concept-trail"), "missing trail in {ref_html}");
+    assert!(
+        ref_html.contains("dt-concept-trail"),
+        "missing trail in {ref_html}"
+    );
     let _ = fs::remove_dir_all(&root);
 }

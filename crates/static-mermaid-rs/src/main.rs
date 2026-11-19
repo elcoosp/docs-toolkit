@@ -49,9 +49,17 @@ fn strip_tags(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut in_tag = false;
     for c in s.chars() {
-        if c == '<' { in_tag = true; continue; }
-        if c == '>' { in_tag = false; continue; }
-        if !in_tag { out.push(c); }
+        if c == '<' {
+            in_tag = true;
+            continue;
+        }
+        if c == '>' {
+            in_tag = false;
+            continue;
+        }
+        if !in_tag {
+            out.push(c);
+        }
     }
     decode_entities(out.trim())
 }
@@ -80,26 +88,29 @@ fn split_label(raw: &str) -> (String, Option<String>) {
 
 fn parse_node_token(tok: &str) -> (String, Option<(String, Option<String>, bool)>) {
     let t = tok.trim();
-    if let Some(idx) = t.find("[(") {
-        if t.ends_with(")]") && idx + 2 <= t.len() - 2 {
-            let id = t[..idx].trim().to_string();
-            let (title, sub) = split_label(&t[idx + 2..t.len() - 2]);
-            return (id, Some((title, sub, true)));
-        }
+    if let Some(idx) = t.find("[(")
+        && t.ends_with(")]")
+        && idx + 2 <= t.len() - 2
+    {
+        let id = t[..idx].trim().to_string();
+        let (title, sub) = split_label(&t[idx + 2..t.len() - 2]);
+        return (id, Some((title, sub, true)));
     }
-    if let Some(idx) = t.find('[') {
-        if t.ends_with(']') && idx + 1 <= t.len() - 1 {
-            let id = t[..idx].trim().to_string();
-            let (title, sub) = split_label(&t[idx + 1..t.len() - 1]);
-            return (id, Some((title, sub, false)));
-        }
+    if let Some(idx) = t.find('[')
+        && t.ends_with(']')
+        && idx < t.len() - 1
+    {
+        let id = t[..idx].trim().to_string();
+        let (title, sub) = split_label(&t[idx + 1..t.len() - 1]);
+        return (id, Some((title, sub, false)));
     }
-    if let Some(idx) = t.find('(') {
-        if t.ends_with(')') && idx + 1 <= t.len() - 1 {
-            let id = t[..idx].trim().to_string();
-            let (title, sub) = split_label(&t[idx + 1..t.len() - 1]);
-            return (id, Some((title, sub, false)));
-        }
+    if let Some(idx) = t.find('(')
+        && t.ends_with(')')
+        && idx < t.len() - 1
+    {
+        let id = t[..idx].trim().to_string();
+        let (title, sub) = split_label(&t[idx + 1..t.len() - 1]);
+        return (id, Some((title, sub, false)));
     }
     (t.to_string(), None)
 }
@@ -145,42 +156,55 @@ fn parse_edge_line(line: &str) -> Vec<(String, Option<String>, bool)> {
         let bytes = rest.as_bytes();
         while scan < bytes.len() {
             let b = bytes[scan];
-            if b == b'"' { in_quotes = !in_quotes; scan += 1; continue; }
-            if in_quotes { scan += 1; continue; }
-            if b == b'[' || b == b'(' { bracket_depth += 1; scan += 1; continue; }
-            if b == b']' || b == b')' { bracket_depth -= 1; scan += 1; continue; }
+            if b == b'"' {
+                in_quotes = !in_quotes;
+                scan += 1;
+                continue;
+            }
+            if in_quotes {
+                scan += 1;
+                continue;
+            }
+            if b == b'[' || b == b'(' {
+                bracket_depth += 1;
+                scan += 1;
+                continue;
+            }
+            if b == b']' || b == b')' {
+                bracket_depth -= 1;
+                scan += 1;
+                continue;
+            }
             if bracket_depth == 0 {
                 let sub = &rest[scan..];
-                if sub.starts_with("-.->") {
-                    let after = &sub[4..];
-                    if let Some(after_pipe) = after.strip_prefix('|') {
-                        if let Some(end_pipe) = after_pipe.find('|') {
-                            let lbl = decode_entities(after_pipe[..end_pipe].trim().trim_matches('"'));
-                            best = Some((scan, 4 + 1 + end_pipe + 1, Some(lbl), true));
-                            break;
-                        }
+                if let Some(after) = sub.strip_prefix("-.->") {
+                    if let Some(after_pipe) = after.strip_prefix('|')
+                        && let Some(end_pipe) = after_pipe.find('|')
+                    {
+                        let lbl = decode_entities(after_pipe[..end_pipe].trim().trim_matches('"'));
+                        best = Some((scan, 4 + 1 + end_pipe + 1, Some(lbl), true));
+                        break;
                     }
                     best = Some((scan, 4, None, true));
                     break;
                 }
-                if sub.starts_with("-->") {
-                    let after = &sub[3..];
-                    if let Some(after_pipe) = after.strip_prefix('|') {
-                        if let Some(end_pipe) = after_pipe.find('|') {
-                            let lbl = decode_entities(after_pipe[..end_pipe].trim().trim_matches('"'));
-                            best = Some((scan, 3 + 1 + end_pipe + 1, Some(lbl), false));
-                            break;
-                        }
+                if let Some(after) = sub.strip_prefix("-->") {
+                    if let Some(after_pipe) = after.strip_prefix('|')
+                        && let Some(end_pipe) = after_pipe.find('|')
+                    {
+                        let lbl = decode_entities(after_pipe[..end_pipe].trim().trim_matches('"'));
+                        best = Some((scan, 3 + 1 + end_pipe + 1, Some(lbl), false));
+                        break;
                     }
                     best = Some((scan, 3, None, false));
                     break;
                 }
-                if sub.starts_with("-- ") {
-                    if let Some(arrow_pos) = sub[3..].find("-->") {
-                        let lbl = decode_entities(sub[3..3 + arrow_pos].trim().trim_matches('"'));
-                        best = Some((scan, 3 + arrow_pos + 3, Some(lbl), false));
-                        break;
-                    }
+                if sub.starts_with("-- ")
+                    && let Some(arrow_pos) = sub[3..].find("-->")
+                {
+                    let lbl = decode_entities(sub[3..3 + arrow_pos].trim().trim_matches('"'));
+                    best = Some((scan, 3 + arrow_pos + 3, Some(lbl), false));
+                    break;
                 }
             }
             scan += 1;
@@ -222,17 +246,26 @@ fn render_flowchart(src: &str) -> String {
         if line.contains("-->") || line.contains("-.->") {
             let hops = parse_edge_line(line);
             for win in hops.windows(2) {
-                let left_group: Vec<usize> = win[0].0.split('&')
+                let left_group: Vec<usize> = win[0]
+                    .0
+                    .split('&')
                     .map(|p| get_or_insert_node(&mut nodes, &mut map, p))
                     .collect();
-                let right_group: Vec<usize> = win[1].0.split('&')
+                let right_group: Vec<usize> = win[1]
+                    .0
+                    .split('&')
                     .map(|p| get_or_insert_node(&mut nodes, &mut map, p))
                     .collect();
                 let lbl = win[1].1.clone();
                 let dashed = win[1].2;
                 for &u in &left_group {
                     for &v in &right_group {
-                        edges.push(Edge { from: u, to: v, label: lbl.clone(), dashed });
+                        edges.push(Edge {
+                            from: u,
+                            to: v,
+                            label: lbl.clone(),
+                            dashed,
+                        });
                     }
                 }
             }
@@ -247,7 +280,11 @@ fn render_flowchart(src: &str) -> String {
 
     for n in &mut nodes {
         let t_chars = n.title.chars().count() as f64;
-        let s_chars = n.subtitle.as_ref().map(|s| s.chars().count() as f64).unwrap_or(0.0);
+        let s_chars = n
+            .subtitle
+            .as_ref()
+            .map(|s| s.chars().count() as f64)
+            .unwrap_or(0.0);
         let max_c = t_chars.max(s_chars * 0.88);
         n.w = (max_c * 7.8 + 34.0).clamp(132.0, 290.0);
         n.h = if n.subtitle.is_some() { 46.0 } else { 36.0 };
@@ -264,7 +301,9 @@ fn render_flowchart(src: &str) -> String {
     }
     let mut q = VecDeque::new();
     for (i, &d) in indeg.iter().enumerate() {
-        if d == 0 { q.push_back(i); }
+        if d == 0 {
+            q.push_back(i);
+        }
     }
     let mut visited = 0usize;
     while let Some(u) = q.pop_front() {
@@ -282,7 +321,9 @@ fn render_flowchart(src: &str) -> String {
     }
     if visited < n_count {
         for (i, n) in nodes.iter_mut().enumerate() {
-            if n.layer == 0 { n.layer = i / 2; }
+            if n.layer == 0 {
+                n.layer = i / 2;
+            }
         }
     }
 
@@ -299,13 +340,20 @@ fn render_flowchart(src: &str) -> String {
         }
         layers[l].sort_by(|&a, &b| {
             let bary = |node_idx: usize| -> f64 {
-                let preds: Vec<f64> = edges.iter()
+                let preds: Vec<f64> = edges
+                    .iter()
                     .filter(|e| e.to == node_idx)
                     .filter_map(|e| pos_map.get(&e.from).copied())
                     .collect();
-                if preds.is_empty() { nodes[node_idx].order as f64 } else { preds.iter().sum::<f64>() / (preds.len() as f64) }
+                if preds.is_empty() {
+                    nodes[node_idx].order as f64
+                } else {
+                    preds.iter().sum::<f64>() / (preds.len() as f64)
+                }
             };
-            bary(a).partial_cmp(&bary(b)).unwrap_or(std::cmp::Ordering::Equal)
+            bary(a)
+                .partial_cmp(&bary(b))
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
     }
 
@@ -317,8 +365,11 @@ fn render_flowchart(src: &str) -> String {
         let mut max_col_h = 0.0f64;
         for group in &layers {
             let col_w = group.iter().map(|&i| nodes[i].w).fold(0.0f64, f64::max);
-            let col_h: f64 = group.iter().map(|&i| nodes[i].h).sum::<f64>() + gap_cross * ((group.len().saturating_sub(1)) as f64);
-            if col_h > max_col_h { max_col_h = col_h; }
+            let col_h: f64 = group.iter().map(|&i| nodes[i].h).sum::<f64>()
+                + gap_cross * ((group.len().saturating_sub(1)) as f64);
+            if col_h > max_col_h {
+                max_col_h = col_h;
+            }
             cur_x += col_w + gap_main;
         }
         let w = (cur_x - gap_main + pad).max(320.0);
@@ -326,7 +377,8 @@ fn render_flowchart(src: &str) -> String {
         let mut x = pad;
         for group in &layers {
             let col_w = group.iter().map(|&i| nodes[i].w).fold(0.0f64, f64::max);
-            let col_h: f64 = group.iter().map(|&i| nodes[i].h).sum::<f64>() + gap_cross * ((group.len().saturating_sub(1)) as f64);
+            let col_h: f64 = group.iter().map(|&i| nodes[i].h).sum::<f64>()
+                + gap_cross * ((group.len().saturating_sub(1)) as f64);
             let mut y = (h - col_h) * 0.5;
             for &i in group {
                 nodes[i].x = x + (col_w - nodes[i].w) * 0.5;
@@ -341,8 +393,11 @@ fn render_flowchart(src: &str) -> String {
         let mut max_row_w = 0.0f64;
         for group in &layers {
             let row_h = group.iter().map(|&i| nodes[i].h).fold(0.0f64, f64::max);
-            let row_w: f64 = group.iter().map(|&i| nodes[i].w).sum::<f64>() + gap_cross * ((group.len().saturating_sub(1)) as f64);
-            if row_w > max_row_w { max_row_w = row_w; }
+            let row_w: f64 = group.iter().map(|&i| nodes[i].w).sum::<f64>()
+                + gap_cross * ((group.len().saturating_sub(1)) as f64);
+            if row_w > max_row_w {
+                max_row_w = row_w;
+            }
             cur_y += row_h + gap_main;
         }
         let w = (max_row_w + pad * 2.0).max(320.0);
@@ -350,7 +405,8 @@ fn render_flowchart(src: &str) -> String {
         let mut y = pad;
         for group in &layers {
             let row_h = group.iter().map(|&i| nodes[i].h).fold(0.0f64, f64::max);
-            let row_w: f64 = group.iter().map(|&i| nodes[i].w).sum::<f64>() + gap_cross * ((group.len().saturating_sub(1)) as f64);
+            let row_w: f64 = group.iter().map(|&i| nodes[i].w).sum::<f64>()
+                + gap_cross * ((group.len().saturating_sub(1)) as f64);
             let mut x = (w - row_w) * 0.5;
             for &i in group {
                 nodes[i].x = x;
@@ -378,16 +434,38 @@ fn render_flowchart(src: &str) -> String {
             let tx = b.x;
             let ty = b.y + b.h * 0.5;
             let mx = (sx + tx) * 0.5;
-            (sx, sy, tx, ty, format!("M {:.1} {:.1} C {:.1} {:.1}, {:.1} {:.1}, {:.1} {:.1}", sx, sy, mx, sy, mx, ty, tx, ty))
+            (
+                sx,
+                sy,
+                tx,
+                ty,
+                format!(
+                    "M {:.1} {:.1} C {:.1} {:.1}, {:.1} {:.1}, {:.1} {:.1}",
+                    sx, sy, mx, sy, mx, ty, tx, ty
+                ),
+            )
         } else {
             let sx = a.x + a.w * 0.5;
             let sy = a.y + a.h;
             let tx = b.x + b.w * 0.5;
             let ty = b.y;
             let my = (sy + ty) * 0.5;
-            (sx, sy, tx, ty, format!("M {:.1} {:.1} C {:.1} {:.1}, {:.1} {:.1}, {:.1} {:.1}", sx, sy, sx, my, tx, my, tx, ty))
+            (
+                sx,
+                sy,
+                tx,
+                ty,
+                format!(
+                    "M {:.1} {:.1} C {:.1} {:.1}, {:.1} {:.1}, {:.1} {:.1}",
+                    sx, sy, sx, my, tx, my, tx, ty
+                ),
+            )
         };
-        let dash = if e.dashed { r#" stroke-dasharray="5 4""# } else { "" };
+        let dash = if e.dashed {
+            r#" stroke-dasharray="5 4""#
+        } else {
+            ""
+        };
         out.push_str(&format!(
             r#"<path d="{}" fill="none" stroke="var(--sl-color-gray-3, #64748b)" stroke-width="1.5"{} marker-end="url(#sl-arr)"/>"#,
             path_d, dash
@@ -443,40 +521,63 @@ fn main() {
     print!("{}", svgs.join("\n===MERMAID_SEP===\n"));
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_entities_and_xml_escaping() {
-        assert_eq!(decode_entities("A &rarr; B &larr; C &amp; &lt;tag&gt; &quot;q&quot;"), "A → B ← C & <tag> \"q\"");
+        assert_eq!(
+            decode_entities("A &rarr; B &larr; C &amp; &lt;tag&gt; &quot;q&quot;"),
+            "A → B ← C & <tag> \"q\""
+        );
         assert_eq!(escape_xml("<a & \"b\">"), "&lt;a &amp; &quot;b&quot;&gt;");
-        assert_eq!(strip_tags("<b>Hello</b> &rarr; <i>World</i>"), "Hello → World");
+        assert_eq!(
+            strip_tags("<b>Hello</b> &rarr; <i>World</i>"),
+            "Hello → World"
+        );
     }
 
     #[test]
     fn test_split_label_and_node_tokens() {
         assert_eq!(split_label(""), (String::new(), None));
-        assert_eq!(split_label("\"Single Line\""), ("Single Line".to_string(), None));
+        assert_eq!(
+            split_label("\"Single Line\""),
+            ("Single Line".to_string(), None)
+        );
         assert_eq!(
             split_label("Title<br/>Sub 1<br />Sub 2<br>Sub 3"),
-            ("Title".to_string(), Some("Sub 1 · Sub 2 · Sub 3".to_string()))
+            (
+                "Title".to_string(),
+                Some("Sub 1 · Sub 2 · Sub 3".to_string())
+            )
         );
 
         assert_eq!(
             parse_node_token("db[(Postgres<br/>v16)]"),
-            ("db".to_string(), Some(("Postgres".to_string(), Some("v16".to_string()), true)))
+            (
+                "db".to_string(),
+                Some(("Postgres".to_string(), Some("v16".to_string()), true))
+            )
         );
         assert_eq!(
             parse_node_token("api[API Gateway]"),
-            ("api".to_string(), Some(("API Gateway".to_string(), None, false)))
+            (
+                "api".to_string(),
+                Some(("API Gateway".to_string(), None, false))
+            )
         );
         assert_eq!(
             parse_node_token("worker(Async Worker)"),
-            ("worker".to_string(), Some(("Async Worker".to_string(), None, false)))
+            (
+                "worker".to_string(),
+                Some(("Async Worker".to_string(), None, false))
+            )
         );
-        assert_eq!(parse_node_token("plain_node"), ("plain_node".to_string(), None));
+        assert_eq!(
+            parse_node_token("plain_node"),
+            ("plain_node".to_string(), None)
+        );
     }
 
     #[test]
@@ -484,12 +585,24 @@ mod tests {
         let hops = parse_edge_line("A[Client] -->|HTTP| B(API) -.->|async| C[(DB)] -- flush --> D");
         assert_eq!(hops.len(), 4);
         assert_eq!(hops[0], ("A[Client]".to_string(), None, false));
-        assert_eq!(hops[1], ("B(API)".to_string(), Some("HTTP".to_string()), false));
-        assert_eq!(hops[2], ("C[(DB)]".to_string(), Some("async".to_string()), true));
+        assert_eq!(
+            hops[1],
+            ("B(API)".to_string(), Some("HTTP".to_string()), false)
+        );
+        assert_eq!(
+            hops[2],
+            ("C[(DB)]".to_string(), Some("async".to_string()), true)
+        );
         assert_eq!(hops[3], ("D".to_string(), Some("flush".to_string()), false));
 
         let dashed_unlabeled = parse_edge_line("X -.-> Y");
-        assert_eq!(dashed_unlabeled, vec![("X".to_string(), None, false), ("Y".to_string(), None, true)]);
+        assert_eq!(
+            dashed_unlabeled,
+            vec![
+                ("X".to_string(), None, false),
+                ("Y".to_string(), None, true)
+            ]
+        );
     }
 
     #[test]

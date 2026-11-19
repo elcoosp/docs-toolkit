@@ -61,9 +61,13 @@ function extractFallbackPageMarkdown(): string {
       if (para) blocks.push(para);
     } else if (tag === 'PRE') {
       const ecLines = Array.from(el.querySelectorAll('.ec-line .code'));
-      const code = ecLines.length > 0
-        ? ecLines.map((l) => l.textContent || '').join('\n').trim()
-        : (el.textContent?.trim() || '');
+      const code =
+        ecLines.length > 0
+          ? ecLines
+              .map((l) => l.textContent || '')
+              .join('\n')
+              .trim()
+          : el.textContent?.trim() || '';
       if (code) blocks.push('```\n' + code + '\n```');
     }
   });
@@ -94,7 +98,11 @@ function morphButtonToSuccess(
     animate(baseSvg, { opacity: 0, scale: 0.45, rotate: -24 }, { duration: 0.18, ease: 'easeOut' });
   }
   if (checkSvg) {
-    animate(checkSvg, { opacity: 1, scale: [0.5, 1.12, 1], rotate: [-14, 0] }, { type: spring, stiffness: 540, damping: 26 });
+    animate(
+      checkSvg,
+      { opacity: 1, scale: [0.5, 1.12, 1], rotate: [-14, 0] },
+      { type: spring, stiffness: 540, damping: 26 },
+    );
   }
   if (checkPath) {
     const len = typeof checkPath.getTotalLength === 'function' ? checkPath.getTotalLength() : 24;
@@ -110,7 +118,11 @@ function morphButtonToSuccess(
       animate(checkSvg, { opacity: 0, scale: 0.5, rotate: 16 }, { duration: 0.18, ease: 'easeIn' });
     }
     if (baseSvg) {
-      animate(baseSvg, { opacity: 1, scale: [0.6, 1], rotate: [18, 0] }, { type: spring, stiffness: 480, damping: 30 });
+      animate(
+        baseSvg,
+        { opacity: 1, scale: [0.6, 1], rotate: [18, 0] },
+        { type: spring, stiffness: 480, damping: 30 },
+      );
     }
   }, 2000);
   timerMap.set(btn, timer);
@@ -146,7 +158,9 @@ export function initPageActions(): void {
       const labelEl = copyBtn.querySelector<HTMLElement>('.morph-label__default');
       if (labelEl) {
         labelEl.textContent = copyError;
-        window.setTimeout(() => { labelEl.textContent = copyLabel; }, 2000);
+        window.setTimeout(() => {
+          labelEl.textContent = copyLabel;
+        }, 2000);
       }
     }
   });
@@ -179,7 +193,11 @@ export function initPageActions(): void {
       animate(chevron, { rotate: open ? 180 : 0 }, { type: spring, stiffness: 520, damping: 32 });
     }
     if (open) {
-      animate(menu, { opacity: [0, 1], scale: [0.95, 1], y: [-6, 0] }, { type: spring, stiffness: 520, damping: 30 });
+      animate(
+        menu,
+        { opacity: [0, 1], scale: [0.95, 1], y: [-6, 0] },
+        { type: spring, stiffness: 520, damping: 30 },
+      );
     }
   }
 

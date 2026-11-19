@@ -36,7 +36,6 @@ const CODE_SYM_CSS = `
 }
 `;
 
-
 function normalizePathname(pathname: string): string {
   let p = pathname.replace(/[#?].*$/, '');
   if (!p.startsWith('/')) p = '/' + p;
@@ -68,7 +67,12 @@ export function initLinkPreview(opts: { hoverDelay?: number } = {}): void {
   if (typeof window === 'undefined' || initialized) return;
   initialized = true;
 
-  if (!document.querySelector("#dt-code-symbol-style")) { const st = document.createElement("style"); st.id = "dt-code-symbol-style"; st.textContent = CODE_SYM_CSS; document.head.append(st); }
+  if (!document.querySelector('#dt-code-symbol-style')) {
+    const st = document.createElement('style');
+    st.id = 'dt-code-symbol-style';
+    st.textContent = CODE_SYM_CSS;
+    document.head.append(st);
+  }
   const hoverDelay = opts.hoverDelay ?? 180;
   const index = (LINK_PREVIEWS ?? {}) as Record<string, LinkPreviewEntry>;
   const card = createHoverCardController();
