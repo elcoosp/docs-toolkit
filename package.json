@@ -1,6 +1,6 @@
 {
   "name": "@elcoosp/docs-toolkit",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "Shared OG image generation, docs config helper, and QA tooling for Starlight sites",
   "repository": {
     "type": "git",
