@@ -89,5 +89,7 @@
   "llms.smallSubtitle": "curated subset",
   "llms.localeLabel": "",
   "conceptTrail.label": "Builds on",
-  "conceptTrail.ariaLabel": "Prerequisite concepts"
+  "conceptTrail.ariaLabel": "Prerequisite concepts",
+  "apiDrift.phantomWarning": "Symbol `{symbol}` referenced in {route} was not found in public source AST.",
+  "apiDrift.reportTitle": "API Drift & Coverage Report"
 }
