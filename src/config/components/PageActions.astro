@@ -343,6 +343,29 @@ transform: translate(0, 0);
   .sl-zen-toggle {
     margin-inline-start: auto;
   }
+  @media (max-width: 560px) {
+    .page-actions-container {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+    .page-actions-container > .action-btn,
+    .page-actions-container > .action-dropdown,
+    .page-actions-container > .action-dropdown > .action-btn {
+      width: 100%;
+      justify-content: center;
+    }
+    .sl-zen-toggle {
+      margin-inline-start: 0;
+    }
+    .sl-zen-toggle:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+    .dropdown-bridge {
+      left: auto;
+      right: 0;
+    }
+  }
   :global(html[data-zen-mode="true"]) .sl-zen-toggle {
     color: var(--sl-color-accent-high);
     border-color: color-mix(in srgb, var(--sl-color-accent) 60%, var(--sl-color-hairline));
@@ -391,12 +414,18 @@ transform: translate(0, 0);
 
 <style is:global>
   main img:not([class*="avatar"]):not(.sl-blog-author-image) {
-max-height: 440px !important;
-max-width: 100% !important;
-width: auto !important;
-object-fit: contain !important;
-display: block !important;
-margin: 2rem auto !important;
-border-radius: 8px;
-}
+    max-height: 440px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 2rem auto !important;
+    border-radius: 8px;
+  }
+  @media (max-width: 50rem) {
+    .hero > img {
+      max-height: 150px !important;
+      margin: 0.25rem auto 0.75rem !important;
+    }
+  }
 </style>

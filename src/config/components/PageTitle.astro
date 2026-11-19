@@ -3,12 +3,22 @@ import DefaultPageTitle from "@astrojs/starlight/components/PageTitle.astro";
 import ReadingContextBar from "../../plugins/reading-context/ReadingContextBar.astro";
 import PageActions from "./PageActions.astro";
 
-const is404 = Astro.props.id === "404" || Astro.url.pathname.endsWith("/404") || Astro.url.pathname.endsWith("/404/");
+const p = Astro.url.pathname.replace(/\/$/, "") || "/";
+const is404 = Astro.props.id === "404" || p.endsWith("/404");
+const isGeneratedIndex =
+  p === "/blog" ||
+  p === "/fr/blog" ||
+  p.includes("/blog/authors/") ||
+  p.includes("/blog/tags/") ||
+  p === "/changelog" ||
+  p === "/fr/changelog" ||
+  p.includes("/changelog/version/");
+const showPageTools = !is404 && !isGeneratedIndex;
 ---
 
 <DefaultPageTitle {...Astro.props} />
-{!is404 && <ReadingContextBar />}
-{!is404 && <PageActions {...Astro.props} />}
+{showPageTools && <ReadingContextBar />}
+{showPageTools && <PageActions {...Astro.props} />}
 
 <script>
   import "./zen-mode-client.ts";

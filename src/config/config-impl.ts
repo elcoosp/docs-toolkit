@@ -618,7 +618,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
                   if (!document.getElementById("sl-zen-css")) {
                     const s = document.createElement("style");
                     s.id = "sl-zen-css";
-                    s.textContent = "html[data-zen-mode=\"true\"] nav.sidebar,html[data-zen-mode=\"true\"] .right-sidebar-container{display:none!important}html[data-zen-mode=\"true\"] .main-frame{padding-inline-start:0!important}html[data-zen-mode=\"true\"] .main-pane{max-width:76ch;margin-inline:auto}";
+                    s.textContent = 'html[data-zen-mode="true"] nav.sidebar,html[data-zen-mode="true"] .right-sidebar-container{display:none!important}html[data-zen-mode="true"] .main-frame{padding-inline-start:0!important}html[data-zen-mode="true"] .main-pane{max-width:76ch;margin-inline:auto}';
                     document.head.appendChild(s);
                   }
                   window.addEventListener("keydown", (e) => {
