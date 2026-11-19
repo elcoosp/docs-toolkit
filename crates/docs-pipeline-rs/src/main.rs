@@ -9,6 +9,7 @@ use plugins::api_drift::{
 use plugins::code_symbols::{CodeSymbolsCfg, run_code_symbols};
 use plugins::concept_trail::{ConceptTrailLabels, run_concept_trail};
 use plugins::diataxis_lint::run_diataxis_lint;
+use plugins::doc_graph::{DocGraphCfg, run_doc_graph};
 use plugins::glossary::run_glossary;
 use plugins::i18n_parity::run_i18n_parity;
 use plugins::link_preview::run_link_preview;
@@ -57,6 +58,8 @@ struct PipelineRequest {
     i18n_parity: Option<I18nCfg>,
     #[serde(default)]
     diataxis_lint: Option<DiataxisCfg>,
+    #[serde(default)]
+    doc_graph: Option<DocGraphCfg>,
     #[serde(default)]
     llms: Option<LlmsConfig>,
     #[serde(default)]
@@ -152,6 +155,9 @@ struct PipelineResponse {
     llms_pages: usize,
     i18n_pairs: usize,
     diataxis_audited: usize,
+    doc_graph_nodes: usize,
+    doc_graph_edges: usize,
+    doc_graph_orphans: usize,
     api_drift_source_syms: usize,
     api_drift_coverage_pct: usize,
     api_drift_phantoms: usize,
@@ -359,6 +365,15 @@ fn main() {
         0
     };
 
+    let (doc_graph_nodes, doc_graph_edges, doc_graph_orphans) = if let Some(dg_cfg) = &req.doc_graph {
+        let rep = run_doc_graph(&dist_dir, &docs, &req.default_locale, dg_cfg);
+        warnings.extend(rep.warnings);
+        errors.extend(rep.errors);
+        (rep.nodes_count, rep.edges_count, rep.orphan_count)
+    } else {
+        (0, 0, 0)
+    };
+
     let llms_pages = if let Some(l_cfg) = &req.llms {
         run_llms(&dist_dir, &docs, l_cfg, &req.default_locale, &i18n)
     } else {
@@ -387,6 +402,9 @@ fn main() {
         llms_pages,
         i18n_pairs,
         diataxis_audited,
+        doc_graph_nodes,
+        doc_graph_edges,
+        doc_graph_orphans,
         api_drift_source_syms,
         api_drift_coverage_pct,
         api_drift_phantoms,

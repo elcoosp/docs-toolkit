@@ -224,6 +224,9 @@ export async function runNativePipelineOnce(
       llmsPages: number;
       i18nPairs: number;
       diataxisAudited: number;
+      docGraphNodes?: number;
+      docGraphEdges?: number;
+      docGraphOrphans?: number;
       apiDriftSourceSyms?: number;
       apiDriftCoveragePct?: number;
       apiDriftPhantoms?: number;
@@ -261,6 +264,10 @@ export async function runNativePipelineOnce(
     if (report.llmsPages > 0) metrics.push(`${report.llmsPages} llms`);
     if (report.i18nPairs > 0) metrics.push(`${report.i18nPairs} i18n pairs`);
     if (report.diataxisAudited > 0) metrics.push(`${report.diataxisAudited} diataxis`);
+    if ((report.docGraphNodes ?? 0) > 0)
+      metrics.push(
+        `doc-graph (${report.docGraphNodes} nodes, ${report.docGraphEdges} edges, ${report.docGraphOrphans} orphans)`,
+      );
     if ((report.apiDriftSourceSyms ?? 0) > 0)
       metrics.push(`api-drift (${report.apiDriftCoveragePct}% cov, ${report.apiDriftPhantoms} phantom)`);
     if ((report.snippetDriftChecked ?? 0) > 0)

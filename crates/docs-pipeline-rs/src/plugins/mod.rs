@@ -2,6 +2,7 @@ pub mod api_drift;
 pub mod code_symbols;
 pub mod concept_trail;
 pub mod diataxis_lint;
+pub mod doc_graph;
 pub mod glossary;
 pub mod i18n_parity;
 pub mod link_preview;

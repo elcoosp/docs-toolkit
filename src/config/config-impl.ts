@@ -124,6 +124,7 @@ export interface DocsConfigOptions {
   conceptTrail?: boolean;
   apiDrift?: boolean | { strict?: boolean; writeReport?: boolean };
   snippetDrift?: boolean | { strict?: boolean; writeReport?: boolean };
+  docGraph?: boolean | { strict?: boolean; warnOrphans?: boolean };
   giscus?: any;
   blog?: boolean | Record<string, unknown>;
 }
@@ -774,6 +775,21 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
               ? options.snippetDrift
               : { strict: false, writeReport: true };
           if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'snippetDrift', sdCfg);
+        },
+      },
+    });
+  }
+  if (options.docGraph !== false) {
+    starlightPlugins.push({
+      name: 'docs-toolkit:doc-graph',
+      hooks: {
+        'config:setup'({ config }: any) {
+          const rDir = (config as { root?: string }).root
+            ? fileURLToPath((config as { root?: string }).root!)
+            : process.cwd();
+          const dgCfg =
+            typeof options.docGraph === 'object' ? options.docGraph : { strict: false, warnOrphans: true };
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, 'docGraph', dgCfg);
         },
       },
     });
