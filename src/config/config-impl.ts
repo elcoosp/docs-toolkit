@@ -121,6 +121,7 @@ export interface DocsConfigOptions {
   extraVite?: Record<string, unknown>;
   llmsTxt?: LlmsTxtConfig | false;
   sinceBadges?: boolean;
+  conceptTrail?: boolean;
   giscus?: any;
   blog?: boolean | Record<string, unknown>;
 }
@@ -757,6 +758,17 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
   });
   starlightPlugins.push(unwrapPlugin(starlightAnnouncement)());
   starlightPlugins.push(starlightLinkPreview());
+  if (options.conceptTrail !== false) {
+    starlightPlugins.push({
+      name: "docs-toolkit:concept-trail",
+      hooks: {
+        "config:setup"({ config }: any) {
+          const rDir = (config as { root?: string }).root ? fileURLToPath((config as { root?: string }).root!) : process.cwd();
+          if (hasNativePipeline()) registerNativePipelinePlugin(rDir, "conceptTrail", true);
+        },
+      },
+    });
+  }
   if (options.sinceBadges !== false) {
     starlightPlugins.push({
       name: "docs-toolkit:since-badges",
