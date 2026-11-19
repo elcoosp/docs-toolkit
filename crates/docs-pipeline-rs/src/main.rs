@@ -4,6 +4,7 @@ mod plugins;
 use host::html_dom::parse_all_html;
 use host::md_source::load_all_markdown;
 use plugins::code_symbols::{run_code_symbols, CodeSymbolsCfg};
+use plugins::concept_trail::{run_concept_trail, ConceptTrailLabels};
 use plugins::diataxis_lint::run_diataxis_lint;
 use plugins::glossary::run_glossary;
 use plugins::i18n_parity::run_i18n_parity;
@@ -36,6 +37,10 @@ struct PipelineRequest {
     link_preview: bool,
     #[serde(default)]
     since_badges: bool,
+    #[serde(default)]
+    concept_trail: bool,
+    #[serde(default)]
+    concept_trail_i18n: HashMap<String, ConceptTrailLabels>,
     #[serde(default)]
     since_badges_i18n: HashMap<String, BadgeLabels>,
     #[serde(default)]
@@ -113,6 +118,8 @@ struct PipelineResponse {
     since_badges_indexed: usize,
     since_badges_injected: usize,
     since_badges_pages: usize,
+    concept_trail_pages: usize,
+    concept_trail_links: usize,
     glossary_indexed: usize,
     glossary_coverage_pct: usize,
     glossary_avg_per_page: String,
@@ -171,7 +178,7 @@ fn main() {
     let (code_symbols_indexed, code_symbol_links, code_symbol_pages) = if let Some(cs_cfg) = &req.code_symbols { let rep = run_code_symbols(&dist_dir, &pages, &docs, cs_cfg); (rep.symbols_indexed, rep.links_injected, rep.pages_enriched) } else { (0, 0, 0) };
     let (since_badges_indexed, since_badges_injected, since_badges_pages) = if req.since_badges { let rep = run_since_badges(&site_root, &dist_dir, &pages, &req.default_locale, &req.since_badges_i18n); (rep.symbols_indexed, rep.badges_injected, rep.pages_enriched) } else { (0, 0, 0) };
 
-    let (glossary_indexed, glossary_coverage_pct, glossary_avg_per_page) =
+    let (glossary_indexed, glossary_coverage_pct, glossary_avg_per_page, glossary_entries) =
         if let Some(g_cfg) = &req.glossary {
             let rep = run_glossary(&site_root, &dist_dir, &docs, &pages);
             for w in rep.warnings {
@@ -184,10 +191,16 @@ fn main() {
                     warnings.push(format!("[starlight-term-glossary] {e}"));
                 }
             }
-            (rep.indexed, rep.coverage_pct, rep.avg_per_page)
+            (rep.indexed, rep.coverage_pct, rep.avg_per_page, rep.entries)
         } else {
-            (0, 0, "0.00".to_string())
+            (0, 0, "0.00".to_string(), Vec::new())
         };
+    let (concept_trail_pages, concept_trail_links) = if req.concept_trail {
+        let rep = run_concept_trail(&dist_dir, &pages, &glossary_entries, &req.default_locale, &req.concept_trail_i18n);
+        (rep.pages_enriched, rep.links_injected)
+    } else {
+        (0, 0)
+    };
 
     let (related_pages_count, related_avg_links) = if let Some(r_cfg) = &req.related_pages {
         let (cnt, avg, isolated) = run_related_pages(&dist_dir, &docs, r_cfg.max_related);
@@ -269,6 +282,8 @@ fn main() {
         since_badges_indexed,
         since_badges_injected,
         since_badges_pages,
+        concept_trail_pages,
+        concept_trail_links,
         glossary_indexed,
         glossary_coverage_pct,
         glossary_avg_per_page,
