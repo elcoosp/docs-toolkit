@@ -89,5 +89,7 @@
   "llms.smallSubtitle": "résumé essentiel",
   "llms.localeLabel": "Français",
   "conceptTrail.label": "S’appuie sur",
-  "conceptTrail.ariaLabel": "Concepts prérequis"
+  "conceptTrail.ariaLabel": "Concepts prérequis",
+  "apiDrift.phantomWarning": "Le symbole `{symbol}` référencé dans {route} est introuvable dans l'AST public du code source.",
+  "apiDrift.reportTitle": "Rapport de dérive et couverture d'API"
 }
