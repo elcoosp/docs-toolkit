@@ -26,7 +26,7 @@
 }
 
 .hero .actions a:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 36rem) {
@@ -77,7 +77,8 @@
 .sl-markdown-content :is(h2, h3) .dt-since-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.16rem 0.54rem;
+  transform: translateY(0.08em);
+  padding: 0.16rem 0.52rem;
   border-radius: 999px;
   font-family: var(--__sl-font-mono, var(--sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace));
   font-size: 0.68rem;
@@ -108,4 +109,56 @@
   color: var(--sl-color-gray-2);
   background: color-mix(in srgb, var(--sl-color-gray-5) 55%, transparent);
   border: 1px solid var(--sl-color-gray-5);
+}
+
+/* Subtle inline concept trail at top of markdown articles */
+.sl-markdown-content > .dt-concept-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.32rem;
+  margin: -0.25rem 0 1.1rem;
+  padding: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--sl-color-gray-3);
+}
+.sl-markdown-content > .dt-concept-trail svg {
+  align-self: center;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+.sl-markdown-content > .dt-concept-trail .dt-ct-label,
+.sl-markdown-content > .dt-concept-trail .dt-ct-items,
+.sl-markdown-content > .dt-concept-trail .dt-ct-sep,
+.sl-markdown-content > .dt-concept-trail .dt-ct-link {
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+.sl-markdown-content > .dt-concept-trail .dt-ct-label {
+  font-weight: 500;
+  color: var(--sl-color-gray-3);
+}
+.sl-markdown-content > .dt-concept-trail .dt-ct-items {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.32rem;
+}
+.sl-markdown-content > .dt-concept-trail .dt-ct-sep {
+  opacity: 0.45;
+  user-select: none;
+}
+.sl-markdown-content > .dt-concept-trail .dt-ct-link {
+  color: var(--sl-color-gray-2);
+  text-decoration: none;
+  border-bottom: 1px dotted color-mix(in srgb, var(--sl-color-accent) 48%, transparent);
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.sl-markdown-content > .dt-concept-trail .dt-ct-link:hover {
+  color: var(--sl-color-accent-high);
+  border-bottom-style: solid;
+  border-bottom-color: var(--sl-color-accent);
 }
