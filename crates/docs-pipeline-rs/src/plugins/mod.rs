@@ -1,3 +1,4 @@
+pub mod api_drift;
 pub mod code_symbols;
 pub mod diataxis_lint;
 pub mod glossary;
