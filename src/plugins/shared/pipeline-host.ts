@@ -99,6 +99,17 @@ function buildConceptTrailI18n(dicts: Record<string, Record<string, string>>, de
   }
   return out;
 }
+function buildApiDriftI18n(dicts: Record<string, Record<string, string>>, def: string) {
+  const fb = dicts[def] ?? dicts.en ?? {};
+  const out: Record<string, { phantomWarning: string; reportTitle: string }> = {};
+  for (const [loc, d] of Object.entries(dicts)) {
+    out[loc] = {
+      phantomWarning: d['apiDrift.phantomWarning'] ?? fb['apiDrift.phantomWarning'] ?? '',
+      reportTitle: d['apiDrift.reportTitle'] ?? fb['apiDrift.reportTitle'] ?? '',
+    };
+  }
+  return out;
+}
 function buildSinceBadgesI18n(dicts: Record<string, Record<string, string>>, def: string) {
   const fb = dicts[def] ?? dicts.en ?? {};
   const out: Record<string, { new: string; breaking: string; deprecated: string }> = {};
@@ -127,7 +138,7 @@ export async function runNativePipelineOnce(
       distDir,
       defaultLocale: state.defaultLocale,
       locales: Array.from(state.locales),
-      i18n: loadMergedI18n(state.siteRoot), sinceBadgesI18n: buildSinceBadgesI18n(loadMergedI18n(state.siteRoot), state.defaultLocale), conceptTrailI18n: buildConceptTrailI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
+      i18n: loadMergedI18n(state.siteRoot), sinceBadgesI18n: buildSinceBadgesI18n(loadMergedI18n(state.siteRoot), state.defaultLocale), conceptTrailI18n: buildConceptTrailI18n(loadMergedI18n(state.siteRoot), state.defaultLocale), apiDriftI18n: buildApiDriftI18n(loadMergedI18n(state.siteRoot), state.defaultLocale),
       ...state.plugins,
     };
 
@@ -166,6 +177,9 @@ export async function runNativePipelineOnce(
       llmsPages: number;
       i18nPairs: number;
       diataxisAudited: number;
+      apiDriftSourceSyms?: number;
+      apiDriftCoveragePct?: number;
+      apiDriftPhantoms?: number;
       warnings: string[];
       errors: string[];
     };
@@ -193,6 +207,7 @@ export async function runNativePipelineOnce(
     if (report.llmsPages > 0) metrics.push(`${report.llmsPages} llms`);
     if (report.i18nPairs > 0) metrics.push(`${report.i18nPairs} i18n pairs`);
     if (report.diataxisAudited > 0) metrics.push(`${report.diataxisAudited} diataxis`);
+    if ((report.apiDriftSourceSyms ?? 0) > 0) metrics.push(`api-drift (${report.apiDriftCoveragePct}% cov, ${report.apiDriftPhantoms} phantom)`);
 
     logger.info(`Rust pipeline completed in ${report.elapsedMs}ms (${metrics.join(' · ')})`);
 
