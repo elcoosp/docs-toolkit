@@ -50,7 +50,7 @@ pub fn collect_html_files(dist_dir: &Path) -> Vec<PathBuf> {
     out
 }
 
-pub fn parse_all_html(dist_dir: &Path, locales: &HashSet<String>) -> Vec<PageDom> {
+pub fn parse_all_html(dist_dir: &Path, locales: &HashSet<String>, default_locale: &str) -> Vec<PageDom> {
     collect_html_files(dist_dir)
         .par_iter()
         .filter_map(|file_path| {
@@ -58,7 +58,7 @@ pub fn parse_all_html(dist_dir: &Path, locales: &HashSet<String>) -> Vec<PageDom
             let rel = file_path.strip_prefix(dist_dir).ok()?.to_string_lossy().replace('\\', "/");
             let route = normalize_route(&format!("/{rel}"));
             let seg = route.split('/').nth(1).unwrap_or("");
-            let locale = if !seg.is_empty() && locales.contains(seg) { seg.to_string() } else { "en".to_string() };
+            let locale = if !seg.is_empty() && seg != default_locale && locales.contains(seg) { seg.to_string() } else { default_locale.to_string() };
             Some(parse_single_html(rel, route, locale, &html))
         })
         .collect()

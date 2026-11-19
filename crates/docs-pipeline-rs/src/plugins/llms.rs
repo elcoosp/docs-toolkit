@@ -1,6 +1,6 @@
 use crate::host::md_source::MdDoc;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -88,31 +88,26 @@ fn glob_matches(pattern: &str, text: &str) -> bool {
     pattern.trim_start_matches('/') == text.trim_start_matches('/')
 }
 
-fn section_label(section_key: &str, locale: &str) -> String {
-    let is_fr = locale == "fr";
-    match section_key {
-        "index" => if is_fr { "Vue d'ensemble" } else { "Overview" }.to_string(),
-        "tutorials" => if is_fr { "Tutoriels" } else { "Tutorials" }.to_string(),
-        "guides" => if is_fr { "Guides pratiques" } else { "How-to Guides" }.to_string(),
-        "reference" => if is_fr { "Référence" } else { "Reference" }.to_string(),
-        "explanation" => if is_fr { "Explications" } else { "Explanation" }.to_string(),
-        "blog" => "Blog".to_string(),
-        "changelog" => if is_fr { "Journal des modifications" } else { "Changelog" }.to_string(),
-        other => other
-            .split(['-', '_'])
-            .filter(|w| !w.is_empty())
-            .map(|w| {
-                let mut chars = w.chars();
-                match chars.next() {
-                    Some(c) => format!("{}{}", c.to_uppercase(), chars.as_str()),
-                    None => String::new(),
-                }
-            })
-            .collect::<Vec<_>>()
-            .join(" "),
+fn tr_llms<'a>(i18n: &'a HashMap<String, HashMap<String, String>>, loc: &str, def: &str, key: &str, fb: &'a str) -> &'a str {
+    i18n.get(loc).and_then(|d| d.get(key)).or_else(|| i18n.get(def).and_then(|d| d.get(key))).or_else(|| i18n.get("en").and_then(|d| d.get(key))).map(String::as_str).unwrap_or(fb)
+}
+fn localized_site_title(base: &str, loc: &str, def: &str, i18n: &HashMap<String, HashMap<String, String>>) -> String {
+    if loc == def { return base.to_string(); }
+    let tag = tr_llms(i18n, loc, def, "llms.localeLabel", "");
+    if tag.is_empty() { format!("{base} ({loc})") } else { format!("{base} ({tag})") }
+}
+fn section_label(key: &str, loc: &str, def: &str, i18n: &HashMap<String, HashMap<String, String>>) -> String {
+    match key {
+        "index" => tr_llms(i18n, loc, def, "llms.overview", "Overview").to_string(),
+        "tutorials" => tr_llms(i18n, loc, def, "llms.tutorials", "Tutorials").to_string(),
+        "guides" => tr_llms(i18n, loc, def, "llms.guides", "How-to Guides").to_string(),
+        "reference" => tr_llms(i18n, loc, def, "llms.reference", "Reference").to_string(),
+        "explanation" => tr_llms(i18n, loc, def, "llms.explanation", "Explanation").to_string(),
+        "blog" => tr_llms(i18n, loc, def, "linkPreview.blog", "Blog").to_string(),
+        "changelog" => tr_llms(i18n, loc, def, "llms.changelog", "Changelog").to_string(),
+        other => other.split(['-', '_']).filter(|w| !w.is_empty()).map(|w| { let mut c = w.chars(); match c.next() { Some(ch) => format!("{}{}", ch.to_uppercase(), c.as_str()), None => String::new() } }).collect::<Vec<_>>().join(" "),
     }
 }
-
 fn extract_attr(attrs: &str, name: &str) -> Option< String > {
     for q in ['"', '\x27'] {
         let needle = format!("{name}={q}");
@@ -389,7 +384,7 @@ _ => 50,
 }
 }
 }
-fn render_full(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str, subtitle: &str) -> String {
+fn render_full(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str, default_locale: &str, i18n: &HashMap<String, HashMap<String, String>>, subtitle: &str) -> String {
 let mut scoped: Vec<&CleanPage<'_>> = pages.iter().filter(|p| p.doc.locale == locale).collect();
 scoped.sort_by(|a, b| {
 section_rank(&a.doc.section_key, true)
@@ -397,11 +392,7 @@ section_rank(&a.doc.section_key, true)
 .then_with(|| a.doc.order.cmp(&b.doc.order))
 .then_with(|| a.title.cmp(&b.title))
 });
-let title = if locale == "fr" {
-format!("{} (Français) — {subtitle}", cfg.title)
-} else {
-format!("{} — {subtitle}", cfg.title)
-};
+let title = format!("{} — {subtitle}", localized_site_title(&cfg.title, locale, default_locale, i18n));
 let mut out = format!("# {title}\n\n");
 if !cfg.description.is_empty() {
 out.push_str(&format!("> {}\n\n", cfg.description));
@@ -420,13 +411,9 @@ out.push_str(&format!("{}\n\n", p.clean_body));
 }
 format!("{}\n", out.trim())
 }
-fn render_index(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str) -> String {
+fn render_index(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str, default_locale: &str, i18n: &HashMap<String, HashMap<String, String>>) -> String {
 let scoped: Vec<&CleanPage<'_>> = pages.iter().filter(|p| p.doc.locale == locale).collect();
-let title = if locale == "fr" {
-format!("{} (Français)", cfg.title)
-} else {
-cfg.title.clone()
-};
+let title = localized_site_title(&cfg.title, locale, default_locale, i18n);
 let mut out = format!("# {title}\n\n");
 if !cfg.description.is_empty() {
 out.push_str(&format!("> {}\n\n", cfg.description));
@@ -477,7 +464,7 @@ out.push_str(&format_link(p));
 }
 }
 if !optional_pages.is_empty() {
-let opt_heading = if locale == "fr" { "Optionnel" } else { "Optional" };
+let opt_heading = tr_llms(i18n, locale, default_locale, "llms.optional", "Optional");
 out.push_str(&format!("\n## {opt_heading}\n\n"));
 for p in optional_pages {
 out.push_str(&format_link(p));
@@ -485,7 +472,7 @@ out.push_str(&format_link(p));
 }
 format!("{}\n", out.trim())
 }
-fn render_small(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str) -> String {
+fn render_small(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str, default_locale: &str, i18n: &HashMap<String, HashMap<String, String>>) -> String {
 let scoped: Vec<&CleanPage<'_>> = pages.iter().filter(|p| p.doc.locale == locale).collect();
 let mut selected: Vec<CleanPage<'_>> = Vec::new();
 let mut seen: HashSet< String > = HashSet::new();
@@ -503,10 +490,10 @@ selected.push((*first).clone());
 }
 }
 }
-let label = if locale == "fr" { "résumé essentiel" } else { "curated subset" };
-render_full(&selected, cfg, locale, label)
+let label = tr_llms(i18n, locale, default_locale, "llms.smallSubtitle", "curated subset");
+render_full(&selected, cfg, locale, default_locale, i18n, label)
 }
-fn render_json(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str) -> String {
+fn render_json(pages: &[CleanPage<'_>], cfg: &LlmsConfig, locale: &str, default_locale: &str, i18n: &HashMap<String, HashMap<String, String>>) -> String {
 let scoped: Vec<JsonPage<'_>> = pages
 .iter()
 .filter(|p| p.doc.locale == locale)
@@ -524,11 +511,7 @@ section: &p.section,
 .collect();
 let manifest = JsonManifest {
 schema: "llmstxt.org",
-title: if locale == "fr" {
-format!("{} (Français)", cfg.title)
-} else {
-cfg.title.clone()
-},
+title: localized_site_title(&cfg.title, locale, default_locale, i18n),
 description: &cfg.description,
 locale,
 url: &cfg.url,
@@ -537,7 +520,7 @@ pages: scoped,
 };
 serde_json::to_string_pretty(&manifest).unwrap_or_else(|_| "{}".to_string())
 }
-pub fn run_llms(dist_dir: &Path, docs: &[MdDoc], cfg: &LlmsConfig) -> usize {
+pub fn run_llms(dist_dir: &Path, docs: &[MdDoc], cfg: &LlmsConfig, default_locale: &str, i18n: &HashMap<String, HashMap<String, String>>) -> usize {
 let base_url = cfg.url.trim_end_matches('/');
 let mut pages: Vec<CleanPage<'_>> = docs
 .iter()
@@ -555,7 +538,7 @@ let fallback_title = d
 CleanPage {
 doc: d,
 title: if d.title.is_empty() { fallback_title } else { d.title.clone() },
-section: section_label(&d.section_key, &d.locale),
+section: section_label(&d.section_key, &d.locale, default_locale, i18n),
 clean_body: clean_body(&d.body, base_url),
 }
 })
@@ -568,25 +551,25 @@ let _ = fs::create_dir_all(parent);
 }
 let _ = fs::write(p, content);
 };
-let mut locales = vec!["en".to_string()];
+let mut locales = vec![default_locale.to_string()];
 for p in &pages {
 if !locales.contains(&p.doc.locale) {
 locales.push(p.doc.locale.clone());
 }
 }
 for loc in &locales {
-let prefix = if loc == "en" { String::new() } else { format!("{loc}/") };
+let prefix = if loc == default_locale { String::new() } else { format!("{loc}/") };
 if cfg.outputs.index {
-write_file(&format!("{prefix}llms.txt"), render_index(&pages, cfg, loc));
+write_file(&format!("{prefix}llms.txt"), render_index(&pages, cfg, loc, default_locale, i18n));
 }
 if cfg.outputs.full {
-write_file(&format!("{prefix}llms-full.txt"), render_full(&pages, cfg, loc, "full documentation"));
+write_file(&format!("{prefix}llms-full.txt"), render_full(&pages, cfg, loc, default_locale, i18n, tr_llms(i18n, loc, default_locale, "llms.fullSubtitle", "full documentation")));
 }
 if cfg.outputs.small {
-write_file(&format!("{prefix}llms-small.txt"), render_small(&pages, cfg, loc));
+write_file(&format!("{prefix}llms-small.txt"), render_small(&pages, cfg, loc, default_locale, i18n));
 }
 if cfg.outputs.json {
-write_file(&format!("{prefix}llms.json"), render_json(&pages, cfg, loc));
+write_file(&format!("{prefix}llms.json"), render_json(&pages, cfg, loc, default_locale, i18n));
 }
 }
 if cfg.outputs.pages {

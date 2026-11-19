@@ -124,7 +124,7 @@ fn extract_aliases(fm: &str) -> Vec<String> {
     Vec::new()
 }
 
-pub fn load_all_markdown(docs_dir: &Path, locales: &HashSet<String>) -> Vec<MdDoc> {
+pub fn load_all_markdown(docs_dir: &Path, locales: &HashSet<String>, default_locale: &str) -> Vec<MdDoc> {
     if !docs_dir.exists() {
         return Vec::new();
     }
@@ -158,8 +158,8 @@ pub fn load_all_markdown(docs_dir: &Path, locales: &HashSet<String>) -> Vec<MdDo
             };
 
             let first_seg = rel_path.split('/').next().unwrap_or("");
-            let is_secondary = !first_seg.is_empty() && first_seg != "en" && locales.contains(first_seg);
-            let locale = if is_secondary { first_seg.to_string() } else { "en".to_string() };
+            let is_secondary = !first_seg.is_empty() && first_seg != default_locale && locales.contains(first_seg);
+            let locale = if is_secondary { first_seg.to_string() } else { default_locale.to_string() };
             let rel_no_locale = if is_secondary {
                 rel_path.strip_prefix(&format!("{first_seg}/")).unwrap_or(&rel_path).to_string()
             } else {

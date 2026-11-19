@@ -12,9 +12,8 @@ use plugins::llms::{run_llms, LlmsConfig};
 use plugins::mermaid::run_mermaid_mutator;
 use plugins::related_pages::run_related_pages;
 use plugins::since_badges::{run_since_badges, BadgeLabels};
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -29,6 +28,8 @@ struct PipelineRequest {
     default_locale: String,
     #[serde(default)]
     locales: Vec<String>,
+    #[serde(default)]
+    i18n: HashMap<String, HashMap<String, String>>,
     #[serde(default)]
     mermaid: bool,
     #[serde(default)]
@@ -135,7 +136,8 @@ fn main() {
     let dist_dir = PathBuf::from(&req.dist_dir);
     let docs_dir = site_root.join("src/content/docs");
 
-    let mut all_locales: HashSet<String> = HashSet::from(["en".to_string(), "fr".to_string()]);
+    let i18n: HashMap<String, HashMap<String, String>> = req.i18n;
+    let mut all_locales: HashSet<String> = HashSet::from([req.default_locale.clone()]);
     for l in &req.locales {
         if !l.is_empty() && l != "root" {
             all_locales.insert(l.clone());
@@ -157,15 +159,15 @@ fn main() {
 
     // Phase 2: Single parallel read & parse of HTML DOM + Markdown sources
     let (pages, docs) = rayon::join(
-        || parse_all_html(&dist_dir, &all_locales),
-        || load_all_markdown(&docs_dir, &all_locales),
+        || parse_all_html(&dist_dir, &all_locales, &req.default_locale),
+        || load_all_markdown(&docs_dir, &all_locales, &req.default_locale),
     );
 
     let mut warnings = Vec::new();
     let mut errors = Vec::new();
 
     // Phase 3: Modular plugins attached to shared PageDom & MdDoc slices
-    let link_previews_indexed = if req.link_preview { run_link_preview(&dist_dir, &pages) } else { 0 };
+    let link_previews_indexed = if req.link_preview { run_link_preview(&dist_dir, &pages, &req.default_locale, &i18n) } else { 0 };
     let (code_symbols_indexed, code_symbol_links, code_symbol_pages) = if let Some(cs_cfg) = &req.code_symbols { let rep = run_code_symbols(&dist_dir, &pages, &docs, cs_cfg); (rep.symbols_indexed, rep.links_injected, rep.pages_enriched) } else { (0, 0, 0) };
     let (since_badges_indexed, since_badges_injected, since_badges_pages) = if req.since_badges { let rep = run_since_badges(&site_root, &dist_dir, &pages, &req.default_locale, &req.since_badges_i18n); (rep.symbols_indexed, rep.badges_injected, rep.pages_enriched) } else { (0, 0, 0) };
 
@@ -250,7 +252,7 @@ fn main() {
     };
 
     let llms_pages = if let Some(l_cfg) = &req.llms {
-        run_llms(&dist_dir, &docs, l_cfg)
+        run_llms(&dist_dir, &docs, l_cfg, &req.default_locale, &i18n)
     } else {
         0
     };

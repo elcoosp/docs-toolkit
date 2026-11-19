@@ -70,5 +70,22 @@
   "cmdk.lessAi": "Show fewer AI assistants",
   "sinceBadges.new": "New in v{version}",
   "sinceBadges.breaking": "Breaking v{version}",
-  "sinceBadges.deprecated": "Deprecated v{version}"
+  "sinceBadges.deprecated": "Deprecated v{version}",
+  "linkPreview.overview": "Overview",
+  "linkPreview.tutorial": "Tutorial",
+  "linkPreview.guide": "How-to Guide",
+  "linkPreview.reference": "Reference",
+  "linkPreview.explanation": "Explanation",
+  "linkPreview.blog": "Blog",
+  "linkPreview.changelog": "Changelog",
+  "llms.overview": "Overview",
+  "llms.tutorials": "Tutorials",
+  "llms.guides": "How-to Guides",
+  "llms.reference": "Reference",
+  "llms.explanation": "Explanation",
+  "llms.changelog": "Changelog",
+  "llms.optional": "Optional",
+  "llms.fullSubtitle": "full documentation",
+  "llms.smallSubtitle": "curated subset",
+  "llms.localeLabel": ""
 }
