@@ -220,6 +220,10 @@ function iconCopy(): SVGSVGElement {
   );
 }
 
+function iconCheck(): SVGSVGElement {
+  return lucideIcon([['polyline', { points: '20 6 9 17 4 12' }]], 13);
+}
+
 function sectionIcon(key?: string): SVGSVGElement {
   if (key === 'guides') return iconBookOpen();
   if (key === 'reference') return iconBraces();
@@ -566,10 +570,17 @@ export function initCommandSearch(): void {
   let renderedItems: FlatItem[] = [];
   let searchSeq = 0;
   const queryCache = new Map<string, PagefindData[]>();
+  interface CodeToken {
+    text: string;
+    light?: string;
+    dark?: string;
+  }
   interface PreviewBlock {
     kind: 'p' | 'code';
     html?: string;
     text?: string;
+    lang?: string;
+    lines?: CodeToken[][];
   }
   interface DocGraphEntry {
     title: string;
@@ -632,6 +643,48 @@ export function initCommandSearch(): void {
   let lastAnimatedSearchSig = '';
   const indicatorEl = el('div', 'sl-cmdk-indicator');
   indicatorEl.setAttribute('aria-hidden', 'true');
+  const tabsPillEl = el('div', 'sl-cmdk-tabs__pill');
+  tabsPillEl.setAttribute('aria-hidden', 'true');
+  let prevTabPillRect: { left: number; width: number; height: number } | null = null;
+
+  function syncTabsPill(instant = false): void {
+    const activeTab = tabsEl!.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!activeTab || tabsEl!.hidden) {
+      tabsPillEl.style.opacity = '0';
+      prevTabPillRect = null;
+      return;
+    }
+    const left = activeTab.offsetLeft;
+    const width = activeTab.offsetWidth;
+    const height = activeTab.offsetHeight;
+    if (!tabsPillEl.parentElement) {
+      tabsEl!.prepend(tabsPillEl);
+    }
+    if (!instant && prevTabPillRect && (prevTabPillRect.left !== left || prevTabPillRect.width !== width)) {
+      tabsPillEl.style.transition = 'none';
+      tabsPillEl.style.opacity = '1';
+      tabsPillEl.style.width = prevTabPillRect.width + 'px';
+      tabsPillEl.style.height = prevTabPillRect.height + 'px';
+      tabsPillEl.style.transform = `translate3d(${prevTabPillRect.left}px, -50%, 0)`;
+      void tabsPillEl.offsetWidth;
+      tabsPillEl.style.transition = '';
+    } else if (instant || !prevTabPillRect) {
+      tabsPillEl.style.transition = 'none';
+      tabsPillEl.style.opacity = '1';
+      tabsPillEl.style.width = width + 'px';
+      tabsPillEl.style.height = height + 'px';
+      tabsPillEl.style.transform = `translate3d(${left}px, -50%, 0)`;
+      void tabsPillEl.offsetWidth;
+      tabsPillEl.style.transition = '';
+      prevTabPillRect = { left, width, height };
+      return;
+    }
+    tabsPillEl.style.opacity = '1';
+    tabsPillEl.style.width = width + 'px';
+    tabsPillEl.style.height = height + 'px';
+    tabsPillEl.style.transform = `translate3d(${left}px, -50%, 0)`;
+    prevTabPillRect = { left, width, height };
+  }
 
   function refreshMarkedUI(): void {
     listEl!.querySelectorAll<HTMLElement>('[data-cmdk-idx]').forEach((row) => {
@@ -1252,24 +1305,59 @@ export function initCommandSearch(): void {
           : '.sl-markdown-content p, .sl-markdown-content pre, main p, main pre',
       )) {
         if (node.closest('aside, .starlight-aside, [data-pagefind-ignore]')) continue;
-        if ((node.tagName === 'P' || (isChangelogPage && node.tagName === 'LI')) && paraCount < 4) {
+        if (
+          (node.tagName === 'P' || (isChangelogPage && node.tagName === 'LI')) &&
+          paraCount < (isChangelogPage ? 4 : 3)
+        ) {
           const cleanText = node.textContent?.replace(/\s+/g, ' ').trim() || '';
           if (cleanText.length > 24) {
             blocks.push({ kind: 'p', html: node.innerHTML.replace(/\s+/g, ' ').trim() });
             paraCount += 1;
           }
         } else if (node.tagName === 'PRE' && codeCount < 1) {
+          const lang = node.getAttribute('data-language') || '';
           const ecLines = Array.from(node.querySelectorAll('.ec-line .code'));
-          const rawCode =
-            ecLines.length > 0
-              ? ecLines
-                  .map((l) => l.textContent || '')
-                  .join('\n')
-                  .trim()
-              : node.textContent?.trim() || '';
-          if (rawCode) {
-            blocks.push({ kind: 'code', text: rawCode.split('\n').slice(0, 10).join('\n') });
-            codeCount += 1;
+          if (ecLines.length > 0) {
+            const hexRe = /^#[0-9a-fA-F]{3,8}$/;
+            const lines: CodeToken[][] = [];
+            for (const lineEl of ecLines.slice(0, 10)) {
+              const tokens: CodeToken[] = [];
+              lineEl.childNodes.forEach((child) => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                  if (child.textContent) tokens.push({ text: child.textContent });
+                } else if (child instanceof HTMLElement) {
+                  if (child.classList.contains('indent')) return;
+                  const text = child.textContent || '';
+                  if (!text) return;
+                  const c0 = child.style.getPropertyValue('--0').trim();
+                  const c1 = child.style.getPropertyValue('--1').trim();
+                  tokens.push({
+                    text,
+                    light: hexRe.test(c0) ? c0 : undefined,
+                    dark: hexRe.test(c1) ? c1 : undefined,
+                  });
+                }
+              });
+              lines.push(tokens);
+            }
+            while (lines.length > 0 && lines.at(-1)!.every((t) => !t.text.trim())) {
+              lines.pop();
+            }
+            if (lines.length > 0) {
+              blocks.push({
+                kind: 'code',
+                lang,
+                lines,
+                text: lines.map((l) => l.map((t) => t.text).join('')).join('\n'),
+              });
+              codeCount += 1;
+            }
+          } else {
+            const rawCode = node.textContent?.trim() || '';
+            if (rawCode) {
+              blocks.push({ kind: 'code', lang, text: rawCode.split('\n').slice(0, 10).join('\n') });
+              codeCount += 1;
+            }
           }
         }
         if (paraCount >= 3 && codeCount >= 1) break;
@@ -1458,10 +1546,53 @@ export function initCommandSearch(): void {
       }
     } else if (cachedMeta && cachedMeta.blocks.length > 0) {
       for (const blk of cachedMeta.blocks) {
-        if (blk.kind === 'code' && blk.text) {
+        if (blk.kind === 'code' && (blk.lines?.length || blk.text)) {
+          const wrap = el('div', 'sl-cmdk-preview__code-wrap');
+          const head = el('div', 'sl-cmdk-preview__code-head');
+          head.append(el('span', 'sl-cmdk-preview__code-lang', blk.lang || 'code'));
+          if (blk.text) {
+            const copyCodeBtn = el('button', 'sl-cmdk-preview__code-copy');
+            copyCodeBtn.type = 'button';
+            copyCodeBtn.setAttribute('aria-label', isFr ? 'Copier le code' : 'Copy code');
+            const setCopyIdle = () => {
+              copyCodeBtn.dataset.copied = 'false';
+              copyCodeBtn.replaceChildren(iconCopy(), el('span', undefined, isFr ? 'Copier' : 'Copy'));
+            };
+            setCopyIdle();
+            let codeCopyTimer: number | undefined;
+            copyCodeBtn.addEventListener('click', () => {
+              void copyTextFallback(blk.text!).then(() => {
+                copyCodeBtn.dataset.copied = 'true';
+                copyCodeBtn.replaceChildren(iconCheck(), el('span', undefined, isFr ? 'Copié' : 'Copied'));
+                if (codeCopyTimer) window.clearTimeout(codeCopyTimer);
+                codeCopyTimer = window.setTimeout(setCopyIdle, 1200);
+              });
+            });
+            head.append(copyCodeBtn);
+          }
+          wrap.append(head);
           const pre = el('pre', 'sl-cmdk-preview__code');
-          pre.textContent = blk.text;
-          top.append(pre);
+          if (blk.lines && blk.lines.length > 0) {
+            const code = el('code');
+            blk.lines.forEach((lineTokens, lineIdx) => {
+              if (lineIdx > 0) code.append(document.createTextNode('\n'));
+              for (const tok of lineTokens) {
+                if (tok.light || tok.dark) {
+                  const span = el('span', 'sl-cmdk-ec-tok', tok.text);
+                  if (tok.light) span.style.setProperty('--ec-0', tok.light);
+                  if (tok.dark) span.style.setProperty('--ec-1', tok.dark);
+                  code.append(span);
+                } else {
+                  code.append(document.createTextNode(tok.text));
+                }
+              }
+            });
+            pre.append(code);
+          } else if (blk.text) {
+            pre.textContent = blk.text;
+          }
+          wrap.append(pre);
+          top.append(wrap);
         } else if (blk.kind === 'p' && blk.html) {
           const excerpt = el('p', 'sl-cmdk-preview__excerpt');
           const parsed = new DOMParser().parseFromString(blk.html, 'text/html');
@@ -1571,6 +1702,7 @@ export function initCommandSearch(): void {
       btn.append(el('span', undefined, String(info.count)));
       tabsEl!.append(btn);
     }
+    requestAnimationFrame(() => syncTabsPill(false));
   }
   function updateActiveRow(shouldScroll = true): void {
     const rows = listEl!.querySelectorAll<HTMLElement>('[data-cmdk-idx]');
@@ -1770,6 +1902,7 @@ export function initCommandSearch(): void {
     for (const cat of catMap.values()) {
       tabsEl!.append(makeEmptyTab(cat.key, cat.label, cat.count));
     }
+    requestAnimationFrame(() => syncTabsPill(false));
 
     listEl!.replaceChildren();
     renderedItems = [];
@@ -2520,6 +2653,7 @@ export function initCommandSearch(): void {
       previewThemeOriginal = null;
     }
     markedItems.clear();
+    prevTabPillRect = null;
     historyCursor = -1;
     activeModePrefix = '';
     aiCommandsExpanded = false;
@@ -2561,15 +2695,24 @@ export function initCommandSearch(): void {
       }
     }
   }
-  root.querySelectorAll('[data-cmdk-open]').forEach((btn) => {
+  root.querySelectorAll<HTMLElement>('[data-cmdk-open]').forEach((btn) => {
+    const icon = btn.querySelector<SVGElement>('svg');
+    btn.addEventListener('pointermove', (ev) => {
+      const rect = btn.getBoundingClientRect();
+      btn.style.setProperty('--mx', ev.clientX - rect.left + 'px');
+      btn.style.setProperty('--my', ev.clientY - rect.top + 'px');
+    });
     btn.addEventListener('pointerenter', () => {
-      animate(btn, { scale: 1.015 }, { type: spring, stiffness: 500, damping: 28 });
+      if (icon) animate(icon, { rotate: -8 }, { type: spring, stiffness: 460, damping: 24 });
     });
     btn.addEventListener('pointerleave', () => {
-      animate(btn, { scale: 1 }, { type: spring, stiffness: 500, damping: 28 });
+      if (icon) animate(icon, { rotate: 0 }, { type: spring, stiffness: 460, damping: 24 });
     });
     btn.addEventListener('pointerdown', () => {
-      animate(btn, { scale: 0.985 }, { type: spring, stiffness: 600, damping: 30 });
+      animate(btn, { y: 1 }, { duration: 0.08 });
+    });
+    btn.addEventListener('pointerup', () => {
+      animate(btn, { y: 0 }, { type: spring, stiffness: 520, damping: 28 });
     });
     btn.addEventListener('click', openModal);
   });

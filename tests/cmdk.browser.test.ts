@@ -351,6 +351,45 @@ describe('Command Palette Real Browser DOM & E2E Suite', () => {
       window.fetch = origFetch;
     }
   });
+  it('preserves Expressive Code syntax highlight variables (--0 / --1) in page preview', async () => {
+    const origFetch = window.fetch.bind(window);
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url;
+      if (url.endsWith('/guides/write-your-own-macro/')) {
+        return new Response(
+          '<!doctype html><html><body><main class="sl-markdown-content"><pre data-language="rust"><code><div class="ec-line"><div class="code"><span style="--0:#6F42C1;--1:#B392F0">pub fn</span> <span style="--0:#005CC5;--1:#79B8FF">demo</span>() {}</div></div></code></pre></main></body></html>',
+          { status: 200, headers: { 'Content-Type': 'text/html' } },
+        );
+      }
+      return origFetch(input, init);
+    }) as typeof window.fetch;
+
+    document.body.innerHTML = '';
+    mountPalette('en');
+    try {
+      document.querySelector<HTMLButtonElement>('[data-cmdk-open]')!.click();
+      await new Promise((r) => setTimeout(r, 40));
+      const input = document.querySelector<HTMLInputElement>('#sl-cmdk-input')!;
+      input.value = 'Write Your Own Macro';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 140));
+
+      const toks = Array.from(document.querySelectorAll<HTMLElement>('.sl-cmdk-ec-tok'));
+      expect(toks.length).toBe(2);
+      expect(toks[0]!.textContent).toBe('pub fn');
+      expect(toks[0]!.style.getPropertyValue('--ec-0')).toBe('#6F42C1');
+      expect(toks[0]!.style.getPropertyValue('--ec-1')).toBe('#B392F0');
+      expect(document.querySelector('.sl-cmdk-preview__code-lang')?.textContent).toBe('rust');
+      const copyCodeBtn = document.querySelector<HTMLButtonElement>('.sl-cmdk-preview__code-copy');
+      expect(copyCodeBtn).toBeTruthy();
+      copyCodeBtn!.click();
+      await new Promise((r) => setTimeout(r, 20));
+      expect(copyCodeBtn!.dataset.copied).toBe('true');
+    } finally {
+      window.fetch = origFetch;
+    }
+  });
+
   it('loads /graph.json on modal open and renders connected pages in preview', async () => {
     const origFetch = window.fetch.bind(window);
     window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
