@@ -203,6 +203,7 @@ pub fn run_doc_graph(
     dist_dir: &Path,
     docs: &[MdDoc],
     default_locale: &str,
+    extra_edges: &HashMap<String, Vec<String>>,
     cfg: &DocGraphCfg,
 ) -> DocGraphReport {
     let valid_docs: Vec<&MdDoc> = docs
@@ -220,7 +221,13 @@ pub fn run_doc_graph(
     let extracted: Vec<(&MdDoc, Vec<String>)> = valid_docs
         .par_iter()
         .map(|doc| {
-            let targets: Vec<String> = extract_internal_links("", &doc.body)
+            let mut merged = extract_internal_links("", &doc.body);
+            if let Some(extra) = extra_edges.get(&doc.route) {
+                for t in extra {
+                    merged.insert(t.clone());
+                }
+            }
+            let targets: Vec<String> = merged
                 .into_iter()
                 .filter(|t| t != &doc.route && known_routes.contains(t))
                 .collect();

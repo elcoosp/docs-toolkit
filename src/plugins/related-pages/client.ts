@@ -70,6 +70,7 @@ async function renderRelated(): Promise<void> {
   if (path.startsWith('/zen-mode/') || path.includes('/404/')) return;
   const main = document.querySelector('main');
   if (!main) return;
+  if (document.querySelector('.sl-related-wrap[data-ssr="true"]')) return;
   document.querySelector('.sl-related-wrap')?.remove();
 
   const map = await loadRelated();

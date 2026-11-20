@@ -264,17 +264,19 @@ fn main() {
         (0, 0)
     };
 
-    let (related_pages_count, related_avg_links) = if let Some(r_cfg) = &req.related_pages {
-        let (cnt, avg, isolated) = run_related_pages(&dist_dir, &docs, r_cfg.max_related);
-        if isolated > 0 {
-            warnings.push(format!(
-                "[starlight-related-pages] {isolated} page(s) have 0 related recommendations."
-            ));
-        }
-        (cnt, avg)
-    } else {
-        (0, "0.00".to_string())
-    };
+    let (related_pages_count, related_avg_links, related_edges) =
+        if let Some(r_cfg) = &req.related_pages {
+            let (cnt, avg, isolated, edges) =
+                run_related_pages(&dist_dir, &pages, &docs, r_cfg.max_related);
+            if isolated > 0 {
+                warnings.push(format!(
+                    "[starlight-related-pages] {isolated} page(s) have 0 related recommendations."
+                ));
+            }
+            (cnt, avg, edges)
+        } else {
+            (0, "0.00".to_string(), HashMap::new())
+        };
 
     let i18n_pairs = if let Some(i_cfg) = &req.i18n_parity {
         let rep = run_i18n_parity(
@@ -366,7 +368,7 @@ fn main() {
     };
 
     let (doc_graph_nodes, doc_graph_edges, doc_graph_orphans) = if let Some(dg_cfg) = &req.doc_graph {
-        let rep = run_doc_graph(&dist_dir, &docs, &req.default_locale, dg_cfg);
+        let rep = run_doc_graph(&dist_dir, &docs, &req.default_locale, &related_edges, dg_cfg);
         warnings.extend(rep.warnings);
         errors.extend(rep.errors);
         (rep.nodes_count, rep.edges_count, rep.orphan_count)
