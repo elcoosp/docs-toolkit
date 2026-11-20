@@ -172,21 +172,17 @@ describe('Command Palette Real Browser DOM & E2E Suite', () => {
     expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth);
   });
 
-  it('previews color theme live on hover/selection and restores if cancelled', async () => {
-    key(document, '/');
+  it('does not flash color theme on hover/selection and switches only on execute', async () => {
+    document.documentElement.dataset.theme = 'light';
+    key(document, 'k', { metaKey: true });
     const input = document.querySelector<HTMLInputElement>('#sl-cmdk-input')!;
-    input.value = '/';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-
-    await vi.waitFor(() =>
-      expect(document.querySelectorAll('#sl-cmdk-list [data-cmdk-idx]').length).toBeGreaterThan(2),
-    );
     expect(document.documentElement.dataset.theme).toBe('light');
     key(input, 'ArrowDown');
-    expect(document.documentElement.dataset.theme).toBe('dark');
-
-    key(document, 'k', { metaKey: true });
     expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.querySelector('.sl-cmdk-theme-swatches')).not.toBeNull();
+
+    key(input, 'Enter');
+    expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
   it('searches headings in # mode and pins pages with Cmd+D', async () => {

@@ -30,7 +30,7 @@ describe('Command Palette Linkedom DOM & Contract Suite', () => {
     );
     expect(hints).toContain('Tab');
     expect(hints).toContain('⌘M');
-    expect(hints).toContain('⌥P/N');
+    expect(hints).toContain('⌥P / ⌥N');
     expect(hints).not.toContain('⇧Tab');
   });
 

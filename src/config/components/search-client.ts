@@ -66,7 +66,7 @@ function lucideIcon(paths: Array<[string, Record<string, string>]>, size = 15): 
   for (const [tag, attrs] of paths) {
     const node = document.createElementNS(SVG_NS, tag);
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-    svg.appendChild(node);
+    svg.append(node);
   }
   return svg;
 }
@@ -279,9 +279,9 @@ function appendHighlightedText(target: HTMLElement, text: string, rawQuery: stri
     if (tokens.some((t) => part.toLowerCase() === t.toLowerCase())) {
       const mark = document.createElement('mark');
       mark.textContent = part;
-      target.appendChild(mark);
+      target.append(mark);
     } else {
-      target.appendChild(document.createTextNode(part));
+      target.append(document.createTextNode(part));
     }
   }
 }
@@ -294,10 +294,10 @@ function appendHighlightedExcerpt(target: HTMLElement, rawExcerpt: string): void
     if (m) {
       const mark = document.createElement('mark');
       mark.textContent = m[1].replace(/<[^>]*>/g, '');
-      target.appendChild(mark);
+      target.append(mark);
     } else {
       const plain = decodeEntities(part.replace(/<[^>]*>/g, ''));
-      if (plain) target.appendChild(document.createTextNode(plain));
+      if (plain) target.append(document.createTextNode(plain));
     }
   }
 }
@@ -382,6 +382,19 @@ function formatBreadcrumb(url: string, isFr: boolean): string {
   return segs.join(' › ');
 }
 
+function modeLabelForPrefix(prefix: string, isFr: boolean): string {
+  if (!prefix) return '';
+  if (prefix === '/') return isFr ? 'Commandes' : 'Commands';
+  if (prefix === '#') return isFr ? 'Titres' : 'Headings';
+  const key = prefix.replace(/:$/, '').toLowerCase();
+  if (key === 'log' || key === 'logs') return 'Changelog';
+  if (key === 'ref' || key === 'reference') return isFr ? 'Référence' : 'Reference';
+  if (key === 'guide' || key === 'guides') return 'Guides';
+  if (key === 'docs') return 'Docs';
+  if (key === 'blog') return 'Blog';
+  return '';
+}
+
 export function initCommandSearch(): void {
   const root = document.querySelector<HTMLElement>('[data-cmdk-root]');
   if (!root || root.dataset.bound === 'true') return;
@@ -419,7 +432,7 @@ export function initCommandSearch(): void {
     svg.style.flexShrink = '0';
     const pathEl = document.createElementNS(SVG_NS, 'path');
     pathEl.setAttribute('d', d);
-    svg.appendChild(pathEl);
+    svg.append(pathEl);
     return svg;
   }
   const dialog = root.querySelector<HTMLDialogElement>('#sl-cmdk-dialog');
@@ -431,6 +444,96 @@ export function initCommandSearch(): void {
   const previewEl = root.querySelector<HTMLElement>('#sl-cmdk-preview');
 
   const statusEl = root.querySelector<HTMLElement>('#sl-cmdk-status');
+  const hintsEl = root.querySelector<HTMLElement>('#sl-cmdk-hints');
+  const modePillEl = root.querySelector<HTMLElement>('#sl-cmdk-mode-pill');
+  const shortcutsBtn = root.querySelector<HTMLButtonElement>('#sl-cmdk-shortcuts-btn');
+  const shortcutsPopover = root.querySelector<HTMLElement>('#sl-cmdk-shortcuts-popover');
+
+  function updateContextualChrome(): void {
+    const curVal = input?.value ?? '';
+    const raw = (activeModePrefix ? activeModePrefix + curVal : curVal).trim();
+    const isCmd = raw.startsWith('/') || raw.startsWith('>');
+    if (modePillEl) {
+      const label = modeLabelForPrefix(activeModePrefix, isFr);
+      if (label) {
+        modePillEl.hidden = false;
+        modePillEl.replaceChildren(
+          document.createTextNode(label + ' '),
+          el('span', 'sl-cmdk-mode-pill__x', '×'),
+        );
+      } else {
+        modePillEl.hidden = true;
+        modePillEl.replaceChildren();
+      }
+    }
+    if (!hintsEl) return;
+    const mod = isMac ? '⌘' : 'Ctrl ';
+    let pairs: Array<[string, string]>;
+    if (markedItems.size > 0) {
+      pairs = [
+        [mod + '⇧C', isFr ? 'Copier Markdown' : 'Copy Markdown'],
+        [mod + '↵', isFr ? 'Tout ouvrir' : 'Open all'],
+        ['ESC', isFr ? 'Tout décocher' : 'Clear marks'],
+      ];
+    } else if (isCmd) {
+      pairs = [
+        ['↑↓', ui.nav || (isFr ? 'Naviguer' : 'Navigate')],
+        ['↵', isFr ? 'Exécuter' : 'Run'],
+        ['ESC', ui.close || (isFr ? 'Fermer' : 'Close')],
+      ];
+    } else {
+      pairs = [
+        ['↑↓', ui.nav || (isFr ? 'Naviguer' : 'Navigate')],
+        ['↵', ui.open || (isFr ? 'Ouvrir' : 'Open')],
+        [mod + '↵', ui.newTab || (isFr ? 'Nouvel onglet' : 'New tab')],
+        [mod + 'D', ui.pin || (isFr ? 'Favori' : 'Pin')],
+      ];
+    }
+    hintsEl.replaceChildren();
+    for (const [k, label] of pairs) {
+      const span = el('span', 'sl-cmdk-hint');
+      span.append(el('kbd', 'sl-cmdk-kbd', k));
+      span.append(document.createTextNode(' ' + label));
+      hintsEl.append(span);
+    }
+  }
+
+  modePillEl?.addEventListener('click', () => {
+    if (!input) return;
+    activeModePrefix = '';
+    input.value = '';
+    input.focus();
+    void handleQuery();
+  });
+  shortcutsPopover?.addEventListener('click', (e) => {
+    const btn = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-cmdk-trigger]') : null;
+    const trig = btn?.dataset.cmdkTrigger;
+    if (!trig || !input) return;
+    shortcutsPopover.hidden = true;
+    shortcutsBtn?.setAttribute('aria-expanded', 'false');
+    activeModePrefix = '';
+    input.value = trig;
+    input.focus();
+    void handleQuery();
+  });
+  shortcutsBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!shortcutsPopover) return;
+    const nextOpen = shortcutsPopover.hidden;
+    shortcutsPopover.hidden = !nextOpen;
+    shortcutsBtn.setAttribute('aria-expanded', String(nextOpen));
+  });
+  dialog?.addEventListener('click', (e) => {
+    if (
+      shortcutsPopover &&
+      !shortcutsPopover.hidden &&
+      e.target instanceof Element &&
+      !e.target.closest('.sl-cmdk-shortcuts-wrap')
+    ) {
+      shortcutsPopover.hidden = true;
+      shortcutsBtn?.setAttribute('aria-expanded', 'false');
+    }
+  });
 
   if (!dialog || !panel || !input || !tabsEl || !listEl) return;
 
@@ -451,6 +554,7 @@ export function initCommandSearch(): void {
   let pagefind: any = null;
   let pagefindFailed = false;
   let activeFilter = 'all';
+  let activeModePrefix = '';
   let activeIndex = 0;
   let aiCommandsExpanded = false;
   let lastToggleClickAt = 0;
@@ -521,7 +625,6 @@ export function initCommandSearch(): void {
   }
   const pageMetaCache = new Map<string, { blocks: PreviewBlock[]; subs: SubResult[] }>();
   const pendingMetaUrls = new Set<string>();
-  let previewCopyBtn: HTMLButtonElement | null = null;
   let lastPreviewKey = '';
   let copyToastTimer: number | undefined;
   let searchListAnimTimer: number | undefined;
@@ -569,16 +672,7 @@ export function initCommandSearch(): void {
       updateActiveRow(true);
     }
   }
-  function applyThemePreviewForItem(item: FlatItem | undefined): void {
-    if (item?.type === 'action' && item?.actionId === 'theme') {
-      if (previewThemeOriginal === null)
-        previewThemeOriginal = document.documentElement.dataset.theme || 'light';
-      document.documentElement.dataset.theme = previewThemeOriginal === 'dark' ? 'light' : 'dark';
-    } else if (previewThemeOriginal !== null) {
-      document.documentElement.dataset.theme = previewThemeOriginal;
-      previewThemeOriginal = null;
-    }
-  }
+  function applyThemePreviewForItem(_item: FlatItem | undefined): void {}
   function syncSelectionIndicator(instant = false): void {
     const selected = listEl!.querySelector<HTMLElement>('[data-cmdk-idx][aria-selected="true"]');
     if (
@@ -757,7 +851,6 @@ export function initCommandSearch(): void {
     if (!item?.url) return;
     const u = new URL(item.url, window.location.origin);
     const clean = u.pathname.replace(/\/+$/, '');
-    const md = clean === '' ? '/index.md' : clean === '/fr' ? '/fr.md' : clean + '.md';
     const getMd = async (rawUrl: string) => {
       const pu = new URL(rawUrl, window.location.origin);
       const cl = pu.pathname.replace(/\/+$/, '');
@@ -844,7 +937,9 @@ export function initCommandSearch(): void {
           type: 'action',
           actionId: 'lang-switch',
           actionHref: opt.value,
-          title: tr('cmdk.actionLangSwitch', 'Switch language to {lang}', { lang: langName }),
+          title: tr('cmdk.actionLangSwitch', 'Switch language to {lang}', {
+            lang: isFr && langName === 'English' ? 'anglais' : langName,
+          }),
           subtitle: shortCode.length <= 5 ? shortCode : langName,
           section: 'Language',
           excerptHtml: tr('cmdk.actionLangSwitchDesc', 'Open this page in {lang}.', { lang: langName }),
@@ -878,7 +973,7 @@ export function initCommandSearch(): void {
     ta.value = text;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
-    document.body.appendChild(ta);
+    document.body.append(ta);
     ta.select();
     try {
       document.execCommand('copy');
@@ -1060,23 +1155,23 @@ export function initCommandSearch(): void {
               tile.setAttribute('aria-selected', 'false');
               const left = el('span', 'sl-cmdk-bento-tile__left');
               const iconWrap = el('span', 'sl-cmdk-bento-tile__icon');
-              iconWrap.appendChild(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
+              iconWrap.append(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
               const nameEl = el('span', 'sl-cmdk-bento-tile__name', act.shortTitle || act.title);
-              left.appendChild(iconWrap);
-              left.appendChild(nameEl);
+              left.append(iconWrap);
+              left.append(nameEl);
               const extWrap = el('span', 'sl-cmdk-bento-tile__ext');
-              extWrap.appendChild(iconArrowUpRight());
-              tile.appendChild(left);
-              tile.appendChild(extWrap);
+              extWrap.append(iconArrowUpRight());
+              tile.append(left);
+              tile.append(extWrap);
               tile.addEventListener('pointermove', (ev) => {
                 const rect = tile.getBoundingClientRect();
                 tile.style.setProperty('--mx', ev.clientX - rect.left + 'px');
                 tile.style.setProperty('--my', ev.clientY - rect.top + 'px');
               });
-              extraGrid.appendChild(tile);
+              extraGrid.append(tile);
             }
-            drawerInner.appendChild(extraGrid);
-            drawer.appendChild(drawerInner);
+            drawerInner.append(extraGrid);
+            drawer.append(drawerInner);
             aiGroup.insertBefore(drawer, toggleBtn);
             renderedItems = [...baseItems, ...extraItems, toggleItem];
           } else {
@@ -1092,8 +1187,8 @@ export function initCommandSearch(): void {
           updateActiveRow(false);
           if (statusEl) {
             statusEl.textContent = isFr
-              ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
-              : 'Commands mode (/) · ' + renderedItems.length + ' actions';
+              ? renderedItems.length + ' actions'
+              : renderedItems.length + ' actions';
           }
           input!.focus({ preventScroll: true });
           return;
@@ -1205,7 +1300,6 @@ export function initCommandSearch(): void {
   function renderPreview(item: FlatItem | undefined): void {
     if (!previewEl) return;
     previewEl.replaceChildren();
-    previewCopyBtn = null;
     if (!item) {
       lastPreviewKey = '';
       const empty = el(
@@ -1213,11 +1307,10 @@ export function initCommandSearch(): void {
         'sl-cmdk-empty',
         isFr ? 'Sélectionnez un élément pour l’aperçu' : 'Select an item to preview',
       );
-      previewEl.appendChild(empty);
+      previewEl.append(empty);
       return;
     }
     const nextPreviewKey = (item.url || '') + '::' + item.title;
-    const isNewPreviewItem = nextPreviewKey !== lastPreviewKey;
     lastPreviewKey = nextPreviewKey;
 
     const cachedMeta = item.url ? pageMetaCache.get(item.url) : undefined;
@@ -1227,25 +1320,25 @@ export function initCommandSearch(): void {
 
     const top = el('div', 'sl-cmdk-preview__top');
     const eyebrow = el('div', 'sl-cmdk-preview__eyebrow');
-    eyebrow.appendChild(
+    eyebrow.append(
       item.actionIconPath
         ? iconBrandPath(item.actionIconPath)
         : item.type === 'action'
-          ? iconZap()
+          ? actionSemanticIcon(item.actionId)
           : item.type === 'sub'
             ? iconHash()
             : sectionIcon(item.sectionKey),
     );
-    eyebrow.appendChild(
+    eyebrow.append(
       document.createTextNode(
         item.section || (item.type === 'recent' ? (isFr ? 'Recherche récente' : 'Recent query') : 'Docs'),
       ),
     );
-    top.appendChild(eyebrow);
+    top.append(eyebrow);
 
-    top.appendChild(el('h3', 'sl-cmdk-preview__title', item.title));
+    top.append(el('h3', 'sl-cmdk-preview__title', item.title));
     if (item.url) {
-      top.appendChild(el('div', 'sl-cmdk-preview__path', item.url));
+      top.append(el('div', 'sl-cmdk-preview__path', item.url));
     }
 
     const appendSafe = (node: Node, target: HTMLElement): void => {
@@ -1254,14 +1347,14 @@ export function initCommandSearch(): void {
         const parts = text.split(/(`[^`]+`)/g);
         for (const part of parts) {
           if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
-            target.appendChild(el('code', undefined, part.slice(1, -1)));
+            target.append(el('code', undefined, part.slice(1, -1)));
           } else if (part) {
-            target.appendChild(document.createTextNode(part));
+            target.append(document.createTextNode(part));
           }
         }
       } else if (node instanceof HTMLElement) {
         if (node.tagName === 'CODE') {
-          target.appendChild(el('code', undefined, node.textContent || ''));
+          target.append(el('code', undefined, node.textContent || ''));
         } else {
           node.childNodes.forEach((child) => appendSafe(child, target));
         }
@@ -1271,70 +1364,132 @@ export function initCommandSearch(): void {
     if (item.excerptHtml) {
       const excerpt = el('p', 'sl-cmdk-preview__excerpt');
       appendHighlightedExcerpt(excerpt, item.excerptHtml);
-      top.appendChild(excerpt);
+      top.append(excerpt);
+    }
+    if (item.type === 'action') {
+      if (item.actionId === 'theme') {
+        const curTheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+        const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
+        const card = el('div', 'sl-cmdk-preview__meta-card');
+        card.append(
+          el(
+            'div',
+            'sl-cmdk-preview__meta-label',
+            isFr ? 'Basculer vers le thème cible' : 'Target color scheme',
+          ),
+        );
+        const swatches = el('div', 'sl-cmdk-theme-swatches');
+        const lightSw = el('div', 'sl-cmdk-theme-swatch sl-cmdk-theme-swatch--light');
+        lightSw.dataset.target = String(nextTheme === 'light');
+        lightSw.append(el('span', undefined, isFr ? 'Clair' : 'Light'));
+        lightSw.append(
+          el(
+            'span',
+            'sl-cmdk-theme-swatch__tag',
+            curTheme === 'light' ? (isFr ? 'Actuel' : 'Current') : isFr ? 'Suivant' : 'Next',
+          ),
+        );
+        const darkSw = el('div', 'sl-cmdk-theme-swatch sl-cmdk-theme-swatch--dark');
+        darkSw.dataset.target = String(nextTheme === 'dark');
+        darkSw.append(el('span', undefined, isFr ? 'Sombre' : 'Dark'));
+        darkSw.append(
+          el(
+            'span',
+            'sl-cmdk-theme-swatch__tag',
+            curTheme === 'dark' ? (isFr ? 'Actuel' : 'Current') : isFr ? 'Suivant' : 'Next',
+          ),
+        );
+        swatches.append(lightSw);
+        swatches.append(darkSw);
+        card.append(swatches);
+        top.append(card);
+      } else if (item.actionId === 'ai-provider') {
+        const card = el('div', 'sl-cmdk-preview__meta-card');
+        card.append(
+          el('div', 'sl-cmdk-preview__meta-label', isFr ? 'Prompt pré-rempli' : 'Pre-filled prompt'),
+        );
+        const pageTitle = document.title.split('|')[0].trim() || window.location.pathname;
+        const promptPreview = isFr
+          ? `Résume « ${pageTitle} » (${window.location.href}) et explique les points clés.`
+          : `Summarize "${pageTitle}" (${window.location.href}) and explain the key takeaways.`;
+        card.append(el('div', 'sl-cmdk-preview__prompt-box', promptPreview));
+        top.append(card);
+      } else if (item.subtitle && item.actionId !== 'toggle-ai-more') {
+        const card = el('div', 'sl-cmdk-preview__meta-card');
+        card.append(
+          el('div', 'sl-cmdk-preview__meta-label', isFr ? 'Raccourci ou déclencheur' : 'Shortcut / trigger'),
+        );
+        const kbdRow = el('div', undefined);
+        kbdRow.append(el('kbd', 'sl-cmdk-kbd', item.subtitle));
+        card.append(kbdRow);
+        top.append(card);
+      } else if (item.url && item.actionId !== 'toggle-ai-more') {
+        const card = el('div', 'sl-cmdk-preview__meta-card');
+        card.append(el('div', 'sl-cmdk-preview__meta-label', isFr ? 'Destination' : 'Destination'));
+        card.append(el('div', 'sl-cmdk-preview__prompt-box', item.url));
+        top.append(card);
+      }
     } else if (cachedMeta && cachedMeta.blocks.length > 0) {
       for (const blk of cachedMeta.blocks) {
         if (blk.kind === 'code' && blk.text) {
           const pre = el('pre', 'sl-cmdk-preview__code');
           pre.textContent = blk.text;
-          top.appendChild(pre);
+          top.append(pre);
         } else if (blk.kind === 'p' && blk.html) {
           const excerpt = el('p', 'sl-cmdk-preview__excerpt');
           const parsed = new DOMParser().parseFromString(blk.html, 'text/html');
           parsed.body.childNodes.forEach((n) => appendSafe(n, excerpt));
-          top.appendChild(excerpt);
+          top.append(excerpt);
         }
       }
     } else if (item.breadcrumb) {
-      top.appendChild(el('p', 'sl-cmdk-preview__excerpt', item.breadcrumb));
+      top.append(el('p', 'sl-cmdk-preview__excerpt', item.breadcrumb));
     }
 
     const effectiveSubs = item.subResults || cachedMeta?.subs;
     if (effectiveSubs && effectiveSubs.length > 0) {
       const subsBox = el('div', 'sl-cmdk-preview__subs');
-      subsBox.appendChild(
-        el('div', 'sl-cmdk-preview__subs-label', isFr ? 'Sections de la page' : 'On this page'),
-      );
+      subsBox.append(el('div', 'sl-cmdk-preview__subs-label', isFr ? 'Sections de la page' : 'On this page'));
       effectiveSubs.forEach((sub, subIdx) => {
         const a = el('a', 'sl-cmdk-preview__sub-link');
         a.href = sub.url;
         a.dataset.subJump = String(subIdx + 1);
         const left = el('span', 'sl-cmdk-preview__sub-left');
-        left.appendChild(iconHash());
-        left.appendChild(document.createTextNode(sub.title));
-        a.appendChild(left);
-        a.appendChild(el('kbd', 'sl-cmdk-kbd', '^' + String(subIdx + 1)));
-        subsBox.appendChild(a);
+        left.append(iconHash());
+        left.append(document.createTextNode(sub.title));
+        a.append(left);
+        a.append(el('kbd', 'sl-cmdk-kbd', '^' + String(subIdx + 1)));
+        subsBox.append(a);
       });
-      top.appendChild(subsBox);
+      top.append(subsBox);
     }
 
     const graphInfo = item.url ? docGraphMap.get(normalizePath(item.url)) : undefined;
     if (graphInfo && (graphInfo.outgoing.length > 0 || graphInfo.incoming.length > 0)) {
       const graphBox = el('div', 'sl-cmdk-preview__subs sl-cmdk-preview__graph');
-      graphBox.appendChild(
+      graphBox.append(
         el('div', 'sl-cmdk-preview__subs-label', tr('cmdk.graphConnections', 'Connected pages')),
       );
       for (const outRef of graphInfo.outgoing.slice(0, 3)) {
         const a = el('a', 'sl-cmdk-preview__sub-link');
         a.href = outRef.route;
         const left = el('span', 'sl-cmdk-preview__sub-left');
-        left.appendChild(document.createTextNode('→ ' + outRef.title));
-        a.appendChild(left);
-        graphBox.appendChild(a);
+        left.append(document.createTextNode('→ ' + outRef.title));
+        a.append(left);
+        graphBox.append(a);
       }
       for (const inRef of graphInfo.incoming.slice(0, 3)) {
         const a = el('a', 'sl-cmdk-preview__sub-link');
         a.href = inRef.route;
         const left = el('span', 'sl-cmdk-preview__sub-left');
-        left.appendChild(document.createTextNode('← ' + inRef.title));
-        a.appendChild(left);
-        graphBox.appendChild(a);
+        left.append(document.createTextNode('← ' + inRef.title));
+        a.append(left);
+        graphBox.append(a);
       }
-      top.appendChild(graphBox);
+      top.append(graphBox);
     }
 
-    previewEl.appendChild(top);
+    previewEl.append(top);
 
     const actions = el('div', 'sl-cmdk-preview__actions');
     if (item.url) {
@@ -1344,15 +1499,14 @@ export function initCommandSearch(): void {
         isFr ? 'Ouvrir la page' : 'Open page',
       );
       openLink.href = item.url;
-      actions.appendChild(openLink);
+      actions.append(openLink);
 
       const copyBtn = el('button', 'sl-cmdk-preview__btn');
-      previewCopyBtn = copyBtn;
       copyBtn.type = 'button';
-      copyBtn.appendChild(iconCopy());
-      copyBtn.appendChild(document.createTextNode(isFr ? 'Copier' : 'Copy link'));
+      copyBtn.append(iconCopy());
+      copyBtn.append(document.createTextNode(isFr ? 'Copier' : 'Copy link'));
       copyBtn.addEventListener('click', () => copyItemUrl(item, copyBtn));
-      actions.appendChild(copyBtn);
+      actions.append(copyBtn);
     } else {
       const runBtn = el(
         'button',
@@ -1361,9 +1515,9 @@ export function initCommandSearch(): void {
       );
       runBtn.type = 'button';
       runBtn.addEventListener('click', () => activateItem(item));
-      actions.appendChild(runBtn);
+      actions.append(runBtn);
     }
-    previewEl.appendChild(actions);
+    previewEl.append(actions);
   }
 
   function renderTabs(results: PagefindData[]): void {
@@ -1387,9 +1541,9 @@ export function initCommandSearch(): void {
       btn.type = 'button';
       btn.dataset.filter = key;
       btn.setAttribute('aria-selected', String(key === activeFilter));
-      btn.appendChild(document.createTextNode(info.label + ' '));
-      btn.appendChild(el('span', undefined, String(info.count)));
-      tabsEl!.appendChild(btn);
+      btn.append(document.createTextNode(info.label + ' '));
+      btn.append(el('span', undefined, String(info.count)));
+      tabsEl!.append(btn);
     }
   }
   function updateActiveRow(shouldScroll = true): void {
@@ -1404,9 +1558,67 @@ export function initCommandSearch(): void {
     });
 
     applyThemePreviewForItem(renderedItems[activeIndex]);
+    updateContextualChrome();
     renderPreview(renderedItems[activeIndex]);
     syncSelectionIndicator(false);
   }
+  function actionSemanticIcon(actionId?: string): SVGSVGElement {
+    if (actionId === 'zen') {
+      return lucideIcon([
+        ['polyline', { points: '15 3 21 3 21 9' }],
+        ['polyline', { points: '9 21 3 21 3 15' }],
+        ['line', { x1: '21', y1: '3', x2: '14', y2: '10' }],
+        ['line', { x1: '3', y1: '21', x2: '10', y2: '14' }],
+      ]);
+    }
+    if (actionId === 'theme') {
+      return lucideIcon([
+        ['circle', { cx: '12', cy: '12', r: '4' }],
+        ['path', { d: 'M12 2v2' }],
+        ['path', { d: 'M12 20v2' }],
+        ['path', { d: 'm4.93 4.93 1.41 1.41' }],
+        ['path', { d: 'm17.66 17.66 1.41 1.41' }],
+        ['path', { d: 'M2 12h2' }],
+        ['path', { d: 'M20 12h2' }],
+        ['path', { d: 'm6.34 17.66-1.41 1.41' }],
+        ['path', { d: 'm19.07 4.93-1.41 1.41' }],
+      ]);
+    }
+    if (actionId === 'changelog') {
+      return lucideIcon([
+        ['path', { d: 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8' }],
+        ['path', { d: 'M3 3v5h5' }],
+        ['path', { d: 'M12 7v5l4 2' }],
+      ]);
+    }
+    if (actionId === 'copy-md') {
+      return lucideIcon([
+        ['path', { d: 'M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z' }],
+        ['polyline', { points: '14 2 14 8 20 8' }],
+        ['path', { d: 'm10 13-2 2 2 2' }],
+        ['path', { d: 'm14 17 2-2-2-2' }],
+      ]);
+    }
+    if (actionId === 'lang-switch') {
+      return lucideIcon([
+        ['circle', { cx: '12', cy: '12', r: '10' }],
+        ['path', { d: 'M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20' }],
+        ['path', { d: 'M2 12h20' }],
+      ]);
+    }
+    if (actionId === 'toggle-ai-more') {
+      return lucideIcon([
+        [
+          'path',
+          {
+            d: 'm12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z',
+          },
+        ],
+      ]);
+    }
+    return iconZap();
+  }
+
   function makeRow(opts: {
     idx: number;
     href?: string;
@@ -1431,8 +1643,8 @@ export function initCommandSearch(): void {
     row.dataset.cmdkIdx = String(opts.idx);
     row.setAttribute('aria-selected', String(opts.idx === activeIndex));
     const iconBox = el('span', opts.iconClass || 'sl-cmdk-row__icon');
-    iconBox.appendChild(opts.icon);
-    row.appendChild(iconBox);
+    iconBox.append(opts.icon);
+    row.append(iconBox);
     const body = el('span', 'sl-cmdk-row__body');
     const head = el('span', 'sl-cmdk-row__head');
     const titleEl = el('span', 'sl-cmdk-row__title');
@@ -1441,25 +1653,25 @@ export function initCommandSearch(): void {
     } else {
       appendHighlightedText(titleEl, opts.title, input!.value);
     }
-    head.appendChild(titleEl);
-    body.appendChild(head);
+    head.append(titleEl);
+    body.append(head);
     if (opts.breadcrumb) {
       const crumbEl = el('span', 'sl-cmdk-row__crumb');
       appendHighlightedText(crumbEl, opts.breadcrumb, input!.value);
-      body.appendChild(crumbEl);
+      body.append(crumbEl);
     }
     if (opts.excerptHtml) {
       const excerptEl = el('span', 'sl-cmdk-row__excerpt');
       appendHighlightedExcerpt(excerptEl, opts.excerptHtml);
-      body.appendChild(excerptEl);
+      body.append(excerptEl);
     }
-    row.appendChild(body);
+    row.append(body);
     const trail = el('span', 'sl-cmdk-row__trail');
     if (opts.badge) {
-      trail.appendChild(el('span', 'sl-cmdk-row__badge', opts.badge));
+      trail.append(el('span', 'sl-cmdk-row__badge', opts.badge));
     }
     if (opts.kbd) {
-      trail.appendChild(el('kbd', 'sl-cmdk-kbd', opts.kbd));
+      trail.append(el('kbd', 'sl-cmdk-kbd', opts.kbd));
     }
     if (opts.showArrow) {
       const pinned = opts.href && opts.href !== '#' ? isPagePinned(opts.href) : false;
@@ -1473,7 +1685,7 @@ export function initCommandSearch(): void {
         markBtn.setAttribute('aria-pressed', String(on));
         markBtn.setAttribute('aria-label', isFr ? 'Sélectionner' : 'Select');
         markBtn.textContent = '✓';
-        trail.appendChild(markBtn);
+        trail.append(markBtn);
         const pinStar = el('button', 'sl-cmdk-row__pin');
         pinStar.type = 'button';
         pinStar.dataset.pinIdx = String(opts.idx);
@@ -1482,15 +1694,15 @@ export function initCommandSearch(): void {
           'aria-label',
           pinned ? (isFr ? 'Retirer des favoris' : 'Unpin page') : isFr ? 'Ajouter aux favoris' : 'Pin page',
         );
-        pinStar.appendChild(iconBookmark(pinned));
-        trail.appendChild(pinStar);
+        pinStar.append(iconBookmark(pinned));
+        trail.append(pinStar);
       }
       const arrowBox = el('span', 'sl-cmdk-row__arrow');
-      arrowBox.appendChild(iconArrowUpRight());
-      trail.appendChild(arrowBox);
+      arrowBox.append(iconArrowUpRight());
+      trail.append(arrowBox);
     }
     if (trail.childNodes.length > 0) {
-      row.appendChild(trail);
+      row.append(trail);
     }
     return row;
   }
@@ -1518,18 +1730,18 @@ export function initCommandSearch(): void {
       btn.type = 'button';
       btn.dataset.emptyView = filterKey;
       btn.setAttribute('aria-selected', String(activeFilter === filterKey));
-      btn.appendChild(document.createTextNode(label));
+      btn.append(document.createTextNode(label));
       if (typeof count === 'number') {
-        btn.appendChild(document.createTextNode(' '));
-        btn.appendChild(el('span', undefined, String(count)));
+        btn.append(document.createTextNode(' '));
+        btn.append(el('span', undefined, String(count)));
       }
       return btn;
     };
 
-    tabsEl!.appendChild(makeEmptyTab('all', isFr ? 'Tout' : 'All'));
-    tabsEl!.appendChild(makeEmptyTab('pinned', isFr ? 'Favoris' : 'Pinned', pinnedCount));
+    tabsEl!.append(makeEmptyTab('all', isFr ? 'Tout' : 'All'));
+    tabsEl!.append(makeEmptyTab('pinned', isFr ? 'Favoris' : 'Pinned', pinnedCount));
     for (const cat of catMap.values()) {
-      tabsEl!.appendChild(makeEmptyTab(cat.key, cat.label, cat.count));
+      tabsEl!.append(makeEmptyTab(cat.key, cat.label, cat.count));
     }
 
     listEl!.replaceChildren();
@@ -1544,7 +1756,7 @@ export function initCommandSearch(): void {
             ? 'Aucune page favorite. Appuyez sur ⌘D pour en épingler une.'
             : 'No pinned pages yet. Press ⌘D or click the bookmark icon to pin a page.',
         );
-        listEl!.appendChild(empty);
+        listEl!.append(empty);
         renderPreview(undefined);
         if (!skipEntrance) animateListCards();
         if (statusEl) statusEl.textContent = isFr ? '0 page favorite' : '0 pinned pages';
@@ -1552,8 +1764,8 @@ export function initCommandSearch(): void {
       }
       const group = el('div', 'sl-cmdk-group');
       const header = el('div', 'sl-cmdk-group__title');
-      header.appendChild(el('span', undefined, isFr ? 'Pages favorites' : 'Pinned pages'));
-      group.appendChild(header);
+      header.append(el('span', undefined, isFr ? 'Pages favorites' : 'Pinned pages'));
+      group.append(header);
       for (const pp of pinnedPages) {
         const idx = renderedItems.length;
         const sec = classifySection(pp.url, isFr);
@@ -1565,7 +1777,7 @@ export function initCommandSearch(): void {
           sectionKey: sec.key,
           breadcrumb: formatBreadcrumb(pp.url, isFr),
         });
-        group.appendChild(
+        group.append(
           makeRow({
             idx,
             href: pp.url,
@@ -1577,7 +1789,7 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(group);
+      listEl!.append(group);
       renderPreview(renderedItems.at(activeIndex));
       requestAnimationFrame(() => syncSelectionIndicator(true));
       if (statusEl) {
@@ -1597,8 +1809,8 @@ export function initCommandSearch(): void {
       const filteredPages = allPages.filter((p) => classifySection(p.url || '/', isFr).key === activeFilter);
       const group = el('div', 'sl-cmdk-group');
       const header = el('div', 'sl-cmdk-group__title');
-      header.appendChild(el('span', undefined, cat.label));
-      group.appendChild(header);
+      header.append(el('span', undefined, cat.label));
+      group.append(header);
       for (const page of filteredPages) {
         const idx = renderedItems.length;
         const item: FlatItem = {
@@ -1608,7 +1820,7 @@ export function initCommandSearch(): void {
           breadcrumb: formatBreadcrumb(page.url || '/', isFr),
         };
         renderedItems.push(item);
-        group.appendChild(
+        group.append(
           makeRow({
             idx,
             href: item.url || '/',
@@ -1620,7 +1832,7 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(group);
+      listEl!.append(group);
       renderPreview(renderedItems.at(activeIndex));
       if (!skipEntrance) animateListCards();
       if (statusEl) {
@@ -1635,12 +1847,12 @@ export function initCommandSearch(): void {
     if (recentPages.length > 0) {
       const group = el('div', 'sl-cmdk-group');
       const header = el('div', 'sl-cmdk-group__title');
-      header.appendChild(el('span', undefined, isFr ? 'Pages récentes' : 'Recent pages'));
+      header.append(el('span', undefined, isFr ? 'Pages récentes' : 'Recent pages'));
       const clearBtnEl = el('button', 'sl-cmdk-clear-recent', isFr ? 'Effacer' : 'Clear');
       clearBtnEl.type = 'button';
       clearBtnEl.dataset.clearRecent = 'true';
-      header.appendChild(clearBtnEl);
-      group.appendChild(header);
+      header.append(clearBtnEl);
+      group.append(header);
       for (const rp of recentPages) {
         const idx = renderedItems.length;
         const sec = classifySection(rp.url, isFr);
@@ -1652,7 +1864,7 @@ export function initCommandSearch(): void {
           sectionKey: sec.key,
           breadcrumb: formatBreadcrumb(rp.url, isFr),
         });
-        group.appendChild(
+        group.append(
           makeRow({
             idx,
             href: rp.url,
@@ -1664,24 +1876,24 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(group);
+      listEl!.append(group);
     }
     const recents = getRecent();
     if (recents.length > 0) {
       const group = el('div', 'sl-cmdk-group');
       const header = el('div', 'sl-cmdk-group__title');
-      header.appendChild(el('span', undefined, isFr ? 'Recherches récentes' : 'Recent searches'));
+      header.append(el('span', undefined, isFr ? 'Recherches récentes' : 'Recent searches'));
       if (recentPages.length === 0) {
         const clearRecentBtn = el('button', 'sl-cmdk-clear-recent', isFr ? 'Effacer' : 'Clear');
         clearRecentBtn.type = 'button';
         clearRecentBtn.dataset.clearRecent = 'true';
-        header.appendChild(clearRecentBtn);
+        header.append(clearRecentBtn);
       }
-      group.appendChild(header);
+      group.append(header);
       for (const q of recents) {
         const idx = renderedItems.length;
         renderedItems.push({ type: 'recent', title: q, query: q });
-        group.appendChild(
+        group.append(
           makeRow({
             idx,
             icon: iconHistory(),
@@ -1690,35 +1902,35 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(group);
+      listEl!.append(group);
     }
     const actionGroup = el('div', 'sl-cmdk-group');
     const actionHeader = el('div', 'sl-cmdk-group__title');
-    actionHeader.appendChild(el('span', undefined, isFr ? 'Actions rapides' : 'Quick actions'));
-    actionGroup.appendChild(actionHeader);
+    actionHeader.append(el('span', undefined, isFr ? 'Actions rapides' : 'Quick actions'));
+    actionGroup.append(actionHeader);
     for (const act of getQuickActions().filter((a) => a.actionId !== 'ai-provider')) {
       const idx = renderedItems.length;
       renderedItems.push(act);
-      actionGroup.appendChild(
+      actionGroup.append(
         makeRow({
           idx,
-          icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
+          icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : actionSemanticIcon(act.actionId),
           title: act.title,
           kbd: act.subtitle,
         }),
       );
     }
-    listEl!.appendChild(actionGroup);
+    listEl!.append(actionGroup);
     const pages = collectSidebarPages();
     if (pages.length > 0) {
       const navGroup = el('div', 'sl-cmdk-group');
       const navHeader = el('div', 'sl-cmdk-group__title');
-      navHeader.appendChild(el('span', undefined, isFr ? 'Navigation rapide' : 'Jump to page'));
-      navGroup.appendChild(navHeader);
+      navHeader.append(el('span', undefined, isFr ? 'Navigation rapide' : 'Jump to page'));
+      navGroup.append(navHeader);
       for (const p of pages) {
         const idx = renderedItems.length;
         renderedItems.push(p);
-        navGroup.appendChild(
+        navGroup.append(
           makeRow({
             idx,
             href: p.url ?? '#',
@@ -1730,8 +1942,9 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(navGroup);
+      listEl!.append(navGroup);
     }
+    updateContextualChrome();
     renderPreview(renderedItems[activeIndex]);
     requestAnimationFrame(() => syncSelectionIndicator(true));
     const searchSig = input!.value.trim() + '::' + activeFilter + '::' + renderedItems.length;
@@ -1749,7 +1962,7 @@ export function initCommandSearch(): void {
           : 'Type to search across all documentation';
     }
   }
-  function renderSearchResults(skipEntrance = false): void {
+  function renderSearchResults(_skipEntrance = false): void {
     renderTabs(currentResults);
     listEl!.replaceChildren();
     const qLow = input!.value.trim().toLowerCase();
@@ -1768,30 +1981,28 @@ export function initCommandSearch(): void {
     if (matchedActions.length > 0) {
       const actionGroup = el('div', 'sl-cmdk-group');
       const actionHeader = el('div', 'sl-cmdk-group__title');
-      actionHeader.appendChild(
-        el('span', undefined, isFr ? 'Commandes correspondantes' : 'Matching commands'),
-      );
-      actionGroup.appendChild(actionHeader);
+      actionHeader.append(el('span', undefined, isFr ? 'Commandes correspondantes' : 'Matching commands'));
+      actionGroup.append(actionHeader);
       for (const act of matchedActions) {
         const idx = renderedItems.length;
         renderedItems.push(act);
-        actionGroup.appendChild(
+        actionGroup.append(
           makeRow({
             idx,
-            icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
+            icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : actionSemanticIcon(act.actionId),
             title: act.title,
             kbd: act.subtitle,
           }),
         );
       }
-      listEl!.appendChild(actionGroup);
+      listEl!.append(actionGroup);
     }
     if (filtered.length === 0 && matchedActions.length === 0) {
       const empty = el('div', 'sl-cmdk-empty');
-      empty.appendChild(document.createTextNode(isFr ? 'Aucun résultat pour « ' : 'No results found for “'));
-      empty.appendChild(el('strong', undefined, input!.value.trim()));
-      empty.appendChild(document.createTextNode(isFr ? ' »' : '”'));
-      listEl!.appendChild(empty);
+      empty.append(document.createTextNode(isFr ? 'Aucun résultat pour « ' : 'No results found for “'));
+      empty.append(el('strong', undefined, input!.value.trim()));
+      empty.append(document.createTextNode(isFr ? ' »' : '”'));
+      listEl!.append(empty);
       renderPreview(undefined);
       if (statusEl) statusEl.textContent = isFr ? '0 résultat' : '0 results';
       return;
@@ -1813,7 +2024,7 @@ export function initCommandSearch(): void {
         subResults: subs,
       });
       const card = el('div', 'sl-cmdk-card');
-      card.appendChild(
+      card.append(
         makeRow({
           idx: pageIdx,
           href: res.url,
@@ -1837,7 +2048,7 @@ export function initCommandSearch(): void {
           breadcrumb: crumb + ' › ' + sub.title,
           excerptHtml: sub.excerpt || '',
         });
-        card.appendChild(
+        card.append(
           makeRow({
             idx: subIdx,
             href: sub.url,
@@ -1850,7 +2061,7 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(card);
+      listEl!.append(card);
     }
     renderPreview(renderedItems[activeIndex]);
     requestAnimationFrame(() => syncSelectionIndicator(true));
@@ -1887,8 +2098,24 @@ export function initCommandSearch(): void {
     return { scope, query: m[2].trim() };
   }
 
-  async function handleQuery(preserveScrollTop?: number): Promise<void> {
-    const q = input!.value.trim();
+  async function handleQuery(_preserveScrollTop?: number): Promise<void> {
+    const rawTyped = input!.value;
+    if (!activeModePrefix) {
+      if (rawTyped.startsWith('/')) {
+        activeModePrefix = '/';
+        input!.value = rawTyped.slice(1);
+      } else if (rawTyped.startsWith('#')) {
+        activeModePrefix = '#';
+        input!.value = rawTyped.slice(1);
+      } else {
+        const scopeMatch = /^(docs|guides?|ref|reference|blog|logs?):\s*(.*)$/i.exec(rawTyped);
+        if (scopeMatch) {
+          activeModePrefix = scopeMatch[1].toLowerCase() + ':';
+          input!.value = scopeMatch[2];
+        }
+      }
+    }
+    const q = (activeModePrefix ? activeModePrefix + input!.value : input!.value).trim();
     if (clearBtn) {
       const vis = q.length > 0;
       clearBtn.dataset.visible = vis ? 'true' : 'false';
@@ -1896,6 +2123,7 @@ export function initCommandSearch(): void {
       clearBtn.setAttribute('aria-hidden', vis ? 'false' : 'true');
     }
     activeIndex = 0;
+    updateContextualChrome();
     if (!q) {
       currentResults = [];
       activeFilter = 'all';
@@ -1916,7 +2144,7 @@ export function initCommandSearch(): void {
         renderedItems.push(act);
         const row = makeRow({
           idx,
-          icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap(),
+          icon: act.actionIconPath ? iconBrandPath(act.actionIconPath) : actionSemanticIcon(act.actionId),
           title: act.title,
           titleHtml: cmdQ ? highlightFuzzyHtml(act.title, cmdQ) : undefined,
           kbd: act.subtitle,
@@ -1936,7 +2164,7 @@ export function initCommandSearch(): void {
 
         const left = el('span', 'sl-cmdk-bento-tile__left');
         const iconWrap = el('span', 'sl-cmdk-bento-tile__icon');
-        iconWrap.appendChild(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
+        iconWrap.append(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
         const nameEl = el('span', 'sl-cmdk-bento-tile__name');
         const displayTitle = act.shortTitle || act.title;
         if (cmdQ) {
@@ -1944,14 +2172,14 @@ export function initCommandSearch(): void {
         } else {
           nameEl.textContent = displayTitle;
         }
-        left.appendChild(iconWrap);
-        left.appendChild(nameEl);
+        left.append(iconWrap);
+        left.append(nameEl);
 
         const extWrap = el('span', 'sl-cmdk-bento-tile__ext');
-        extWrap.appendChild(iconArrowUpRight());
+        extWrap.append(iconArrowUpRight());
 
-        tile.appendChild(left);
-        tile.appendChild(extWrap);
+        tile.append(left);
+        tile.append(extWrap);
 
         tile.addEventListener('pointermove', (ev) => {
           const rect = tile.getBoundingClientRect();
@@ -1968,37 +2196,37 @@ export function initCommandSearch(): void {
         if (workspaceActs.length > 0) {
           const g = el('div', 'sl-cmdk-group');
           const h = el('div', 'sl-cmdk-group__title');
-          h.appendChild(el('span', undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
-          g.appendChild(h);
-          for (const act of workspaceActs) g.appendChild(renderActionRow(act));
-          listEl!.appendChild(g);
+          h.append(el('span', undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
+          g.append(h);
+          for (const act of workspaceActs) g.append(renderActionRow(act));
+          listEl!.append(g);
         }
         if (langActs.length > 0) {
           const g = el('div', 'sl-cmdk-group');
           const h = el('div', 'sl-cmdk-group__title');
-          h.appendChild(el('span', undefined, tr('cmdk.groupLanguage', 'Language')));
-          g.appendChild(h);
-          for (const act of langActs) g.appendChild(renderActionRow(act));
-          listEl!.appendChild(g);
+          h.append(el('span', undefined, tr('cmdk.groupLanguage', 'Language')));
+          g.append(h);
+          for (const act of langActs) g.append(renderActionRow(act));
+          listEl!.append(g);
         }
         if (aiActs.length > 0) {
           const g = el('div', 'sl-cmdk-group');
           const h = el('div', 'sl-cmdk-group__title');
-          h.appendChild(el('span', undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
-          h.appendChild(el('span', 'sl-cmdk-group__count', String(aiActs.length)));
-          g.appendChild(h);
+          h.append(el('span', undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
+          h.append(el('span', 'sl-cmdk-group__count', String(aiActs.length)));
+          g.append(h);
           const primaryGrid = el('div', 'sl-cmdk-ai-grid');
-          for (const act of aiActs.slice(0, 2)) primaryGrid.appendChild(renderBentoTile(act));
-          g.appendChild(primaryGrid);
+          for (const act of aiActs.slice(0, 2)) primaryGrid.append(renderBentoTile(act));
+          g.append(primaryGrid);
           if (aiCommandsExpanded && aiActs.length > 2) {
             const drawer = el('div', 'sl-cmdk-ai-drawer');
             drawer.dataset.open = 'false';
             const drawerInner = el('div', 'sl-cmdk-ai-drawer__inner');
             const extraGrid = el('div', 'sl-cmdk-ai-grid');
-            for (const act of aiActs.slice(2)) extraGrid.appendChild(renderBentoTile(act));
-            drawerInner.appendChild(extraGrid);
-            drawer.appendChild(drawerInner);
-            g.appendChild(drawer);
+            for (const act of aiActs.slice(2)) extraGrid.append(renderBentoTile(act));
+            drawerInner.append(extraGrid);
+            drawer.append(drawerInner);
+            g.append(drawer);
             requestAnimationFrame(() => {
               drawer.dataset.open = 'true';
             });
@@ -2018,18 +2246,17 @@ export function initCommandSearch(): void {
               section: tr('cmdk.groupAi', 'Ask AI Assistant'),
               excerptHtml: aiActs.map((x) => x.shortTitle || x.title).join(' · '),
             };
-            g.appendChild(renderActionRow(toggleItem, 'sl-cmdk-row--expand-ai'));
+            g.append(renderActionRow(toggleItem, 'sl-cmdk-row--expand-ai'));
           }
-          listEl!.appendChild(g);
+          listEl!.append(g);
         }
         activeIndex = 0;
+        updateContextualChrome();
         applyThemePreviewForItem(renderedItems[0]);
         renderPreview(renderedItems[0]);
         syncSelectionIndicator(true);
         if (statusEl) {
-          statusEl.textContent = isFr
-            ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
-            : 'Commands mode (/) · ' + renderedItems.length + ' actions';
+          statusEl.textContent = renderedItems.length + ' actions';
         }
         return;
       }
@@ -2039,16 +2266,14 @@ export function initCommandSearch(): void {
           s: Math.max(fuzzyScore(cmdQ, a.title), a.subtitle ? fuzzyScore(cmdQ, a.subtitle) : 0),
         }))
         .filter((x) => x.s > 0)
-        .sort((x, y) => y.s - x.s)
+        .toSorted((x, y) => y.s - x.s)
         .map((x) => x.a);
       if (matchedActions.length === 0) {
         const empty = el('div', 'sl-cmdk-empty');
-        empty.appendChild(
-          document.createTextNode(isFr ? 'Aucune commande pour « ' : 'No commands matching “'),
-        );
-        empty.appendChild(el('strong', undefined, q.slice(1).trim()));
-        empty.appendChild(document.createTextNode(isFr ? ' »' : '”'));
-        listEl!.appendChild(empty);
+        empty.append(document.createTextNode(isFr ? 'Aucune commande pour « ' : 'No commands matching “'));
+        empty.append(el('strong', undefined, q.slice(1).trim()));
+        empty.append(document.createTextNode(isFr ? ' »' : '”'));
+        listEl!.append(empty);
         renderPreview(undefined);
         if (statusEl)
           statusEl.textContent = isFr ? 'Mode commandes (/) · 0 résultat' : 'Commands mode (/) · 0 matches';
@@ -2059,21 +2284,21 @@ export function initCommandSearch(): void {
       if (nonAi.length > 0) {
         const g = el('div', 'sl-cmdk-group');
         const h = el('div', 'sl-cmdk-group__title');
-        h.appendChild(el('span', undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
-        g.appendChild(h);
-        for (const act of nonAi) g.appendChild(renderActionRow(act));
-        listEl!.appendChild(g);
+        h.append(el('span', undefined, tr('cmdk.groupWorkspace', 'Workspace & Navigation')));
+        g.append(h);
+        for (const act of nonAi) g.append(renderActionRow(act));
+        listEl!.append(g);
       }
       if (aiMatched.length > 0) {
         const g = el('div', 'sl-cmdk-group');
         const h = el('div', 'sl-cmdk-group__title');
-        h.appendChild(el('span', undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
-        h.appendChild(el('span', 'sl-cmdk-group__count', String(aiMatched.length)));
-        g.appendChild(h);
+        h.append(el('span', undefined, tr('cmdk.groupAi', 'Ask AI Assistant')));
+        h.append(el('span', 'sl-cmdk-group__count', String(aiMatched.length)));
+        g.append(h);
         const grid = el('div', 'sl-cmdk-ai-grid');
-        for (const act of aiMatched) grid.appendChild(renderBentoTile(act));
-        g.appendChild(grid);
-        listEl!.appendChild(g);
+        for (const act of aiMatched) grid.append(renderBentoTile(act));
+        g.append(grid);
+        listEl!.append(g);
       }
       activeIndex = 0;
       updateActiveRow(false);
@@ -2119,12 +2344,10 @@ export function initCommandSearch(): void {
       const shown = allHeadings.slice(0, 24);
       if (shown.length === 0) {
         const empty = el('div', 'sl-cmdk-empty');
-        empty.appendChild(
-          document.createTextNode(isFr ? 'Aucune section pour « ' : 'No headings matching “'),
-        );
-        empty.appendChild(el('strong', undefined, q));
-        empty.appendChild(document.createTextNode(isFr ? ' »' : '”'));
-        listEl!.appendChild(empty);
+        empty.append(document.createTextNode(isFr ? 'Aucune section pour « ' : 'No headings matching “'));
+        empty.append(el('strong', undefined, q));
+        empty.append(document.createTextNode(isFr ? ' »' : '”'));
+        listEl!.append(empty);
         renderPreview(undefined);
         if (statusEl)
           statusEl.textContent = isFr ? 'Mode sections (#) · 0 résultat' : 'Headings mode (#) · 0 matches';
@@ -2132,12 +2355,12 @@ export function initCommandSearch(): void {
       }
       const group = el('div', 'sl-cmdk-group');
       const header = el('div', 'sl-cmdk-group__title');
-      header.appendChild(el('span', undefined, isFr ? 'Sections (#)' : 'Headings (#)'));
-      group.appendChild(header);
+      header.append(el('span', undefined, isFr ? 'Sections (#)' : 'Headings (#)'));
+      group.append(header);
       for (const item of shown) {
         const idx = renderedItems.length;
         renderedItems.push(item);
-        group.appendChild(
+        group.append(
           makeRow({
             idx,
             href: item.url || '#',
@@ -2150,7 +2373,7 @@ export function initCommandSearch(): void {
           }),
         );
       }
-      listEl!.appendChild(group);
+      listEl!.append(group);
       renderPreview(renderedItems.at(0));
       animateListCards();
       if (statusEl) {
@@ -2167,7 +2390,6 @@ export function initCommandSearch(): void {
     const effectiveQ = parsedScope.query;
     if (parsedScope.scope === 'changelog') {
       const entries = collectSidebarPages().filter((item) => item.sectionKey === 'changelog');
-      const qLow = effectiveQ.toLowerCase();
       const matched = effectiveQ
         ? entries
             .map((item) => ({
@@ -2178,7 +2400,7 @@ export function initCommandSearch(): void {
               ),
             }))
             .filter((x) => x.s > 0)
-            .sort((a, b) => b.s - a.s)
+            .toSorted((a, b) => b.s - a.s)
             .map((x) => x.item)
         : entries;
       currentResults = matched.map((m) => ({
@@ -2271,7 +2493,12 @@ export function initCommandSearch(): void {
     }
     markedItems.clear();
     historyCursor = -1;
+    activeModePrefix = '';
     aiCommandsExpanded = false;
+    if (shortcutsPopover) {
+      shortcutsPopover.hidden = true;
+      shortcutsBtn?.setAttribute('aria-expanded', 'false');
+    }
     dialog!.close();
   }
   function activateItem(item: FlatItem | undefined, newTab = false): void {
@@ -2360,6 +2587,7 @@ export function initCommandSearch(): void {
     }
   });
   clearBtn?.addEventListener('click', () => {
+    activeModePrefix = '';
     input!.value = '';
     handleQuery();
     input!.focus();
@@ -2501,6 +2729,21 @@ export function initCommandSearch(): void {
         closeModal();
         if (targetHref) window.location.assign(targetHref);
       }
+    } else if (e.key === '?' && !activeModePrefix && input?.value === '' && shortcutsPopover) {
+      e.preventDefault();
+      const nextOpen = shortcutsPopover.hidden;
+      shortcutsPopover.hidden = !nextOpen;
+      shortcutsBtn?.setAttribute('aria-expanded', String(nextOpen));
+    } else if (
+      e.key === 'Backspace' &&
+      activeModePrefix &&
+      ((input?.value.length ?? 0) === 0 ||
+        ((input?.selectionStart ?? 0) === 0 && (input?.selectionEnd ?? 0) === 0))
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeModePrefix = '';
+      void handleQuery();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       activateItem(renderedItems[activeIndex], e.metaKey || e.ctrlKey);

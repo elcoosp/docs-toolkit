@@ -182,6 +182,7 @@ const cmdkConfig = {
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />
           </svg>
+          <span id="sl-cmdk-mode-pill" class="sl-cmdk-mode-pill" hidden></span>
           <input
             id="sl-cmdk-input" aria-controls="sl-cmdk-list"
             class="sl-cmdk-input"
@@ -201,18 +202,36 @@ const cmdkConfig = {
         </div>
 
         <div class="sl-cmdk-footer">
-          <div class="sl-cmdk-hints">
+          <div id="sl-cmdk-hints" class="sl-cmdk-hints">
             <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↑↓</kbd> {ui.nav}</span>
             <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">↵</kbd> {ui.open}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-newtab-kbd>⌘↵</kbd> {ui.newTab}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-copy-kbd>⌘C</kbd> {ui.copy}</span>
             <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd" data-cmdk-pin-kbd>⌘D</kbd> {ui.pin}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">Tab</kbd> {ui.filter}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">⌘M</kbd> {isFr ? "Marquer" : "Mark"}</span>
-            <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">⌥P/N</kbd> {isFr ? "Historique" : "History"}</span>
             <span class="sl-cmdk-hint"><kbd class="sl-cmdk-kbd">ESC</kbd> {ui.close}</span>
           </div>
-          <span id="sl-cmdk-status"></span>
+          <div class="sl-cmdk-footer__right">
+            <div class="sl-cmdk-shortcuts-wrap">
+              <button id="sl-cmdk-shortcuts-btn" type="button" class="sl-cmdk-shortcuts-btn" aria-expanded="false" aria-controls="sl-cmdk-shortcuts-popover">
+                <kbd class="sl-cmdk-kbd">?</kbd>
+                <span>{isFr ? "Raccourcis" : "Shortcuts"}</span>
+              </button>
+              <div id="sl-cmdk-shortcuts-popover" class="sl-cmdk-shortcuts-popover" hidden>
+                <div class="sl-cmdk-shortcuts-popover__title">{isFr ? "Raccourcis clavier" : "Keyboard shortcuts"}</div>
+                <div class="sl-cmdk-shortcuts-popover__grid">
+                  <span>{ui.nav}</span><kbd class="sl-cmdk-kbd">↑↓ / ⌃N ⌃P</kbd>
+                  <span>{ui.open}</span><kbd class="sl-cmdk-kbd">↵</kbd>
+                  <span>{ui.newTab}</span><kbd class="sl-cmdk-kbd" data-cmdk-newtab-kbd>⌘↵</kbd>
+                  <span>{ui.copy}</span><kbd class="sl-cmdk-kbd" data-cmdk-copy-kbd>⌘C</kbd>
+                  <span>{isFr ? "Copier en Markdown" : "Copy Markdown"}</span><kbd class="sl-cmdk-kbd">⌘⇧C</kbd>
+                  <span>{ui.pin}</span><kbd class="sl-cmdk-kbd" data-cmdk-pin-kbd>⌘D</kbd>
+                  <span>{isFr ? "Marquer la sélection" : "Mark selection"}</span><kbd class="sl-cmdk-kbd">⌘M</kbd>
+                  <span>{ui.filter}</span><kbd class="sl-cmdk-kbd">Tab</kbd>
+                  <span>{isFr ? "Historique" : "History"}</span><kbd class="sl-cmdk-kbd">⌥P / ⌥N</kbd>
+                  <span>{isFr ? "Modes rapides" : "Quick modes"}</span><span class="sl-cmdk-mode-triggers"><button type="button" class="sl-cmdk-kbd sl-cmdk-mode-trigger" data-cmdk-trigger="/">/</button><button type="button" class="sl-cmdk-kbd sl-cmdk-mode-trigger" data-cmdk-trigger="#">#</button><button type="button" class="sl-cmdk-kbd sl-cmdk-mode-trigger" data-cmdk-trigger="ref:">ref:</button><button type="button" class="sl-cmdk-kbd sl-cmdk-mode-trigger" data-cmdk-trigger="log:">log:</button></span>
+                </div>
+              </div>
+            </div>
+            <span id="sl-cmdk-status" class="sl-cmdk-status"></span>
+          </div>
         </div>
       </div>
     </div>
