@@ -1022,16 +1022,84 @@ export function initCommandSearch(): void {
     const actionHref = typeof itemOrId === 'object' ? itemOrId?.actionHref : undefined;
     if (actionId === 'toggle-ai-more') {
       lastToggleClickAt = performance.now();
-      const keepScroll = listEl!.scrollTop;
       aiCommandsExpanded = !aiCommandsExpanded;
-      void handleQuery().then(() => {
-        const toggleIdx = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
-        activeIndex = toggleIdx !== -1 ? toggleIdx : Math.max(0, renderedItems.length - 1);
-        updateActiveRow(false);
-        listEl!.scrollTop = Math.min(keepScroll, Math.max(0, listEl!.scrollHeight - listEl!.clientHeight));
-        syncSelectionIndicator(true);
-        input!.focus();
-      });
+      const toggleBtn = listEl!.querySelector<HTMLElement>('.sl-cmdk-row--expand-ai');
+      const aiGroup = toggleBtn?.closest<HTMLElement>('.sl-cmdk-group');
+      const allActions = getQuickActions();
+      const aiActs = allActions.filter((a) => a.section === 'AI');
+      if (aiGroup && toggleBtn && aiActs.length > 2) {
+        const existingDrawer = aiGroup.querySelector('.sl-cmdk-ai-drawer');
+        if (existingDrawer) existingDrawer.remove();
+        const toggleIdxBefore = renderedItems.findIndex((x) => x.actionId === 'toggle-ai-more');
+        if (toggleIdxBefore !== -1) {
+          const extraIds = new Set(aiActs.slice(2).map((e) => e.actionId));
+          const baseItems = renderedItems.slice(0, toggleIdxBefore).filter((x) => !extraIds.has(x.actionId));
+          const toggleItem = renderedItems[toggleIdxBefore];
+          const hiddenCount = aiActs.length - 2;
+          toggleItem.title = aiCommandsExpanded
+            ? tr('cmdk.lessAi', 'Show fewer AI assistants')
+            : tr('cmdk.moreAi', 'Show all {total} AI assistants', {
+                total: String(aiActs.length),
+                count: String(hiddenCount),
+              });
+          toggleItem.subtitle = aiCommandsExpanded ? '−' : '+' + hiddenCount;
+          if (aiCommandsExpanded) {
+            const drawer = el('div', 'sl-cmdk-ai-drawer');
+            drawer.dataset.open = 'true';
+            const drawerInner = el('div', 'sl-cmdk-ai-drawer__inner');
+            const extraGrid = el('div', 'sl-cmdk-ai-grid');
+            const extraItems: FlatItem[] = [];
+            for (const act of aiActs.slice(2)) {
+              const idx = baseItems.length + extraItems.length;
+              extraItems.push(act);
+              const tile = document.createElement('button');
+              tile.type = 'button';
+              tile.className = 'sl-cmdk-row sl-cmdk-bento-tile';
+              tile.dataset.cmdkIdx = String(idx);
+              tile.setAttribute('role', 'option');
+              tile.setAttribute('aria-selected', 'false');
+              const left = el('span', 'sl-cmdk-bento-tile__left');
+              const iconWrap = el('span', 'sl-cmdk-bento-tile__icon');
+              iconWrap.appendChild(act.actionIconPath ? iconBrandPath(act.actionIconPath) : iconZap());
+              const nameEl = el('span', 'sl-cmdk-bento-tile__name', act.shortTitle || act.title);
+              left.appendChild(iconWrap);
+              left.appendChild(nameEl);
+              const extWrap = el('span', 'sl-cmdk-bento-tile__ext');
+              extWrap.appendChild(iconArrowUpRight());
+              tile.appendChild(left);
+              tile.appendChild(extWrap);
+              tile.addEventListener('pointermove', (ev) => {
+                const rect = tile.getBoundingClientRect();
+                tile.style.setProperty('--mx', ev.clientX - rect.left + 'px');
+                tile.style.setProperty('--my', ev.clientY - rect.top + 'px');
+              });
+              extraGrid.appendChild(tile);
+            }
+            drawerInner.appendChild(extraGrid);
+            drawer.appendChild(drawerInner);
+            aiGroup.insertBefore(drawer, toggleBtn);
+            renderedItems = [...baseItems, ...extraItems, toggleItem];
+          } else {
+            renderedItems = [...baseItems, toggleItem];
+          }
+          const newToggleIdx = renderedItems.length - 1;
+          toggleBtn.dataset.cmdkIdx = String(newToggleIdx);
+          const titleNode = toggleBtn.querySelector('.sl-cmdk-row__title');
+          if (titleNode) titleNode.textContent = toggleItem.title;
+          const kbdNode = toggleBtn.querySelector('.sl-cmdk-kbd');
+          if (kbdNode) kbdNode.textContent = toggleItem.subtitle || '';
+          activeIndex = newToggleIdx;
+          updateActiveRow(false);
+          if (statusEl) {
+            statusEl.textContent = isFr
+              ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
+              : 'Commands mode (/) · ' + renderedItems.length + ' actions';
+          }
+          input!.focus({ preventScroll: true });
+          return;
+        }
+      }
+      void handleQuery();
       return;
     }
     if (actionId === 'changelog') {
@@ -1819,7 +1887,7 @@ export function initCommandSearch(): void {
     return { scope, query: m[2].trim() };
   }
 
-  async function handleQuery(): Promise<void> {
+  async function handleQuery(preserveScrollTop?: number): Promise<void> {
     const q = input!.value.trim();
     if (clearBtn) {
       const vis = q.length > 0;
