@@ -626,6 +626,7 @@ export function initCommandSearch(): void {
   const pageMetaCache = new Map<string, { blocks: PreviewBlock[]; subs: SubResult[] }>();
   const pendingMetaUrls = new Set<string>();
   let lastPreviewKey = '';
+  const previewStack: FlatItem[] = [];
   let copyToastTimer: number | undefined;
   let searchListAnimTimer: number | undefined;
   let lastAnimatedSearchSig = '';
@@ -1292,8 +1293,21 @@ export function initCommandSearch(): void {
           }
         });
       pageMetaCache.set(url, { blocks, subs });
-      if (renderedItems[activeIndex]?.url === url) {
-        renderPreview(renderedItems[activeIndex]);
+      const activePreviewPath = previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__path')?.textContent;
+      if (renderedItems[activeIndex]?.url === url || activePreviewPath === url) {
+        const currentPreviewItem =
+          previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__path')?.textContent === url &&
+          renderedItems[activeIndex]?.url !== url
+            ? {
+                type: 'nav' as const,
+                title: previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__title')?.textContent || url,
+                url,
+                section: classifySection(url, isFr).label,
+                sectionKey: classifySection(url, isFr).key,
+                breadcrumb: formatBreadcrumb(url, isFr),
+              }
+            : renderedItems[activeIndex];
+        renderPreview(currentPreviewItem);
       }
     } catch {
       pageMetaCache.set(url, { blocks: [], subs: [] });
@@ -1324,6 +1338,14 @@ export function initCommandSearch(): void {
     }
 
     const top = el('div', 'sl-cmdk-preview__top');
+    if (previewStack.length > 0) {
+      const prevItem = previewStack.at(-1)!;
+      const backBtn = el('button', 'sl-cmdk-preview__back');
+      backBtn.type = 'button';
+      backBtn.dataset.previewBack = 'true';
+      backBtn.textContent = (isFr ? '← Retour à ' : '← Back to ') + prevItem.title;
+      top.append(backBtn);
+    }
     const eyebrow = el('div', 'sl-cmdk-preview__eyebrow');
     eyebrow.append(
       item.actionIconPath
@@ -1475,22 +1497,21 @@ export function initCommandSearch(): void {
       graphBox.append(
         el('div', 'sl-cmdk-preview__subs-label', tr('cmdk.graphConnections', 'Connected pages')),
       );
-      for (const outRef of graphInfo.outgoing.slice(0, 3)) {
-        const a = el('a', 'sl-cmdk-preview__sub-link');
-        a.href = outRef.route;
+      let graphJumpIdx = 0;
+      const appendGraphLink = (ref: { route: string; title: string }, dir: 'out' | 'in') => {
+        graphJumpIdx += 1;
+        const a = el('a', 'sl-cmdk-preview__sub-link sl-cmdk-preview__graph-link');
+        a.href = ref.route;
+        a.dataset.graphJump = String(graphJumpIdx);
+        a.dataset.graphTitle = ref.title;
         const left = el('span', 'sl-cmdk-preview__sub-left');
-        left.append(document.createTextNode('→ ' + outRef.title));
+        left.append(document.createTextNode((dir === 'out' ? '→ ' : '← ') + ref.title));
         a.append(left);
+        a.append(el('kbd', 'sl-cmdk-kbd', '⌥' + String(graphJumpIdx)));
         graphBox.append(a);
-      }
-      for (const inRef of graphInfo.incoming.slice(0, 3)) {
-        const a = el('a', 'sl-cmdk-preview__sub-link');
-        a.href = inRef.route;
-        const left = el('span', 'sl-cmdk-preview__sub-left');
-        left.append(document.createTextNode('← ' + inRef.title));
-        a.append(left);
-        graphBox.append(a);
-      }
+      };
+      for (const outRef of graphInfo.outgoing.slice(0, 3)) appendGraphLink(outRef, 'out');
+      for (const inRef of graphInfo.incoming.slice(0, 3)) appendGraphLink(inRef, 'in');
       top.append(graphBox);
     }
 
@@ -1562,6 +1583,7 @@ export function initCommandSearch(): void {
       }
     });
 
+    previewStack.length = 0;
     applyThemePreviewForItem(renderedItems[activeIndex]);
     updateContextualChrome();
     renderPreview(renderedItems[activeIndex]);
@@ -2483,6 +2505,7 @@ export function initCommandSearch(): void {
     if (dialog!.open) return;
     dialog!.showModal();
     activeIndex = 0;
+    previewStack.length = 0;
     if (!input!.value.trim()) renderEmptyState();
 
     ensurePagefind();
@@ -2613,7 +2636,57 @@ export function initCommandSearch(): void {
     renderSearchResults();
   });
 
+  function pivotPreviewToGraphLink(link: HTMLAnchorElement): void {
+    const targetUrl = link.getAttribute('href') || link.href;
+    if (!targetUrl) return;
+    const curTitle = previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__title')?.textContent || '';
+    const curUrl =
+      previewEl?.querySelector<HTMLElement>('.sl-cmdk-preview__path')?.textContent ||
+      renderedItems[activeIndex]?.url;
+    if (curUrl) {
+      const sec = classifySection(curUrl, isFr);
+      previewStack.push({
+        type: 'nav',
+        title: curTitle || curUrl,
+        url: curUrl,
+        section: sec.label,
+        sectionKey: sec.key,
+        breadcrumb: formatBreadcrumb(curUrl, isFr),
+      });
+    }
+    const nextSec = classifySection(targetUrl, isFr);
+    const nextTitle =
+      link.dataset.graphTitle || link.textContent?.replace(/^[→←]\s*/, '').trim() || targetUrl;
+    renderPreview({
+      type: 'nav',
+      title: nextTitle,
+      url: targetUrl,
+      section: nextSec.label,
+      sectionKey: nextSec.key,
+      breadcrumb: formatBreadcrumb(targetUrl, isFr),
+    });
+  }
+
   previewEl?.addEventListener('click', (e) => {
+    const backBtn =
+      e.target instanceof Element ? e.target.closest<HTMLButtonElement>('[data-preview-back]') : null;
+    if (backBtn) {
+      e.preventDefault();
+      const prev = previewStack.pop();
+      renderPreview(prev || renderedItems[activeIndex]);
+      return;
+    }
+    const graphLink =
+      e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('[data-graph-jump]') : null;
+    if (graphLink) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey) {
+        closeModal();
+        return;
+      }
+      e.preventDefault();
+      pivotPreviewToGraphLink(graphLink);
+      return;
+    }
     const subLink =
       e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('.sl-cmdk-preview__sub-link') : null;
     if (subLink) {
@@ -2719,6 +2792,25 @@ export function initCommandSearch(): void {
           behavior: 'smooth',
         });
       }
+    } else if (
+      e.altKey &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.shiftKey &&
+      (/^[1-6]$/.test(e.key) || /^Digit[1-6]$/.test(e.code))
+    ) {
+      const digit = /^[1-6]$/.test(e.key) ? e.key : e.code.slice(5);
+      const graphLink = previewEl?.querySelector<HTMLAnchorElement>(`[data-graph-jump="${digit}"]`);
+      if (graphLink) {
+        e.preventDefault();
+        e.stopPropagation();
+        pivotPreviewToGraphLink(graphLink);
+      }
+    } else if (e.altKey && !e.metaKey && !e.ctrlKey && e.key === 'ArrowLeft' && previewStack.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      const prev = previewStack.pop();
+      renderPreview(prev || renderedItems[activeIndex]);
     } else if (
       e.ctrlKey &&
       !e.metaKey &&

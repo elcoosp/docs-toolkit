@@ -1295,3 +1295,26 @@
   color: var(--sl-color-text-accent);
   background: var(--sl-color-accent-low);
 }
+
+#sl-cmdk-dialog .sl-cmdk-preview__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  margin-bottom: 0.45rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sl-color-hairline);
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-accent-high);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+#sl-cmdk-dialog .sl-cmdk-preview__back:hover {
+  border-color: var(--sl-color-text-accent);
+  background: var(--sl-color-accent-low);
+}

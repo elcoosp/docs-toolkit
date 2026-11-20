@@ -304,6 +304,53 @@ describe('Command Palette Real Browser DOM & E2E Suite', () => {
     delete (window as any).__slPagefindModule;
   });
 
+  it('pivots preview interactively across connected pages via click and Alt+1..6 with back stack', async () => {
+    const origFetch = window.fetch.bind(window);
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url;
+      if (url.endsWith('/graph.json')) {
+        return new Response(
+          JSON.stringify({
+            nodes: [
+              { route: '/guides/write-your-own-macro/', title: 'Write Your Own Macro', pageRank: 40 },
+              { route: '/reference/megamac/', title: 'Megamac Reference', pageRank: 95 },
+            ],
+            edges: [{ source: '/guides/write-your-own-macro/', target: '/reference/megamac/' }],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return origFetch(input, init);
+    }) as typeof window.fetch;
+
+    document.body.innerHTML = '';
+    mountPalette('en');
+    try {
+      document.querySelector<HTMLButtonElement>('[data-cmdk-open]')!.click();
+      await new Promise((r) => setTimeout(r, 60));
+      const input = document.querySelector<HTMLInputElement>('#sl-cmdk-input')!;
+      input.value = 'Write Your Own Macro';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 120));
+
+      const graphLink = document.querySelector<HTMLAnchorElement>('[data-graph-jump="1"]');
+      expect(graphLink?.textContent).toContain('Megamac Reference');
+      expect(graphLink?.textContent).toContain('⌥1');
+
+      // Pivot via Alt+1 without closing dialog
+      key(input, '1', { altKey: true, code: 'Digit1' });
+      expect(document.querySelector<HTMLDialogElement>('#sl-cmdk-dialog')!.open).toBe(true);
+      expect(document.querySelector('.sl-cmdk-preview__title')?.textContent).toBe('Megamac Reference');
+      const backBtn = document.querySelector<HTMLButtonElement>('[data-preview-back]');
+      expect(backBtn?.textContent).toContain('Write Your Own Macro');
+
+      // Go back via button click
+      backBtn!.click();
+      expect(document.querySelector('.sl-cmdk-preview__title')?.textContent).toBe('Write Your Own Macro');
+    } finally {
+      window.fetch = origFetch;
+    }
+  });
   it('loads /graph.json on modal open and renders connected pages in preview', async () => {
     const origFetch = window.fetch.bind(window);
     window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -339,7 +386,9 @@ describe('Command Palette Real Browser DOM & E2E Suite', () => {
       await new Promise((r) => setTimeout(r, 120));
 
       const graphLinks = Array.from(
-        document.querySelectorAll<HTMLAnchorElement>('#sl-cmdk-preview .sl-cmdk-preview__graph a'),
+        document.querySelectorAll<HTMLElement>(
+          '#sl-cmdk-preview .sl-cmdk-preview__graph .sl-cmdk-preview__sub-left',
+        ),
       ).map((a) => a.textContent?.trim());
       expect(graphLinks).toContain('→ Megamac Reference');
       expect(graphLinks).toContain('← Getting Started');
