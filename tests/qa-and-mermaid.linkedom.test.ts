@@ -52,11 +52,19 @@ describe('QA Scripts & Static Mermaid (100% coverage)', () => {
       .png()
       .toFile(join(dist, 'logo.png'));
 
-    const makeHtml = (title: string) =>
+    const makeHtml = (title: string, withTheme = true) =>
       '<!doctype html><html lang="en"><head><title>' +
       title +
-      '</title></head><body>' +
-      '<header class="site-title"><img src="/logo.png" width="16" height="16"></header>' +
+      '</title>' +
+      (withTheme
+        ? '<script>document.documentElement.dataset.theme=localStorage.getItem("starlight-theme")||"light"</script>'
+        : '') +
+      '</head><body>' +
+      '<header class="site-title"><img src="/logo.png" width="16" height="16">' +
+      (withTheme
+        ? "<starlight-theme-select><button onclick=\"document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'\"></button></starlight-theme-select>"
+        : '') +
+      '</header>' +
       '<div class="sl-zen-toggle" data-pagefind-ignore="all"></div>' +
       '<div class="sl-reading-context" data-pagefind-ignore="all"></div>' +
       '<div class="page-actions-container" data-pagefind-ignore="all"></div>' +
@@ -111,6 +119,7 @@ describe('QA Scripts & Static Mermaid (100% coverage)', () => {
   it('covers qa/bootstrap-artifacts, qa/components, qa/lint, and qa/screenshots', async () => {
     process.chdir(tmp);
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     process.env.QA_SAMPLE = '1';
     process.env.QA_CONCURRENCY = '2';
     try {
@@ -121,8 +130,10 @@ describe('QA Scripts & Static Mermaid (100% coverage)', () => {
       await import('../src/qa/components');
       await import('../src/qa/lint');
       await import('../src/qa/screenshots');
-      expect(existsSync(join(tmp, '.qa/failures.json'))).toBe(true);
+      const failures = JSON.parse(readFileSync(join(tmp, '.qa/failures.json'), 'utf8'));
+      expect(failures.every((f: { kind: string }) => f.kind !== 'theme')).toBe(true);
     } finally {
+      errSpy.mockRestore();
       exitSpy.mockRestore();
     }
   }, 30000);
