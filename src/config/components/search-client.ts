@@ -1955,7 +1955,9 @@ export function initCommandSearch(): void {
           listEl!.appendChild(g);
         }
         activeIndex = 0;
-        updateActiveRow(false);
+        applyThemePreviewForItem(renderedItems[0]);
+        renderPreview(renderedItems[0]);
+        syncSelectionIndicator(true);
         if (statusEl) {
           statusEl.textContent = isFr
             ? 'Mode commandes (/) · ' + renderedItems.length + ' actions'
