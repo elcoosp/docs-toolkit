@@ -927,22 +927,27 @@ export function initCommandSearch(): void {
     if (langSelect) {
       for (const opt of Array.from(langSelect.options)) {
         if (opt.selected || !opt.value) continue;
-        const langName = (opt.textContent || opt.label || opt.value).trim();
-        const shortCode = (
+        const rawLangName = (opt.textContent || opt.label || opt.value).trim();
+        const targetCode = (
           opt.getAttribute('lang') ||
           opt.value.replace(/^\/|\/$/g, '').split('/')[0] ||
-          'EN'
-        ).toUpperCase();
+          'en'
+        ).toLowerCase();
+        const shortCode = targetCode.toUpperCase();
+        let localizedLang = rawLangName;
+        try {
+          const uiLocale = document.documentElement.lang || root.dataset.locale || 'en';
+          const dn = new Intl.DisplayNames([uiLocale], { type: 'language' });
+          localizedLang = dn.of(targetCode) || rawLangName;
+        } catch {}
         actions.push({
           type: 'action',
           actionId: 'lang-switch',
           actionHref: opt.value,
-          title: tr('cmdk.actionLangSwitch', 'Switch language to {lang}', {
-            lang: isFr && langName === 'English' ? 'anglais' : langName,
-          }),
-          subtitle: shortCode.length <= 5 ? shortCode : langName,
+          title: tr('cmdk.actionLangSwitch', 'Switch language to {lang}', { lang: localizedLang }),
+          subtitle: shortCode.length <= 5 ? shortCode : rawLangName,
           section: 'Language',
-          excerptHtml: tr('cmdk.actionLangSwitchDesc', 'Open this page in {lang}.', { lang: langName }),
+          excerptHtml: tr('cmdk.actionLangSwitchDesc', 'Open this page in {lang}.', { lang: localizedLang }),
         });
       }
     }
