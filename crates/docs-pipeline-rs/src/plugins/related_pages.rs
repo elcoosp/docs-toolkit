@@ -260,101 +260,166 @@ pub fn run_related_pages(
             }
             scored.sort_by(|a, b_item| {
                 b_item
-.1
-.partial_cmp(&a.1)
-.unwrap_or(std::cmp::Ordering::Equal)
-});
-let mut picked: Vec<&DocRecord<'_>> = Vec::new();
-let mut used_cats = HashSet::from([src.category]);
-for (cand, _) in &scored {
-if picked.len() >= max_related {
-break;
-}
-if used_cats.insert(cand.category) {
-picked.push(cand);
-}
-}
-for (cand, _) in &scored {
-if picked.len() >= max_related {
-break;
-}
-if !picked.iter().any(|p| p.doc.route == cand.doc.route) {
-picked.push(cand);
-}
-}
-graph.insert(
-src.doc.route.clone(),
-picked
-.into_iter()
-.map(|p| RelatedItem {
-href: p.doc.route.clone(),
-title: p.doc.title.clone(),
-description: p.doc.description.clone(),
-category: p.category.to_string(),
-})
-.collect(),
-);
-}
-}
-// Inject static SSR related cards into built HTML pages so search crawlers & doc-graph see real internal links
-pages.par_iter().for_each(|page| {
-if !page.rel_path.ends_with("index.html")
-|| page.route.starts_with("/zen-mode/")
-|| page.route.contains("/404/")
-{
-return;
-}
-let Some(items) = graph.get(&page.route) else {
-return;
-};
-if items.is_empty() {
-return;
-}
-let html_path = dist_dir.join(&page.rel_path);
-let Ok(html) = fs::read_to_string(&html_path) else {
-return;
-};
-if html.contains("sl-related-wrap") {
-return;
-}
-let is_fr = page.locale == "fr" || page.route.starts_with("/fr/");
-let section_html = render_related_ssr(items, is_fr);
-let mut injected = false;
-let rw = rewrite_str(
-&html,
-RewriteStrSettings::new()
-.append_element_content_handler(element!("head", |el| {
-el.append(RELATED_CSS, ContentType::Html);
-Ok(())
-}))
-.append_element_content_handler(element!(".sl-markdown-content", |el| {
-if !injected {
-el.append(&section_html, ContentType::Html);
-injected = true;
-}
-Ok(())
-})),
-);
-if let Ok(next) = rw
-&& injected
-{
-let _ = fs::write(&html_path, next);
-}
-});
-let pages_count = graph.len();
-let total_links: usize = graph.values().map(|v| v.len()).sum();
-let isolated = graph.values().filter(|v| v.is_empty()).count();
-let avg = if pages_count > 0 {
-format!("{:.2}", total_links as f64 / pages_count as f64)
-} else {
-"0.00".to_string()
-};
-if let Ok(json) = serde_json::to_string(&graph) {
-let _ = fs::write(dist_dir.join("related-pages.json"), json);
-}
-let edge_map: HashMap<String, Vec<String>> = graph
-.into_iter()
-.map(|(k, v)| (k, v.into_iter().map(|it| it.href).collect()))
-.collect();
-(pages_count, avg, isolated, edge_map)
+                    .1
+                    .partial_cmp(&a.1)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            let mut picked: Vec<&DocRecord<'_>> = Vec::new();
+            let mut used_cats = HashSet::from([src.category]);
+            for (cand, _) in &scored {
+                if picked.len() >= max_related {
+                    break;
+                }
+                if used_cats.insert(cand.category) {
+                    picked.push(cand);
+                }
+            }
+            for (cand, _) in &scored {
+                if picked.len() >= max_related {
+                    break;
+                }
+                if !picked.iter().any(|p| p.doc.route == cand.doc.route) {
+                    picked.push(cand);
+                }
+            }
+            graph.insert(
+                src.doc.route.clone(),
+                picked
+                    .into_iter()
+                    .map(|p| RelatedItem {
+                        href: p.doc.route.clone(),
+                        title: p.doc.title.clone(),
+                        description: p.doc.description.clone(),
+                        category: p.category.to_string(),
+                    })
+                    .collect(),
+            );
+        }
+    }
+    // Ensure every non-root page in each locale has at least one inbound related link (zero orphans)
+    let mut inbound: std::collections::HashSet<String> = graph
+        .values()
+        .flat_map(|items| items.iter().map(|it| it.href.clone()))
+        .collect();
+    for group in by_locale.values() {
+        for cand in group {
+            if cand.doc.route == "/"
+                || cand.doc.route == "/fr/"
+                || inbound.contains(&cand.doc.route)
+            {
+                continue;
+            }
+            let best_src = group
+                .iter()
+                .filter(|s| {
+                    s.doc.route != cand.doc.route
+                        && !s.doc.rel_no_locale.starts_with("blog/")
+                        && graph.contains_key(&s.doc.route)
+                })
+                .min_by_key(|s| graph.get(&s.doc.route).map(|v| v.len()).unwrap_or(0));
+            if let Some(src) = best_src {
+                graph
+                    .entry(src.doc.route.clone())
+                    .or_default()
+                    .push(RelatedItem {
+                        href: cand.doc.route.clone(),
+                        title: cand.doc.title.clone(),
+                        description: cand.doc.description.clone(),
+                        category: cand.category.to_string(),
+                    });
+                inbound.insert(cand.doc.route.clone());
+            }
+        }
+    }
+
+    // Inject static SSR related cards into built HTML pages so search crawlers & doc-graph see real internal links
+    pages.par_iter().for_each(|page| {
+        if !page.rel_path.ends_with("index.html")
+            || page.route.starts_with("/zen-mode/")
+            || page.route.contains("/404/")
+        {
+            return;
+        }
+        let Some(items) = graph.get(&page.route) else {
+            return;
+        };
+        if items.is_empty() {
+            return;
+        }
+        let html_path = dist_dir.join(&page.rel_path);
+        let Ok(html) = fs::read_to_string(&html_path) else {
+            return;
+        };
+        let is_fr = page.locale == "fr" || page.route.starts_with("/fr/");
+        let mut injected = false;
+        let rw = if html.contains("sl-related-wrap") {
+            let missing_cards: String = items
+                .iter()
+                .filter(|it| !html.contains(&format!("href=\"{}\"", it.href)))
+                .map(|it| {
+                    format!(
+                        "<a class=\"sl-related-card\" href=\"{}\"><span class=\"sl-related-card__cat\">{}</span><span class=\"sl-related-card__title\">{}</span></a>",
+                        escape_html(&it.href),
+                        escape_html(&it.category),
+                        escape_html(&it.title),
+                    )
+                })
+                .collect();
+            if missing_cards.is_empty() {
+                return;
+            }
+            rewrite_str(
+                &html,
+                RewriteStrSettings::new().append_element_content_handler(element!(
+                    ".sl-related-grid",
+
+                    |el| {
+                        if !injected {
+                            el.append(&missing_cards, ContentType::Html);
+                            injected = true;
+                        }
+                        Ok(())
+                    }
+                )),
+            )
+        } else {
+            let section_html = render_related_ssr(items, is_fr);
+            rewrite_str(
+                &html,
+                RewriteStrSettings::new()
+                    .append_element_content_handler(element!("head", |el| {
+                        el.append(RELATED_CSS, ContentType::Html);
+                        Ok(())
+                    }))
+                    .append_element_content_handler(element!(".sl-markdown-content", |el| {
+                        if !injected {
+                            el.append(&section_html, ContentType::Html);
+                            injected = true;
+                        }
+                        Ok(())
+                    })),
+            )
+        };
+        if let Ok(next) = rw
+            && injected
+        {
+            let _ = fs::write(&html_path, next);
+        }
+    });
+    let pages_count = graph.len();
+    let total_links: usize = graph.values().map(|v| v.len()).sum();
+    let isolated = graph.values().filter(|v| v.is_empty()).count();
+    let avg = if pages_count > 0 {
+        format!("{:.2}", total_links as f64 / pages_count as f64)
+    } else {
+        "0.00".to_string()
+    };
+    if let Ok(json) = serde_json::to_string(&graph) {
+        let _ = fs::write(dist_dir.join("related-pages.json"), json);
+    }
+    let edge_map: HashMap<String, Vec<String>> = graph
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().map(|it| it.href).collect()))
+        .collect();
+    (pages_count, avg, isolated, edge_map)
 }
