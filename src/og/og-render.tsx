@@ -1,4 +1,33 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import React from 'react';
+import sharp from 'sharp';
+import {
+  createDataUrlResolver,
+  type OgAssetSource,
+  type OgFontSpec,
+} from './assets';
+
+export interface OgIllustration {
+  src: OgAssetSource;
+  placement?: 'right-hero' | 'watermark';
+  size?: number;
+}
+
+export type OgIllustrationResolver = (
+  ctx: RenderProps & { section: string },
+) => OgIllustration | OgAssetSource | null | undefined;
+
+export interface OgOptions {
+  fonts?: Array<OgAssetSource | OgFontSpec>;
+  fontFamily?: string;
+  monoFontFamily?: string;
+  illustration?: OgIllustrationResolver;
+  render?: (
+    props: RenderProps,
+    ctx: MakeRenderOptions & { defaultRender: (props: RenderProps) => Promise<React.ReactElement> },
+  ) => Promise<React.ReactElement> | React.ReactElement;
+}
 
 export interface MakeRenderOptions {
   logoDataUrl: string;
@@ -6,6 +35,11 @@ export interface MakeRenderOptions {
   accentHexA12: string;
   domain: string;
   projectName: string;
+  cwd?: string;
+  fontFamily?: string;
+  monoFontFamily?: string;
+  illustration?: OgIllustrationResolver;
+  render?: OgOptions['render'];
 }
 
 export interface RenderProps {
@@ -32,27 +66,25 @@ function getSection(pathname: string): string {
   return 'Overview';
 }
 
-function computeTitleSize(title: string, description?: string | null): number {
+function computeTitleSize(title: string, description?: string | null, hasRightHero = false): number {
   const tl = title.length;
   const dl = description ? description.length : 0;
   const total = tl + dl;
   let size;
-  if (tl <= 6) size = 190;
-  else if (tl <= 12) size = 145;
-  else if (tl <= 22) size = 108;
-  else if (tl <= 35) size = 78;
-  else if (tl <= 55) size = 60;
-  else size = 46;
-  if (total > 260) size = Math.min(size, 44);
-  else if (total > 200) size = Math.min(size, 56);
-  else if (total > 150) size = Math.min(size, 70);
-  else if (total > 100) size = Math.min(size, 88);
+  if (tl <= 6) size = hasRightHero ? 140 : 190;
+  else if (tl <= 12) size = hasRightHero ? 112 : 145;
+  else if (tl <= 22) size = hasRightHero ? 88 : 108;
+  else if (tl <= 35) size = hasRightHero ? 66 : 78;
+  else if (tl <= 55) size = hasRightHero ? 52 : 60;
+  else size = hasRightHero ? 42 : 46;
+  if (total > 260) size = Math.min(size, 42);
+  else if (total > 200) size = Math.min(size, 52);
+  else if (total > 150) size = Math.min(size, 64);
+  else if (total > 100) size = Math.min(size, hasRightHero ? 74 : 88);
   return size;
 }
 
-// Particles clustered toward top-right where the accent glow lives
 const PARTICLES = [
-  // Dense cluster top-right (constellation near glow)
   { x: 1150, y: 42, r: 3, o: 0.55 },
   { x: 1108, y: 78, r: 2, o: 0.45 },
   { x: 1172, y: 122, r: 2, o: 0.4 },
@@ -63,7 +95,6 @@ const PARTICLES = [
   { x: 1008, y: 302, r: 2, o: 0.35 },
   { x: 1112, y: 346, r: 3, o: 0.3 },
   { x: 1160, y: 400, r: 2, o: 0.45 },
-  // Trailing cluster middle-right (fades outward)
   { x: 940, y: 220, r: 2, o: 0.28 },
   { x: 880, y: 320, r: 2, o: 0.24 },
   { x: 820, y: 140, r: 2, o: 0.22 },
@@ -71,39 +102,94 @@ const PARTICLES = [
   { x: 700, y: 260, r: 2, o: 0.18 },
   { x: 1000, y: 480, r: 2, o: 0.22 },
   { x: 1080, y: 540, r: 3, o: 0.25 },
-  // Sparse left side (barely there)
   { x: 200, y: 120, r: 2, o: 0.15 },
   { x: 340, y: 480, r: 2, o: 0.15 },
 ];
 
-// Grid — vertical full height, horizontal only top 40% (header zone)
-const V_LINES = [108, 208, 308, 408, 508, 608, 708, 808, 908, 1008, 1108];
-const H_LINES_TOP = [90, 180, 270]; // stop above title
+const V_LINES = Array.from({ length: 11 }, (_, i) => 108 + i * 100);
+const H_LINES_TOP = Array.from({ length: 3 }, (_, i) => (i + 1) * 90);
 
-export const makeRender = ({
-  logoDataUrl,
-  accentHex,
-  accentHexA12,
-  domain,
-  projectName,
-}: MakeRenderOptions) => {
-  return async ({ title = '', description = null, pathname = '' }: RenderProps) => {
-    const titleSize = computeTitleSize(title, description);
+function isOgIllustration(val: OgIllustration | OgAssetSource): val is OgIllustration {
+  return typeof val === 'object' && val !== null && !Buffer.isBuffer(val) && !(val instanceof URL) && 'src' in val;
+}
+
+const svgPngCache = new Map<string, Promise<string>>();
+
+async function resolveIllustrationDataUrl(
+  src: OgAssetSource,
+  cwd: string,
+  toDataUrl: (s: OgAssetSource) => string,
+): Promise<string> {
+  if (typeof src === 'string' && src.toLowerCase().endsWith('.svg')) {
+    const fullPath = path.resolve(cwd, src);
+    if (fs.existsSync(fullPath)) {
+      let pending = svgPngCache.get(fullPath);
+      if (!pending) {
+        pending = sharp(fullPath, { density: 288 })
+          .png()
+          .toBuffer()
+          .then((buf) => `data:image/png;base64,${buf.toString('base64')}`);
+        svgPngCache.set(fullPath, pending);
+      }
+      return pending;
+    }
+  }
+  return toDataUrl(src);
+}
+
+export const makeRender = (opts: MakeRenderOptions) => {
+  const {
+    logoDataUrl,
+    accentHex,
+    accentHexA12,
+    domain,
+    projectName,
+    cwd = process.cwd(),
+    fontFamily,
+    monoFontFamily = 'monospace',
+    illustration,
+    render: customRender,
+  } = opts;
+
+  const toDataUrl = createDataUrlResolver(cwd);
+
+  const defaultRender = async (props: RenderProps) => {
+    const { title = '', description = null, pathname = '' } = props;
     const section = getSection(pathname);
     const cleanPath = pathname === '/' ? '' : pathname.replaceAll(/^\/|\/$/g, '');
     const is404 = section === '404';
 
+    const displayTitle = title
+      .replace(new RegExp(`\\s*[—–-]\\s*(?:Documentation\\s+)?${projectName}(?:\\s+documentation)?$`, 'i'), '')
+      .trim();
+
+    const resolvedRaw = illustration?.({ ...props, section });
+    let illDataUrl: string | undefined;
+    let illPlacement: 'right-hero' | 'watermark' = 'right-hero';
+    let illSize = 310;
+
+    if (resolvedRaw) {
+      const spec: OgIllustration = isOgIllustration(resolvedRaw) ? resolvedRaw : { src: resolvedRaw };
+      illDataUrl = await resolveIllustrationDataUrl(spec.src, cwd, toDataUrl);
+      illPlacement = spec.placement ?? 'right-hero';
+      illSize = spec.size ?? (illPlacement === 'watermark' ? 440 : 310);
+    }
+
+    const hasRightHero = Boolean(illDataUrl && illPlacement === 'right-hero');
+    const titleSize = computeTitleSize(displayTitle, description, hasRightHero);
+    const contentMaxWidth = hasRightHero ? 650 : 1020;
+
     return (
-      <div tw="flex flex-col w-full h-full bg-white relative overflow-hidden">
-        {/* Left accent bar */}
+      <div
+        tw="flex flex-col w-full h-full bg-white relative overflow-hidden"
+        style={fontFamily ? { fontFamily } : undefined}
+      >
         <div tw="absolute" style={{ left: 0, top: 0, bottom: 0, width: 8, backgroundColor: accentHex }} />
 
-        {/* Ambient wash — full canvas, only in top-right quadrant */}
         <div
           tw={`absolute top-0 right-0 w-full h-full bg-linear-to-bl from-[${accentHexA12}] via-transparent to-transparent`}
         />
 
-        {/* Vertical grid — full height, very subtle */}
         {V_LINES.map((x) => (
           <div
             key={`v${x}`}
@@ -118,7 +204,6 @@ export const makeRender = ({
           />
         ))}
 
-        {/* Horizontal grid — only top zone, ends before title */}
         {H_LINES_TOP.map((y) => (
           <div
             key={`h${y}`}
@@ -133,7 +218,6 @@ export const makeRender = ({
           />
         ))}
 
-        {/* Particles — clustered, constellation feel */}
         {PARTICLES.map((p, i) => (
           <div
             key={`p${i}`}
@@ -149,12 +233,26 @@ export const makeRender = ({
           />
         ))}
 
-        {/* Content */}
+        {illDataUrl && illPlacement === 'watermark' && (
+          <img
+            src={illDataUrl}
+            style={{
+              position: 'absolute',
+              right: 48,
+              bottom: 72,
+              width: illSize,
+              height: illSize,
+              objectFit: 'contain',
+              opacity: 0.16,
+            }}
+            alt=""
+          />
+        )}
+
         <div
           tw="flex flex-col h-full relative"
           style={{ paddingTop: 60, paddingBottom: 48, paddingRight: 72, paddingLeft: 108, zIndex: 10 }}
         >
-          {/* Top row — baseline-aligned logo + name */}
           <div tw="flex items-center justify-between">
             <div tw="flex items-center" style={{ gap: 20, alignItems: 'center' }}>
               <img
@@ -165,11 +263,11 @@ export const makeRender = ({
               <span
                 style={{
                   fontSize: 58,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: '#09090b',
                   letterSpacing: '-0.045em',
                   lineHeight: 1,
-                  marginTop: 4,
+                  marginTop: 0,
                 }}
               >
                 {projectName}
@@ -204,42 +302,54 @@ export const makeRender = ({
             </div>
           </div>
 
-          <div tw="flex-1" />
-
-          {/* Title block */}
-          <div tw="flex flex-col">
-            <div style={{ width: 60, height: 5, backgroundColor: accentHex, marginBottom: 20 }} />
-            <h1
-              style={{
-                fontSize: titleSize,
-                fontWeight: 800,
-                lineHeight: 0.95,
-                letterSpacing: '-0.05em',
-                color: '#09090b',
-                maxWidth: 1020,
-                margin: 0,
-              }}
-            >
-              {title}
-            </h1>
-            {description && !is404 && (
-              <p
+          <div tw="flex items-end justify-between" style={{ gap: 32, flex: 1 }}>
+            <div tw="flex flex-col" style={{ maxWidth: contentMaxWidth }}>
+              <div style={{ width: 60, height: 5, backgroundColor: accentHex, marginBottom: 20 }} />
+              <h1
                 style={{
-                  fontSize: 34,
-                  lineHeight: 1.35,
-                  color: '#3f3f46',
-                  letterSpacing: '-0.008em',
-                  maxWidth: 1020,
+                  fontSize: titleSize,
+                  fontWeight: 700,
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.05em',
+                  color: '#09090b',
+                  maxWidth: contentMaxWidth,
                   margin: 0,
-                  marginTop: 20,
                 }}
               >
-                {description}
-              </p>
+                {displayTitle}
+              </h1>
+              {description && !is404 && (
+                <p
+                  style={{
+                    fontSize: hasRightHero ? 30 : 34,
+                    lineHeight: 1.35,
+                    color: '#3f3f46',
+                    letterSpacing: '-0.008em',
+                    maxWidth: contentMaxWidth,
+                    margin: 0,
+                    marginTop: 20,
+                  }}
+                >
+                  {description}
+                </p>
+              )}
+            </div>
+
+            {hasRightHero && illDataUrl && (
+              <img
+                src={illDataUrl}
+                style={{
+                  width: illSize,
+                  height: illSize,
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  display: 'block',
+                }}
+                alt=""
+              />
             )}
           </div>
 
-          {/* Footer — stronger border */}
           <div
             tw="flex items-center justify-between"
             style={{
@@ -254,7 +364,7 @@ export const makeRender = ({
               DOCUMENTATION
             </span>
             <span
-              style={{ fontSize: 24, fontFamily: 'monospace', color: '#52525b', letterSpacing: '-0.01em' }}
+              style={{ fontSize: 24, fontFamily: monoFontFamily, color: '#52525b', letterSpacing: '-0.01em' }}
             >
               {domain}
               {cleanPath ? '/' + cleanPath : ''}
@@ -264,4 +374,7 @@ export const makeRender = ({
       </div>
     );
   };
+
+  if (!customRender) return defaultRender;
+  return async (props: RenderProps) => customRender(props, { ...opts, defaultRender });
 };

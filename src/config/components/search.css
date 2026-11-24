@@ -1486,3 +1486,9 @@
 :root[data-theme='dark'] #sl-cmdk-dialog .sl-cmdk-ec-tok {
   color: var(--ec-1, var(--ec-0, inherit));
 }
+
+#sl-cmdk-dialog .sl-cmdk-preview__code-kbd {
+  padding: 0.05rem 0.3rem;
+  font-size: 0.6rem;
+  opacity: 0.85;
+}

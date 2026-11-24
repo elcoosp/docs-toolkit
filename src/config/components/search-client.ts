@@ -1556,7 +1556,11 @@ export function initCommandSearch(): void {
             copyCodeBtn.setAttribute('aria-label', isFr ? 'Copier le code' : 'Copy code');
             const setCopyIdle = () => {
               copyCodeBtn.dataset.copied = 'false';
-              copyCodeBtn.replaceChildren(iconCopy(), el('span', undefined, isFr ? 'Copier' : 'Copy'));
+              copyCodeBtn.replaceChildren(
+                iconCopy(),
+                el('span', undefined, isFr ? 'Copier' : 'Copy'),
+                el('kbd', 'sl-cmdk-kbd sl-cmdk-preview__code-kbd', '⌥C'),
+              );
             };
             setCopyIdle();
             let codeCopyTimer: number | undefined;
@@ -2948,6 +2952,19 @@ export function initCommandSearch(): void {
         e.preventDefault();
         e.stopPropagation();
         pivotPreviewToGraphLink(graphLink);
+      }
+    } else if (
+      e.altKey &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.shiftKey &&
+      (e.key.toLowerCase() === 'c' || e.code === 'KeyC')
+    ) {
+      const copyCodeBtn = previewEl?.querySelector<HTMLButtonElement>('.sl-cmdk-preview__code-copy');
+      if (copyCodeBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        copyCodeBtn.click();
       }
     } else if (e.altKey && !e.metaKey && !e.ctrlKey && e.key === 'ArrowLeft' && previewStack.length > 0) {
       e.preventDefault();

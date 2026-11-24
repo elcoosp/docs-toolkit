@@ -57,17 +57,6 @@ pub struct DocGraphReport {
     pub errors: Vec<String>,
 }
 
-fn detect_category(rel_no_locale: &str) -> &'static str {
-    match rel_no_locale.split('/').next().unwrap_or("") {
-        "tutorials" => "tutorials",
-        "guides" => "guides",
-        "explanation" => "explanation",
-        "reference" => "reference",
-        "" | "index.md" | "index.mdx" => "home",
-        _ => "docs",
-    }
-}
-
 fn is_home_route(route: &str, locale: &str, default_locale: &str) -> bool {
     if route == "/" {
         return true;
@@ -140,7 +129,10 @@ fn extract_internal_links(raw_text: &str, body: &str) -> BTreeSet<String> {
     links
 }
 
-fn compute_pagerank(routes: &[String], outgoing: &HashMap<String, Vec<String>>) -> HashMap<String, f64> {
+fn compute_pagerank(
+    routes: &[String],
+    outgoing: &HashMap<String, Vec<String>>,
+) -> HashMap<String, f64> {
     let n = routes.len();
     if n == 0 {
         return HashMap::new();
@@ -237,7 +229,10 @@ pub fn run_doc_graph(
 
     let mut by_locale: BTreeMap<&str, Vec<(&MdDoc, Vec<String>)>> = BTreeMap::new();
     for item in extracted {
-        by_locale.entry(item.0.locale.as_str()).or_default().push(item);
+        by_locale
+            .entry(item.0.locale.as_str())
+            .or_default()
+            .push(item);
     }
 
     let mut nodes = Vec::with_capacity(valid_docs.len());
@@ -284,7 +279,7 @@ pub fn run_doc_graph(
                 route: doc.route.clone(),
                 locale: locale.to_string(),
                 title: doc.title.clone(),
-                category: detect_category(&doc.rel_no_locale).to_string(),
+                category: doc.category().to_string(),
                 in_degree: in_d,
                 out_degree: out_d,
                 page_rank: pr.get(&doc.route).copied().unwrap_or(0.0),
@@ -300,7 +295,11 @@ pub fn run_doc_graph(
             .unwrap_or(std::cmp::Ordering::Equal)
             .then_with(|| a.route.cmp(&b.route))
     });
-    edges.sort_by(|a, b| a.source.cmp(&b.source).then_with(|| a.target.cmp(&b.target)));
+    edges.sort_by(|a, b| {
+        a.source
+            .cmp(&b.source)
+            .then_with(|| a.target.cmp(&b.target))
+    });
 
     let orphan_count = nodes.iter().filter(|n| n.orphan).count();
     let dead_end_count = nodes.iter().filter(|n| n.dead_end).count();
@@ -313,14 +312,14 @@ pub fn run_doc_graph(
         orphan_count,
         dead_end_count,
     };
-if let Ok(json) = serde_json::to_string(&artifact) {
-let _ = fs::write(dist_dir.join("graph.json"), json);
-}
-DocGraphReport {
-nodes_count,
-edges_count,
-orphan_count,
-warnings,
-errors,
-}
+    if let Ok(json) = serde_json::to_string(&artifact) {
+        let _ = fs::write(dist_dir.join("graph.json"), json);
+    }
+    DocGraphReport {
+        nodes_count,
+        edges_count,
+        orphan_count,
+        warnings,
+        errors,
+    }
 }

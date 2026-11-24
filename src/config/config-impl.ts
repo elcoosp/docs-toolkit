@@ -13,11 +13,11 @@ import type { AstroUserConfig } from 'astro';
 import starlight from '@astrojs/starlight';
 import type { StarlightUserConfig } from '@astrojs/starlight/types';
 import astroTakumi from '@elcoosp/astro-takumi';
-import { makeRender } from '../og/og-render';
+import { makeRender, type OgOptions } from '../og/og-render';
+import { createDataUrlResolver, resolveOgFonts } from '../og/assets';
 import { deriveAccent, accentFromHex } from '../og/accent';
 import { resolveLlmsConfig, llmsIntegration, llmsHeadLink } from './llms';
 import type { LlmsTxtConfig } from './llms';
-import { ROBOTO_BASE64 } from '../assets/font-b64';
 import { staticMermaidIntegration } from './rehype-static-mermaid';
 import type { AstroIntegration } from 'astro';
 
@@ -115,6 +115,7 @@ export interface DocsConfigOptions {
   routeMiddleware?: string;
   base?: string;
   accentOverride?: string;
+  og?: OgOptions;
   expressiveCode?: StarlightUserConfig['expressiveCode'];
   extraStarlight?: Partial<StarlightUserConfig>;
   extraIntegrations?: NonNullable<AstroUserConfig['integrations']>;
@@ -547,15 +548,22 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     );
     autoAccentCss.push('./.astro/docs-toolkit-accent.css');
   }
-  const logoB64 = fs.readFileSync(logoPath).toString('base64');
+  const cwd = process.cwd();
+  const toDataUrl = createDataUrlResolver(cwd);
+  const ogOpts = options.og ?? {};
+  const resolvedFonts = resolveOgFonts(ogOpts.fonts, cwd);
   const render = makeRender({
-    logoDataUrl: 'data:image/png;base64,' + logoB64,
+    logoDataUrl: toDataUrl(logoPath),
     accentHex: accent.hex,
     accentHexA12: accent.hexA12,
     domain,
     projectName,
+    cwd,
+    fontFamily: ogOpts.fontFamily ?? resolvedFonts.sansFamily,
+    monoFontFamily: ogOpts.monoFontFamily ?? resolvedFonts.monoFamily,
+    illustration: ogOpts.illustration,
+    render: ogOpts.render,
   });
-  const fontBuf = Buffer.from(ROBOTO_BASE64, 'base64');
 
   const starlightPlugins: any[] = [];
 
@@ -946,7 +954,7 @@ export async function defineDocsConfig(options: DocsConfigOptions): Promise<Astr
     astroTakumi({
       options: {
         domBackend: 'linkedom',
-        fonts: [fontBuf],
+        fonts: resolvedFonts.buffers,
         width: 1200,
         height: 630,
         format: 'webp',

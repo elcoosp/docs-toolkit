@@ -314,30 +314,36 @@ export function starlightRelatedPages(options: RelatedPagesOptions = {}): Starli
         addIntegration({
           name: 'starlight-related-pages',
           hooks: {
-            'astro:config:setup'({ injectScript, updateConfig }) {
-              injectScript(
-                'page',
-                'import { initRelatedPages } from ' +
-                  Q +
-                  '@elcoosp/docs-toolkit/src/plugins/related-pages/client.ts' +
-                  Q +
-                  '; initRelatedPages();',
-              );
-              updateConfig({
-                vite: {
-                  plugins: [
-                    {
-                      name: 'starlight-related-pages-dev',
-                      configureServer(server) {
-                        server.middlewares.use('/related-pages.json', (_req, res) => {
-                          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-                          res.end(cachedPayload);
-                        });
+            'astro:config:setup'({ command, injectScript, updateConfig }) {
+              if (!hasNativePipeline() || command === 'serve') {
+                if (hasNativePipeline() && cachedPayload === '{}') {
+                  cachedGraph = buildRelatedGraph(docsDir, locales, maxRelated);
+                  cachedPayload = JSON.stringify(cachedGraph);
+                }
+                injectScript(
+                  'page',
+                  'import { initRelatedPages } from ' +
+                    Q +
+                    '@elcoosp/docs-toolkit/src/plugins/related-pages/client.ts' +
+                    Q +
+                    '; initRelatedPages();',
+                );
+                updateConfig({
+                  vite: {
+                    plugins: [
+                      {
+                        name: 'starlight-related-pages-dev',
+                        configureServer(server) {
+                          server.middlewares.use('/related-pages.json', (_req, res) => {
+                            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                            res.end(cachedPayload);
+                          });
+                        },
                       },
-                    },
-                  ],
-                },
-              });
+                    ],
+                  },
+                });
+              }
             },
             async 'astro:build:done'({ dir, logger }) {
               if (await runNativePipelineOnce(rootDir, dir, logger)) return;

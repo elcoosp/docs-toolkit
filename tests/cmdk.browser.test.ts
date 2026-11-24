@@ -382,7 +382,7 @@ describe('Command Palette Real Browser DOM & E2E Suite', () => {
       expect(document.querySelector('.sl-cmdk-preview__code-lang')?.textContent).toBe('rust');
       const copyCodeBtn = document.querySelector<HTMLButtonElement>('.sl-cmdk-preview__code-copy');
       expect(copyCodeBtn).toBeTruthy();
-      copyCodeBtn!.click();
+      key(input, 'c', { altKey: true, code: 'KeyC' });
       await new Promise((r) => setTimeout(r, 20));
       expect(copyCodeBtn!.dataset.copied).toBe('true');
     } finally {

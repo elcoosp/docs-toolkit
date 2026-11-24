@@ -156,16 +156,6 @@ fn strip_code_and_tags(body: &str) -> String {
     out.join(" ")
 }
 
-fn detect_category(rel_no_locale: &str) -> &'static str {
-    match rel_no_locale.split('/').next().unwrap_or("") {
-        "tutorials" => "tutorials",
-        "guides" => "guides",
-        "explanation" => "explanation",
-        "reference" => "reference",
-        _ => "docs",
-    }
-}
-
 struct DocRecord<'a> {
     doc: &'a MdDoc,
     category: &'static str,
@@ -209,7 +199,7 @@ pub fn run_related_pages(
             .or_default()
             .push(DocRecord {
                 doc,
-                category: detect_category(&doc.rel_no_locale),
+                category: doc.category(),
                 tf,
                 doc_len,
             });
@@ -414,9 +404,6 @@ pub fn run_related_pages(
     } else {
         "0.00".to_string()
     };
-    if let Ok(json) = serde_json::to_string(&graph) {
-        let _ = fs::write(dist_dir.join("related-pages.json"), json);
-    }
     let edge_map: HashMap<String, Vec<String>> = graph
         .into_iter()
         .map(|(k, v)| (k, v.into_iter().map(|it| it.href).collect()))

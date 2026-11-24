@@ -53,7 +53,7 @@ fn cli_full_pipeline_success_and_strict_failure() {
     assert_eq!(v["codeSymbolLinks"], 1);
     assert!(dist.join("llms.txt").exists());
     assert!(dist.join("_link-previews.json").exists());
-    assert!(dist.join("related-pages.json").exists());
+    assert!(!dist.join("related-pages.json").exists());
 
     let strict_cfg = serde_json::json!({
         "siteRoot": tmp,

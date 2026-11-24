@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
@@ -106,6 +106,28 @@ describe('OG, Accent, RouteData, i18n Sidebar & AI Providers (100% coverage)', (
       expect(tree).toBeTruthy();
     }
     expect(await render({})).toBeTruthy();
+
+    const svgPath = join(dir, 'mascot.svg');
+    copyFileSync(join(process.cwd(), '../glyim/glyim-docs/public/mascot.svg'), svgPath);
+    const pngPath = await makePng('ill.png', { r: 10, g: 20, b: 30, alpha: 1 });
+    const customRender = makeRender({
+      logoDataUrl: 'data:image/png;base64,AA==',
+      accentHex: '#2563eb',
+      accentHexA12: '#2563eb1a',
+      domain: 'example.com',
+      projectName: 'Glyim',
+      fontFamily: 'Space Grotesk',
+      monoFontFamily: 'JetBrains Mono',
+      cwd: dir,
+      illustration: ({ section }) => {
+        if (section === 'Guide') return { src: 'mascot.svg', placement: 'right-hero', size: 300 };
+        if (section === 'Overview') return { src: 'mascot.svg', placement: 'watermark' };
+        return pngPath;
+      },
+    });
+    expect(await customRender({ title: 'CLI — Glyim documentation', pathname: '/guides/cli/' })).toBeTruthy();
+    expect(await customRender({ title: 'Home', pathname: '/' })).toBeTruthy();
+    expect(await customRender({ title: 'Ref', pathname: '/reference/api/' })).toBeTruthy();
 
     const head: Array<{ tag: string; attrs: Record<string, string> }> = [];
     onRequest({

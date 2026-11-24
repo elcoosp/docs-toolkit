@@ -22,6 +22,19 @@ pub struct MdDoc {
     pub body: String,
 }
 
+impl MdDoc {
+    pub fn category(&self) -> &'static str {
+        match self.section_key.as_str() {
+            "tutorials" => "tutorials",
+            "guides" => "guides",
+            "explanation" => "explanation",
+            "reference" => "reference",
+            "index" => "home",
+            _ => "docs",
+        }
+    }
+}
+
 pub fn unquote_yaml(val: &str) -> String {
     let t = val.trim();
     if (t.starts_with('"') && t.ends_with('"') && t.len() >= 2)

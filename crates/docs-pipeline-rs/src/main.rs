@@ -367,8 +367,15 @@ fn main() {
         0
     };
 
-    let (doc_graph_nodes, doc_graph_edges, doc_graph_orphans) = if let Some(dg_cfg) = &req.doc_graph {
-        let rep = run_doc_graph(&dist_dir, &docs, &req.default_locale, &related_edges, dg_cfg);
+    let (doc_graph_nodes, doc_graph_edges, doc_graph_orphans) = if let Some(dg_cfg) = &req.doc_graph
+    {
+        let rep = run_doc_graph(
+            &dist_dir,
+            &docs,
+            &req.default_locale,
+            &related_edges,
+            dg_cfg,
+        );
         warnings.extend(rep.warnings);
         errors.extend(rep.errors);
         (rep.nodes_count, rep.edges_count, rep.orphan_count)
